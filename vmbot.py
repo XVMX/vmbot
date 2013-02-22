@@ -148,7 +148,7 @@ class VMBot(MUCJabberBot):
 	
 	@botcmd
 	def bcast(self, mess, args):
-		'''bcast vm <message> - Sends a message to XVMX members. Must be <=1kb including the tag line. "vm" required to avoid accidental bcasts. Do not abuse this or Solo's wrath shall be upon you.
+		'''bcast vm <message> - Sends a message to XVMX members. Must be <=1kb including the tag line. "vm" required to avoid accidental bcasts, only works in dir chat. Do not abuse this or Solo's wrath shall be upon you.
 		A hacked together piece of shit.
 		API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
 		'''
@@ -156,19 +156,22 @@ class VMBot(MUCJabberBot):
 		srjid = self.senderRjid(mess)
 
 		if args[:2] == 'vm' and len(args) > 3:
-			if srjid in self.directors:
-				broadcast = args[4:] + '\n\n *** This was a broadcast by ' + srjid + ' to ' + self.target + ' through VMBot at ' + time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()) + ' EVE. ***'
-				if len(broadcast) <= 1024:
-					if(self.sendBcast(broadcast)):
-						reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + self.target
+			if str(mess.getFrom()).split("@")[0] == 'vm_dir':
+				if srjid in self.directors:
+					broadcast = args[3:] + '\n\n *** This was a broadcast by ' + srjid + ' to ' + self.target + ' through VMBot at ' + time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()) + ' EVE. ***'
+					if len(broadcast) <= 1024:
+						if(self.sendBcast(broadcast)):
+							reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + self.target
+						else:
+							reply = "Something went wrong while sending the broadcast."
 					else:
-						reply = "Something went wrong while sending the broadcast."
+						reply = "This broadcast is too long; max length is 1024 characters including the automatically generated info line at the end. Please try again with less of a tale."
 				else:
-					reply = "This broadcast is too long; max length is 1024 characters including the automatically generated info line at the end. Please try again with less of a tale."
+					reply = "You don't have the rights to send broadcasts."
 			else:
-				reply = "You don't have the rights to send broadcasts."
-		
-			self.send_simple_reply(mess, reply)
+				reply = "Broadcasting is only enabled in director chat."
+				
+		self.send_simple_reply(mess, reply)
 	
 	@botcmd
 	def pickone(self, mess, args):
@@ -230,8 +233,10 @@ if __name__ == '__main__':
     password = ''
     res      = 'vmbot'
     nickname = 'Morgooglie'
-    chatroom = 'vm_dir@conference.goonfleet.com'
+	chatroom1 = 'vm_dir@conference.goonfleet.com'
+	chatroom2 = 'xvmx@conference.goonfleet.com'
 
-    morgooglie = VMBot(username, password, res, only_direct=False)
-    morgooglie.join_room(chatroom, nickname)
-    morgooglie.serve_forever()
+	morgooglie = VMBot(username, password, res, only_direct=False)
+	morgooglie.join_room(chatroom1, nickname)
+	morgooglie.join_room(chatroom2, nickname)
+	morgooglie.serve_forever()
