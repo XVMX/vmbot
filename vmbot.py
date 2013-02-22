@@ -140,22 +140,10 @@ class VMBot(MUCJabberBot):
 				
 		self.send_simple_reply(mess, reply)
 		
-	@botcmd(hidden=True)
-	def testjid(self, mess, args):
-		jid = mess.getFrom()
-		getNode = jid.getNode();
-		getResource = jid.getResource();
-		getStripped = jid.getStripped();
-		getDomain = jid.getDomain();
-		
-		reply = 'jid: ' + str(jid) + ', getNode: ' + getNode + ', getResource: ' + getResource + ', getStripped: ' + getStripped + ', getDomain: '
-		self.send_simple_reply(mess, reply)
-	
-	@botcmd(hidden=True)
-	def testseen(self, mess, args):
-		show, status, rjid = self.seen.get(mess.getFrom())
-		reply = rjid.split('@')[0]
-
+	@botcmd
+	def flipcoin(self, mess, args):
+		'''flipcoin - flips a coin'''
+		reply = random.choice(["Heads!", "Tails!"])
 		self.send_simple_reply(mess, reply)
 	
 	@botcmd
