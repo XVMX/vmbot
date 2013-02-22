@@ -169,7 +169,7 @@ class VMBot(MUCJabberBot):
 
 		if args[:2] == 'vm' and len(args) > 3:
 			if srjid in self.directors:
-				broadcast = args + '\n\n *** This was a broadcast by ' + srjid + ' to ' + self.target + ' through VMBot at ' + time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()) + ' EVE. ***'
+				broadcast = args[4:] + '\n\n *** This was a broadcast by ' + srjid + ' to ' + self.target + ' through VMBot at ' + time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()) + ' EVE. ***'
 				if len(broadcast) <= 1024:
 					if(self.sendBcast(broadcast)):
 						reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + self.target
@@ -225,11 +225,11 @@ class VMBot(MUCJabberBot):
 		text = ET.SubElement(message, "text")
 		text.text = broadcast
 		result = '<?xml version="1.0"?>' + ET.tostring(messaging)
-		print result
+		#print result
 		
 		headers = {"X-SourceID" : self.id, "X-SharedKey" : self.key}
 		r = requests.post(url=self.url, data=result, headers=headers)
-		print r.text
+		#print r.text
 		return True
 	
 	def senderRjid(self, mess):
