@@ -21,6 +21,7 @@ import re
 import logging
 import random
 import requests
+import from sympy.parsing.sympy_parser import parse_expr
 
 logger = logging.getLogger('jabberbot')
 logger.setLevel(logging.DEBUG)
@@ -83,7 +84,12 @@ class VMBot(MUCJabberBot):
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
         super(VMBot, self).__init__(*args, **kwargs)
-        
+    
+    @botcmd
+    def math(self, mess, args):
+        '''math <expr> - Evaluates expr mathematically. If you want decimal results, force floating point numbers by doing 4.0/3 instead of 4/3'''
+        self.send_simple_reply(mess, str(parse_expr(args)))
+    
     @botcmd
     def eightball(self, mess, args):
         '''eightball <question> - Provides insight into the future'''
