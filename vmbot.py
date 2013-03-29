@@ -2,7 +2,6 @@
 # coding: utf-8
 
 # Copyright (C) 2010 Arthur Furlan <afurlan@afurlan.org>
-# Copyright (C) 2012 Sascha J�ngling <sjuengling@gmail.com>
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +20,8 @@ import re
 import logging
 import random
 import requests
-import from sympy.parsing.sympy_parser import parse_expr
+from sympy.parsing.sympy_parser import parse_expr
+import vmbot_config as vmc
 
 logger = logging.getLogger('jabberbot')
 logger.setLevel(logging.DEBUG)
@@ -50,7 +50,7 @@ class MUCJabberBot(JabberBot):
         user, domain = str(self.jid).split('@')
         self.direct_message_re = re.compile('^%s(@%s)?[^\w]? ' \
                 % (user, domain))
-        
+		
     def callback_message(self, conn, mess):
         ''' Changes the behaviour of the JabberBot in order to allow
         it to answer direct messages. This is used often when it is
@@ -66,33 +66,53 @@ class MUCJabberBot(JabberBot):
         elif not self.only_direct:
             return super(MUCJabberBot, self).callback_message(conn, mess)
 
-
 class VMBotError(StandardError):
     def __init__(self, msg):
         super(VMBotError, self).__init__(msg)
 
+class TimeoutException(Exception): 
+    pass 
+
 class VMBot(MUCJabberBot):
-    # Lists and config options for use in the various methods
+    # Lists for use in the various methods
     eball_answers = ['Probably.', 'Rather likely.', 'Definitely.', 'Of course.', 'Probably not.', 'This is very questionable.', 'Unlikely.', 'Absolutely not.']
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!"]
-    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "petter_sandstad", "johann_tollefson", "petyr_baelich", "arele"]
-    url = ""
-    id = ""
-    key = ""
-    target = '[gs]_valar_morghulis@bcast.goonfleet.com' # [gs]_valar_morghulis@bcast.goonfleet.com     jack_haydn@goonfleet.com
+    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "petter_sandstad", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim"]
     
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
         super(VMBot, self).__init__(*args, **kwargs)
     
+    def timeout(timeout_time, default):
+        def timeout_function(f):
+            def f2(*args):
+                def timeout_handler(signum, frame):
+                    raise TimeoutException()
+     
+                old_handler = signal.signal(signal.SIGALRM, timeout_handler) 
+                signal.alarm(timeout_time) # triger alarm in timeout_time seconds
+                try: 
+                    retval = f()
+                except TimeoutException:
+                    return default
+                finally:
+                    signal.signal(signal.SIGALRM, old_handler) 
+                signal.alarm(0)
+                return retval
+            return f2
+        return timeout_function
+    
+    
+    @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
     @botcmd
     def math(self, mess, args):
+        print "test"
         '''math <expr> - Evaluates expr mathematically. If you want decimal results, force floating point numbers by doing 4.0/3 instead of 4/3'''
-        self.send_simple_reply(mess, str(parse_expr(args)))
+        self.send_simple_reply(mess, str(sympy.parsing.sympy_parser.parse_expr(args)))
     
     @botcmd
-    def eightball(self, mess, args):
-        '''eightball <question> - Provides insight into the future'''
+    def bot_8ball(self, mess, args):
+        '''8ball <question> - Provides insight into the future'''
         if len(args) == 0:
             reply = 'You will need to provide a question for me to answer.'
         else:
@@ -179,14 +199,14 @@ class VMBot(MUCJabberBot):
             if srjid not in self.directors:
                 raise VMBotError("You don't have the rights to send broadcasts.")
             
-            footer = '\n\n *** This was a broadcast by {} to {} through VMBot at {} EVE. ***'.format(srjid, self.target, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()))
+            footer = '\n\n *** This was a broadcast by {} to {} through VMBot at {} EVE. ***'.format(srjid, vmc.target, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()))
             broadcast = args[3:] + footer
             
             if len(broadcast) > 1024:
                 raise VMBotError("This broadcast is too long; max length is 1024 characters including the automatically generated info line at the end. Please try again with less of a tale.")
             
             self.sendBcast(broadcast)
-            reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + self.target
+            reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
         except VMBotError, e:
             reply = str(e)
         finally:
@@ -215,7 +235,7 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True)
     def reload(self, mess, args):
         if len(args) == 0:
-            if self.senderRjid(mess) == 'jack_haydn' and self.get_sender_username(mess) != nickname:
+            if self.senderRjid(mess) == 'jack_haydn' and self.get_sender_username(mess) != vmc.nickname:
                 reply = 'afk shower'
                 self.quit()
             else:
@@ -231,15 +251,14 @@ class VMBot(MUCJabberBot):
         id = ET.SubElement(message, "id")
         id.text = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         target = ET.SubElement(message, "target")
-        target.text = self.target
+        target.text = vmc.target
         text = ET.SubElement(message, "text")
         text.text = broadcast
         result = '<?xml version="1.0"?>' + ET.tostring(messaging)
         #print result
         
-        headers = {"X-SourceID" : self.id, "X-SharedKey" : self.key}
-        r = requests.post(url=self.url, data=result, headers=headers)
-        #print r.text
+        headers = {"X-SourceID" : vmc.id, "X-SharedKey" : vmc.key}
+        r = requests.post(url=vmc.url, data=result, headers=headers)
         return True
     
     def senderRjid(self, mess):
@@ -247,15 +266,9 @@ class VMBot(MUCJabberBot):
         return rjid.split('@')[0]
         
 if __name__ == '__main__':
-
-    username = ''
-    password = ''
-    res      = 'vmbot'
-    nickname = 'Morgooglie'
-    chatroom1 = 'vm_dir@conference.goonfleet.com'
-    chatroom2 = 'xvmx@conference.goonfleet.com'
-
-    morgooglie = VMBot(username, password, res, only_direct=False)
-    morgooglie.join_room(chatroom1, nickname)
-    morgooglie.join_room(chatroom2, nickname)
+    
+    # Grabbing values from imported config file
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
+    morgooglie.join_room(vmc.chatroom1, vmc.nickname)
+    morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.serve_forever()

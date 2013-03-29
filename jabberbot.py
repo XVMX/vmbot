@@ -63,7 +63,7 @@ def botcmd(*args, **kwargs):
         setattr(func, '_jabberbot_command_name', name or func.__name__)
         setattr(func, '_jabberbot_command_thread', thread)  # Experimental!
         return func
-
+	print func;
     if len(args):
         return decorate(args[0], **kwargs)
     else:
@@ -88,8 +88,8 @@ class JabberBot(object):
     MSG_ERROR_OCCURRED = 'Sorry for your inconvenience. '\
         'An unexpected error occurred.'
 
-    PING_FREQUENCY = 0  # Set to the number of seconds, e.g. 60.
-    PING_TIMEOUT = 2  # Seconds to wait for a response.
+    PING_FREQUENCY = 60  # Set to the number of seconds, e.g. 60.
+    PING_TIMEOUT = 5  # Seconds to wait for a response.
 
     def __init__(self, username, password, res=None, debug=False,
             privatedomain=False, acceptownmsgs=False, handlers=None,
@@ -152,6 +152,8 @@ class JabberBot(object):
         for name, value in inspect.getmembers(self, inspect.ismethod):
             if getattr(value, '_jabberbot_command', False):
                 name = getattr(value, '_jabberbot_command_name')
+                if name.find("bot_") == 0:
+                    name = name[4:]
                 self.log.info('Registered command: %s' % name)
                 self.commands[self.__command_prefix + name] = value
 
