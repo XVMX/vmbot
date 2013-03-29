@@ -3,6 +3,7 @@
 
 # JabberBot: A simple jabber/xmpp bot framework
 # Copyright (c) 2007-2012 Thomas Perl <thp.io/about>
+# Copyright (c) 2013 Sascha Jüngling <sjuengling@gmail.com>
 # $Id: 32c2cb16c60352ee527896f200a8b623147e75ff $
 #
 # This program is free software; you can redistribute it and/or modify
@@ -63,7 +64,7 @@ def botcmd(*args, **kwargs):
         setattr(func, '_jabberbot_command_name', name or func.__name__)
         setattr(func, '_jabberbot_command_thread', thread)  # Experimental!
         return func
-	print func;
+
     if len(args):
         return decorate(args[0], **kwargs)
     else:
