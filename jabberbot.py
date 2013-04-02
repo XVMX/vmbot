@@ -93,7 +93,7 @@ class JabberBot(object):
     PING_TIMEOUT = 5  # Seconds to wait for a response.
 
     def __init__(self, username, password, res=None, debug=False,
-            privatedomain=False, acceptownmsgs=False, handlers=None,
+            privatedomain=False, acceptownmsgs=True, handlers=None,
             command_prefix=''):
         """Initializes the jabber bot and sets up commands.
 
@@ -537,6 +537,10 @@ class JabberBot(object):
 
         if type not in ("groupchat", "chat"):
             self.log.debug("unhandled message type: %s" % type)
+            return
+
+        if type == "chat" and (username == "solo_drakban" or username == "the_mittani"):
+            self.log.debug("Solo says: Make the bot not dumb!")
             return
 
         # Ignore messages from before we joined
