@@ -1,8 +1,8 @@
 VMBot TODO list
 
 * Add exception handling throughout the code
-* Separate all sensitive vars/config options into a .gitignoreable config file
 * promote/fire commands to act accordingly on the director ACL
 * Read server status and logged in users from the eve api/scrape from login servers (?) and add the info to evetime
 * player lookup method which displays corp history (read from eve api)
 * Send replies with many lines via pm instead of channel
+* Implement a FAQ database (URL to important threads/wiki articles, alt api key management, etc)

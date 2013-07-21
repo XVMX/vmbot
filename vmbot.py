@@ -77,7 +77,7 @@ class TimeoutException(Exception):
 class VMBot(MUCJabberBot):
     # Lists for use in the various methods
     eball_answers = ['Probably.', 'Rather likely.', 'Definitely.', 'Of course.', 'Probably not.', 'This is very questionable.', 'Unlikely.', 'Absolutely not.']
-    fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!"]
+    fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "petter_sandstad", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim"]
     
     def __init__(self, *args, **kwargs):
@@ -138,6 +138,55 @@ class VMBot(MUCJabberBot):
         '''sayhi - Says hi to you!'''
         reply = "Hi " + self.get_sender_username(mess) + "!"
         self.send_simple_reply(mess, reply)
+    
+    @botcmd(hidden=True)
+    def every(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 6 and random.randint(1,6) == 1:
+            reply = "lion"
+            self.send_simple_reply(mess, reply)
+    
+    @botcmd(hidden=True)
+    def lion(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 5 and random.randint(1,6) == 1:
+            reply = "except"
+            self.send_simple_reply(mess, reply)
+    
+    @botcmd(hidden=True)
+    def bot_except(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 7 and random.randint(1,6) == 1:
+            reply = "for"
+            self.send_simple_reply(mess, reply)
+            
+    @botcmd(hidden=True)
+    def bot_for(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 4 and random.randint(1,6) == 1:
+            reply = "at"
+            self.send_simple_reply(mess, reply)
+            
+    @botcmd(hidden=True)
+    def at(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 3 and random.randint(1,6) == 1:
+            reply = "most"
+            self.send_simple_reply(mess, reply)
+            
+    @botcmd(hidden=True)
+    def bot_most(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 5 and random.randint(1,6) == 1:
+            reply = "one"
+            self.send_simple_reply(mess, reply)
+            
+    @botcmd(hidden=True)
+    def bot_one(self, mess, args):
+        '''Every lion except for at most one'''
+        if len(args) < 4 and random.randint(1,6) == 1:
+            reply = ":bravo:"
+            self.send_simple_reply(mess, reply)
     
     @botcmd
     def fishsay(self, mess, args):
