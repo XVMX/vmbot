@@ -114,10 +114,9 @@ class VMBot(MUCJabberBot):
 
         try:
             reply = self.do_math(args)
-        except TimeoutError, e:
+        except Exception, e:
             reply = str(e)
-        except TypeError, e:
-            reply = str(e)
+
         if len(reply) > 2 ** 15:  # TODO: what is the actual bound?
             reply = "I've evaluated your expression but it's too long to send with jabber"
         self.send_simple_reply(mess, reply)
