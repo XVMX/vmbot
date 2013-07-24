@@ -25,6 +25,7 @@ from functools import wraps
 import errno
 import os
 import signal
+import subprocess
 
 from sympy.parsing.sympy_parser import parse_expr
 import vmbot_config as vmc
@@ -98,7 +99,9 @@ class VMBot(MUCJabberBot):
     eball_answers = ['Probably.', 'Rather likely.', 'Definitely.', 'Of course.', 'Probably not.', 'This is very questionable.', 'Unlikely.', 'Absolutely not.']
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     pimpisms = ["eabod"]
-    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "petter_sandstad", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim"]
+    # The following are the first part of the jabber id
+    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim"]
+    admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
@@ -205,6 +208,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def pimpsay(self, mess, args):
+        '''pimpsay - pimpy wisdom.'''
         self.send_simple_reply(mess, random.choice(self.pimpisms))
 
     @botcmd
@@ -251,10 +255,10 @@ class VMBot(MUCJabberBot):
         API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
         '''
 
-        srjid = self.senderRjid(mess)
-
         if args[:2] != 'vm' or len(args) <= 3:
             return
+            
+        srjid = self.senderRjid(mess)
 
         try:
             if str(mess.getFrom()).split("@")[0] != 'vm_dir':
@@ -298,8 +302,9 @@ class VMBot(MUCJabberBot):
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
+        '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
         if len(args) == 0:
-            if self.senderRjid(mess) == 'jack_haydn' and self.get_sender_username(mess) != vmc.nickname:
+            if self.senderRjid(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
                 reply = 'afk shower'
                 self.quit()
             else:
@@ -319,7 +324,6 @@ class VMBot(MUCJabberBot):
         text = ET.SubElement(message, "text")
         text.text = broadcast
         result = '<?xml version="1.0"?>' + ET.tostring(messaging)
-        # print result
 
         headers = {"X-SourceID" : vmc.id, "X-SharedKey" : vmc.key}
         r = requests.post(url=vmc.url, data=result, headers=headers)
@@ -328,6 +332,28 @@ class VMBot(MUCJabberBot):
     def senderRjid(self, mess):
         show, status, rjid = self.seen.get(mess.getFrom())
         return rjid.split('@')[0]
+    
+    @botcmd(hidden=True)
+    def gitpull(self, mess, args):
+        '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
+        
+        srjid = self.senderRjid(mess)
+        
+        try:
+                if str(mess.getFrom()).split("@")[0] != 'vm_dir':
+                    raise VMBotError("git pull is only enabled in director chat.")
+
+                if srjid not in self.admins:
+                    raise VMBotError("You don't have the rights to git pull.")
+                    
+                p = subprocess.Popen(['git', 'pull',], cwd=r'/home/sjuengling/vmbot/', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = p.communicate()
+                reply = ('\n').join([out, err])
+        except VMBotError, e:
+            reply = str(e)
+        finally:
+            self.send_simple_reply(mess, reply)
+        
 
 if __name__ == '__main__':
 
