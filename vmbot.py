@@ -40,6 +40,9 @@ class MUCJabberBot(JabberBot):
     ''' Add features in JabberBot to allow it to handle specific
     caractheristics of multiple users chatroom (MUC). '''
 
+    PING_FREQUENCY = 60  # overriding JabberBot base class
+    PING_TIMEOUT = 5
+
     def __init__(self, *args, **kwargs):
         ''' Initialize variables. '''
 
@@ -367,7 +370,7 @@ class VMBot(MUCJabberBot):
 if __name__ == '__main__':
 
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, acceptownmsgs=True)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.serve_forever()
