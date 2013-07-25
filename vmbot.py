@@ -54,10 +54,19 @@ class MUCJabberBot(JabberBot):
         self.direct_message_re = re.compile('^%s(@%s)?[^\w]? ' \
                 % (user, domain))
 
+    def unknown_command(self, mess, cmd, args):
+        # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
+        return ''
+
     def callback_message(self, conn, mess):
         ''' Changes the behaviour of the JabberBot in order to allow
         it to answer direct messages. This is used often when it is
         connected in MUCs (multiple users chatroom). '''
+
+        # change this to be limited to certain people if you want by
+        # if self.get_sender_username(mess) == 'solodrakban":
+        if mess.getType() != "groupchat":  # solodrakban protection
+            return
 
         message = mess.getBody()
         if not message:
@@ -107,15 +116,10 @@ class VMBot(MUCJabberBot):
         # initialize jabberbot
         super(VMBot, self).__init__(*args, **kwargs)
 
-    def unknown_command(self, mess, cmd, args):
-        # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
-        return ''
-
     @botcmd
     def math(self, mess, args):
         '''<expr> - Evaluates expr mathematically. If you want decimal results, force floating point numbers by doing 4.0/3 instead of 4/3'''
-        if mess.getType() != "groupchat":
-            return
+
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
             return str(parse_expr(args))
@@ -132,9 +136,6 @@ class VMBot(MUCJabberBot):
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '''<question> - Provides insight into the future'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
-
         if len(args) == 0:
             return 'You will need to provide a question for me to answer.'
         else:
@@ -144,8 +145,6 @@ class VMBot(MUCJabberBot):
     @botcmd
     def evetime(self, mess, args):
         '''[+offset] - Displays the current evetime and the resulting evetime of the offset, if provided'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         timefmt = '%Y-%m-%d %H:%M:%S'
         evetime = datetime.utcnow()
         reply = 'The current EVE time is ' + evetime.strftime(timefmt)
@@ -159,22 +158,16 @@ class VMBot(MUCJabberBot):
     @botcmd
     def sayhi(self, mess, args):
         '''Says hi to you!'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         return "Hi " + self.get_sender_username(mess) + "!"
 
     @botcmd(hidden=True)
     def every(self, mess, args):
         '''Every lion except for at most one'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if not args and random.randint(1, 5) == 1:
             return "lion"
 
     @botcmd(hidden=True)
     def lion(self, mess, args):
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
             return "except"
@@ -182,62 +175,46 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True, name="except")
     def bot_except(self, mess, args):
         '''Every lion except for at most one'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if not args and random.randint(1, 5) == 1:
             return "for"
 
     @botcmd(hidden=True, name="for")
     def bot_for(self, mess, args):
         '''Every lion except for at most one'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if not args and random.randint(1, 5) == 1:
             return "at"
 
     @botcmd(hidden=True)
     def at(self, mess, args):
         '''Every lion except for at most one'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if not args and random.randint(1, 5) == 1:
             return "most"
 
     @botcmd(hidden=True, name="most")
     def bot_most(self, mess, args):
         '''Every lion except for at most one'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if not args and random.randint(1, 5) == 1:
             return "one"
 
     @botcmd(hidden=True, name="one")
     def bot_one(self, mess, args):
         '''Every lion except for at most one'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if not args and random.randint(1, 5) == 1:
             return ":bravo:"
 
     @botcmd
     def fishsay(self, mess, args):
         '''Fishy wisdom.'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         return random.choice(self.fishisms)
 
     @botcmd(hidden=True)
     def pimpsay(self, mess, args):
         '''Like fishsay but blacker'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         return random.choice(self.pimpisms)
 
     @botcmd
     def rtd(self, mess, args):
         '''Like a box of chocolates, you never know what you're gonna get'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         emotes = open("emotes.txt", 'r')
         remotes = emotes.read().split('\n')
         emotes.close()
@@ -250,8 +227,6 @@ class VMBot(MUCJabberBot):
     @botcmd
     def dice(self, mess, args):
         '''[dice count] [sides] - Roll the dice. If no dice count/sides are provided, one dice and six sides will be assumed.'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         dice = 1
         sides = 6
         try:
@@ -284,8 +259,6 @@ class VMBot(MUCJabberBot):
     @botcmd
     def flipcoin(self, mess, args):
         '''flips a coin'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         return random.choice(["Heads!", "Tails!"])
 
     @botcmd
@@ -294,8 +267,6 @@ class VMBot(MUCJabberBot):
         A hacked together piece of shit.
         API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
         '''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if args[:2] != 'vm' or len(args) <= 3:
             return
 
@@ -324,8 +295,6 @@ class VMBot(MUCJabberBot):
     @botcmd
     def pickone(self, mess, args):
         '''<option1> or <option2> [or <option3> ...] - Chooses an option for you'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         args = args.strip().split(' or ')
         if len(args) > 1:
             return random.choice(args)
@@ -335,8 +304,6 @@ class VMBot(MUCJabberBot):
     @botcmd
     def ping(self, mess, args):
         '''[-a] - Is this thing on? The -a flag makes the bot answer to you specifically.'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if args == "-a":
             return self.get_sender_username(mess) + ': Pong.'
         else:
@@ -345,8 +312,6 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True)
     def reload(self, mess, args):
         '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
         if len(args) == 0:
             if self.senderRjid(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
                 reply = 'afk shower'
@@ -380,8 +345,6 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
-        if mess.getType() != "groupchat":  # solodrakban protection
-            return
 
         srjid = self.senderRjid(mess)
 
