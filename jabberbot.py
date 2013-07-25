@@ -3,7 +3,7 @@
 
 # JabberBot: A simple jabber/xmpp bot framework
 # Copyright (c) 2007-2012 Thomas Perl <thp.io/about>
-# Copyright (c) 2013 Sascha Jüngling <sjuengling@gmail.com>
+# Copyright (c) 2013 Sascha Jï¿½ngling <sjuengling@gmail.com>
 # $Id: 32c2cb16c60352ee527896f200a8b623147e75ff $
 #
 # This program is free software; you can redistribute it and/or modify
@@ -153,8 +153,6 @@ class JabberBot(object):
         for name, value in inspect.getmembers(self, inspect.ismethod):
             if getattr(value, '_jabberbot_command', False):
                 name = getattr(value, '_jabberbot_command_name')
-                if name.find("bot_") == 0:
-                    name = name[4:]
                 self.log.info('Registered command: %s' % name)
                 self.commands[self.__command_prefix + name] = value
 
@@ -207,7 +205,7 @@ class JabberBot(object):
             else:
                 conn = xmpp.Client(self.jid.getDomain(), debug=[])
 
-            #connection attempt
+            # connection attempt
             conres = conn.connect()
             if not conres:
                 self.log.error('unable to connect to server %s.' %
@@ -385,7 +383,7 @@ class JabberBot(object):
             html = xmpp.Node('html', \
                 {'xmlns': 'http://jabber.org/protocol/xhtml-im'})
             try:
-                html.addChild(node=xmpp.simplexml.XML2Node( \
+                html.addChild(node=xmpp.simplexml.XML2Node(\
                     "<body xmlns='http://www.w3.org/1999/xhtml'>" + \
                     text.encode('utf-8') + "</body>"))
                 message.addChild(node=html)
@@ -692,12 +690,12 @@ class JabberBot(object):
         if self.PING_FREQUENCY \
             and time.time() - self.__lastping > self.PING_FREQUENCY:
             self.__lastping = time.time()
-            #logging.debug('Pinging the server.')
+            # logging.debug('Pinging the server.')
             ping = xmpp.Protocol('iq', typ='get', \
                 payload=[xmpp.Node('ping', attrs={'xmlns':'urn:xmpp:ping'})])
             try:
                 res = self.conn.SendAndWaitForResponse(ping, self.PING_TIMEOUT)
-                #logging.debug('Got response: ' + str(res))
+                # logging.debug('Got response: ' + str(res))
                 if res is None:
                     self.on_ping_timeout()
             except IOError, e:

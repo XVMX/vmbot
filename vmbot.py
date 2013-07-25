@@ -124,7 +124,7 @@ class VMBot(MUCJabberBot):
             reply = "I've evaluated your expression but it's too long to send with jabber"
         self.send_simple_reply(mess, reply)
 
-    @botcmd
+    @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '''<question> - Provides insight into the future'''
         if len(args) == 0:
@@ -164,13 +164,13 @@ class VMBot(MUCJabberBot):
         if not args and random.randint(1, 5) == 1:
             self.send_simple_reply(mess, "except")
 
-    @botcmd(hidden=True)
+    @botcmd(hidden=True, name="except")
     def bot_except(self, mess, args):
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
             self.send_simple_reply(mess, "for")
 
-    @botcmd(hidden=True)
+    @botcmd(hidden=True, name="for")
     def bot_for(self, mess, args):
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
@@ -182,14 +182,14 @@ class VMBot(MUCJabberBot):
         if not args and random.randint(1, 5) == 1:
             self.send_simple_reply(mess, "most")
 
-    @botcmd(hidden=True)
+    @botcmd(hidden=True, name="most")
     def bot_most(self, mess, args):
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
             reply = "one"
             self.send_simple_reply(mess, reply)
 
-    @botcmd(hidden=True)
+    @botcmd(hidden=True, name="one")
     def bot_one(self, mess, args):
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
