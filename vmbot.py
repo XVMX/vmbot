@@ -114,7 +114,8 @@ class VMBot(MUCJabberBot):
     @botcmd
     def math(self, mess, args):
         '''<expr> - Evaluates expr mathematically. If you want decimal results, force floating point numbers by doing 4.0/3 instead of 4/3'''
-        if mess.getType() != "groupchat": return
+        if mess.getType() != "groupchat":
+            return
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
             return str(parse_expr(args))
@@ -126,7 +127,7 @@ class VMBot(MUCJabberBot):
 
         if len(reply) > 2 ** 15:  # TODO: what is the actual bound?
             reply = "I've evaluated your expression but it's too long to send with jabber"
-        self.send_simple_reply(mess, reply)
+        return reply
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
@@ -135,10 +136,10 @@ class VMBot(MUCJabberBot):
             return
 
         if len(args) == 0:
-            reply = 'You will need to provide a question for me to answer.'
+            return 'You will need to provide a question for me to answer.'
         else:
-            reply = random.choice(self.eball_answers)
-        self.send_simple_reply(mess, reply)
+            return random.choice(self.eball_answers)
+
 
     @botcmd
     def evetime(self, mess, args):
@@ -153,15 +154,14 @@ class VMBot(MUCJabberBot):
             reply += ' and {} hour(s) is {}'.format(args.strip(), offset_time.strftime(timefmt))
         except ValueError:
             pass
-        self.send_simple_reply(mess, reply)
+        return reply
 
     @botcmd
     def sayhi(self, mess, args):
         '''Says hi to you!'''
         if mess.getType() != "groupchat":  # solodrakban protection
             return
-        reply = "Hi " + self.get_sender_username(mess) + "!"
-        self.send_simple_reply(mess, reply)
+        return "Hi " + self.get_sender_username(mess) + "!"
 
     @botcmd(hidden=True)
     def every(self, mess, args):
@@ -169,7 +169,7 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if not args and random.randint(1, 5) == 1:
-            self.send_simple_reply(mess, "lion")
+            return "lion"
 
     @botcmd(hidden=True)
     def lion(self, mess, args):
@@ -177,7 +177,7 @@ class VMBot(MUCJabberBot):
             return
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
-            self.send_simple_reply(mess, "except")
+            return "except"
 
     @botcmd(hidden=True, name="except")
     def bot_except(self, mess, args):
@@ -185,7 +185,7 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if not args and random.randint(1, 5) == 1:
-            self.send_simple_reply(mess, "for")
+            return "for"
 
     @botcmd(hidden=True, name="for")
     def bot_for(self, mess, args):
@@ -193,7 +193,7 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if not args and random.randint(1, 5) == 1:
-            self.send_simple_reply(mess, "at")
+            return "at"
 
     @botcmd(hidden=True)
     def at(self, mess, args):
@@ -201,7 +201,7 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if not args and random.randint(1, 5) == 1:
-            self.send_simple_reply(mess, "most")
+            return "most"
 
     @botcmd(hidden=True, name="most")
     def bot_most(self, mess, args):
@@ -209,8 +209,7 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if not args and random.randint(1, 5) == 1:
-            reply = "one"
-            self.send_simple_reply(mess, reply)
+            return "one"
 
     @botcmd(hidden=True, name="one")
     def bot_one(self, mess, args):
@@ -218,21 +217,21 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if not args and random.randint(1, 5) == 1:
-            self.send_simple_reply(mess, ":bravo:")
+            return ":bravo:"
 
     @botcmd
     def fishsay(self, mess, args):
         '''Fishy wisdom.'''
         if mess.getType() != "groupchat":  # solodrakban protection
             return
-        self.send_simple_reply(mess, random.choice(self.fishisms))
+        return random.choice(self.fishisms)
 
     @botcmd(hidden=True)
     def pimpsay(self, mess, args):
         '''Like fishsay but blacker'''
         if mess.getType() != "groupchat":  # solodrakban protection
             return
-        self.send_simple_reply(mess, random.choice(self.pimpisms))
+        return random.choice(self.pimpisms)
 
     @botcmd
     def rtd(self, mess, args):
@@ -246,7 +245,7 @@ class VMBot(MUCJabberBot):
         while not remotes.pop(0).startswith('[default]'):
             pass
 
-        self.send_simple_reply(mess, random.choice(remotes).split()[-1])
+        return random.choice(remotes).split()[-1]
 
     @botcmd
     def dice(self, mess, args):
@@ -280,14 +279,14 @@ class VMBot(MUCJabberBot):
         except VMBotError, e:
             reply = str(e)
         finally:
-            self.send_simple_reply(mess, reply)
+            return reply
 
     @botcmd
     def flipcoin(self, mess, args):
         '''flips a coin'''
         if mess.getType() != "groupchat":  # solodrakban protection
             return
-        self.send_simple_reply(mess, random.choice(["Heads!", "Tails!"]))
+        return random.choice(["Heads!", "Tails!"])
 
     @botcmd
     def bcast(self, mess, args):
@@ -320,7 +319,7 @@ class VMBot(MUCJabberBot):
         except VMBotError, e:
             reply = str(e)
         finally:
-            self.send_simple_reply(mess, reply)
+            return reply
 
     @botcmd
     def pickone(self, mess, args):
@@ -329,11 +328,9 @@ class VMBot(MUCJabberBot):
             return
         args = args.strip().split(' or ')
         if len(args) > 1:
-            reply = random.choice(args)
+            return random.choice(args)
         else:
-            reply = 'You need to provide at least 2 options to choose from.'
-
-        self.send_simple_reply(mess, reply)
+            return 'You need to provide at least 2 options to choose from.'
 
     @botcmd
     def ping(self, mess, args):
@@ -341,10 +338,9 @@ class VMBot(MUCJabberBot):
         if mess.getType() != "groupchat":  # solodrakban protection
             return
         if args == "-a":
-            reply = self.get_sender_username(mess) + ': Pong.'
+            return self.get_sender_username(mess) + ': Pong.'
         else:
-            reply = 'Pong.'
-        self.send_simple_reply(mess, reply)
+            return 'Pong.'
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
@@ -358,7 +354,7 @@ class VMBot(MUCJabberBot):
             else:
                 reply = 'You are not authorized to reload the bot, please go and DIAF!'
 
-            self.send_simple_reply(mess, reply)
+            return reply
 
     def sendBcast(self, broadcast):
         result = ''
@@ -402,7 +398,7 @@ class VMBot(MUCJabberBot):
         except VMBotError, e:
             reply = str(e)
         finally:
-            self.send_simple_reply(mess, reply)
+            return reply
 
 
 if __name__ == '__main__':
