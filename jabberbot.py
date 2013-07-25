@@ -537,10 +537,6 @@ class JabberBot(object):
             self.log.debug("unhandled message type: %s" % type)
             return
 
-        if type == "chat" and (username == "solo_drakban" or username == "the_mittani"):
-            self.log.debug("Solo says: Make the bot not dumb!")
-            return
-
         # Ignore messages from before we joined
         if xmpp.NS_DELAY in props:
             return
