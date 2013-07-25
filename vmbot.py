@@ -104,16 +104,17 @@ class VMBot(MUCJabberBot):
         # initialize jabberbot
         super(VMBot, self).__init__(*args, **kwargs)
 
-    @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
-    def do_math(self, args):
-        return str(parse_expr(args))
-
     @botcmd
     def math(self, mess, args):
-        '''math <expr> - Evaluates expr mathematically. If you want decimal results, force floating point numbers by doing 4.0/3 instead of 4/3'''
+        '''<expr> - Evaluates expr mathematically. If you want decimal results, force floating point numbers by doing 4.0/3 instead of 4/3'''
+
+        @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
+        def do_math(args):
+            return str(parse_expr(args))
 
         try:
-            reply = self.do_math(args)
+            reply = do_math(args)
+            print reply
         except Exception, e:
             reply = str(e)
 
@@ -123,7 +124,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def bot_8ball(self, mess, args):
-        '''8ball <question> - Provides insight into the future'''
+        '''<question> - Provides insight into the future'''
         if len(args) == 0:
             reply = 'You will need to provide a question for me to answer.'
         else:
@@ -132,7 +133,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def evetime(self, mess, args):
-        '''evetime [+offset] - Displays the current evetime and the resulting evetime of the offset, if provided'''
+        '''[+offset] - Displays the current evetime and the resulting evetime of the offset, if provided'''
         timefmt = '%Y-%m-%d %H:%M:%S'
         evetime = datetime.utcnow()
         reply = 'The current EVE time is ' + evetime.strftime(timefmt)
@@ -145,7 +146,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def sayhi(self, mess, args):
-        '''sayhi - Says hi to you!'''
+        '''Says hi to you!'''
         reply = "Hi " + self.get_sender_username(mess) + "!"
         self.send_simple_reply(mess, reply)
 
@@ -153,36 +154,31 @@ class VMBot(MUCJabberBot):
     def every(self, mess, args):
         '''Every lion except for at most one'''
         if len(args) < 6 and random.randint(1, 6) == 1:
-            reply = "lion"
-            self.send_simple_reply(mess, reply)
+            self.send_simple_reply(mess, "lion")
 
     @botcmd(hidden=True)
     def lion(self, mess, args):
         '''Every lion except for at most one'''
         if len(args) < 5 and random.randint(1, 6) == 1:
-            reply = "except"
-            self.send_simple_reply(mess, reply)
+            self.send_simple_reply(mess, "except")
 
     @botcmd(hidden=True)
     def bot_except(self, mess, args):
         '''Every lion except for at most one'''
         if len(args) < 7 and random.randint(1, 6) == 1:
-            reply = "for"
-            self.send_simple_reply(mess, reply)
+            self.send_simple_reply(mess, "for")
 
     @botcmd(hidden=True)
     def bot_for(self, mess, args):
         '''Every lion except for at most one'''
         if len(args) < 4 and random.randint(1, 6) == 1:
-            reply = "at"
-            self.send_simple_reply(mess, reply)
+            self.send_simple_reply(mess, "at")
 
     @botcmd(hidden=True)
     def at(self, mess, args):
         '''Every lion except for at most one'''
         if len(args) < 3 and random.randint(1, 6) == 1:
-            reply = "most"
-            self.send_simple_reply(mess, reply)
+            self.send_simple_reply(mess, "most")
 
     @botcmd(hidden=True)
     def bot_most(self, mess, args):
@@ -195,40 +191,40 @@ class VMBot(MUCJabberBot):
     def bot_one(self, mess, args):
         '''Every lion except for at most one'''
         if len(args) < 4 and random.randint(1, 6) == 1:
-            reply = ":bravo:"
-            self.send_simple_reply(mess, reply)
+            self.send_simple_reply(mess, ":bravo:")
 
     @botcmd
     def fishsay(self, mess, args):
-        '''fishsay - fishy wisdom.'''
+        '''Fishy wisdom.'''
         self.send_simple_reply(mess, random.choice(self.fishisms))
 
-    @botcmd
+    @botcmd(hidden=True)
     def pimpsay(self, mess, args):
+        '''Like fishsay but blacker'''
         self.send_simple_reply(mess, random.choice(self.pimpisms))
 
     @botcmd
     def rtd(self, mess, args):
-        '''rtd [dice count] [sides] - Roll the dice. If no dice count/sides are provided, one dice and six sides will be assumed.'''
+        '''[dice count] [sides] - Roll the dice. If no dice count/sides are provided, one dice and six sides will be assumed.'''
         dice = 1
         sides = 6
-        # TODO: still kind of messy, need to take a second pass at this
         try:
-            if args:
-                args = args.strip().split(' ')
-                if len(args) > 2:
-                    raise VMBotError('You need to provide none, one or two parameters.')
+            args = args.strip().split()
+            if len(args) > 2:
+                raise VMBotError('You need to provide none, one or two parameters.')
 
-                try:
-                    dice = int(args[0])
-                    sides = int(args[1])
-                except ValueError:
-                    raise VMBotError('You need to provide integer parameters.')
-                except IndexError:
-                    pass
+            try:
+                dice = int(args[0])
+                sides = int(args[1])
+            except ValueError:
+                raise VMBotError('You need to provide integer parameters.')
+            except IndexError:
+                pass
 
-                if dice not in xrange(1000) or sides not in xrange(1, 1000):
-                    raise VMBotError("I want to see those dice/seeing you throw that many dice, dude. I don't get paid, so find someone else to do that for you, tyvm.")
+            if dice not in xrange(1000):
+                raise VMBotError("That's an absurd number of dice, try again")
+            if sides not in xrange(1, 2 ** 15):
+                raise VMBotError("That's an absurd number of sides, try again")
 
             result = ''
             for i in range(dice):
@@ -241,12 +237,12 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def flipcoin(self, mess, args):
-        '''flipcoin - flips a coin'''
+        '''flips a coin'''
         self.send_simple_reply(mess, random.choice(["Heads!", "Tails!"]))
 
     @botcmd
     def bcast(self, mess, args):
-        '''bcast vm <message> - Sends a message to XVMX members. Must be <=1kb including the tag line. "vm" required to avoid accidental bcasts, only works in dir chat. Do not abuse this or Solo's wrath shall be upon you.
+        ''' vm <message> - Sends a message to XVMX members. Must be <=1kb including the tag line. "vm" required to avoid accidental bcasts, only works in dir chat. Do not abuse this or Solo's wrath shall be upon you.
         A hacked together piece of shit.
         API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
         '''
@@ -278,7 +274,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def pickone(self, mess, args):
-        '''pickone <option1> or <option2> [or <option3> ...] - Chooses an option for you'''
+        '''<option1> or <option2> [or <option3> ...] - Chooses an option for you'''
         args = args.strip().split(' or ')
         if len(args) > 1:
             reply = random.choice(args)
@@ -289,7 +285,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def ping(self, mess, args):
-        '''ping [-a] - Is this thing on? The -a flag makes the bot answer to you specifically.'''
+        '''[-a] - Is this thing on? The -a flag makes the bot answer to you specifically.'''
         if args == "-a":
             reply = self.get_sender_username(mess) + ': Pong.'
         else:
