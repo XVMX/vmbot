@@ -89,11 +89,11 @@ class JabberBot(object):
     MSG_ERROR_OCCURRED = 'Sorry for your inconvenience. '\
         'An unexpected error occurred.'
 
-    PING_FREQUENCY = 60  # Set to the number of seconds, e.g. 60.
-    PING_TIMEOUT = 5  # Seconds to wait for a response.
+    PING_FREQUENCY = 0  # Set to the number of seconds, e.g. 60.
+    PING_TIMEOUT = 2  # Seconds to wait for a response.
 
     def __init__(self, username, password, res=None, debug=False,
-            privatedomain=False, acceptownmsgs=True, handlers=None,
+            privatedomain=False, acceptownmsgs=False, handlers=None,
             command_prefix=''):
         """Initializes the jabber bot and sets up commands.
 
