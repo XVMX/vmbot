@@ -63,14 +63,18 @@ class MUCJabberBot(JabberBot):
         return ''
 
     def get_uname_from_mess(self, mess):
-        juid = self.nick_dict[self.get_sender_username(mess)]
+        node = mess.getFrom().getNode()
+        juid = self.nick_dict[node][self.get_sender_username(mess)]
         return juid.split('@')[0]
 
     def callback_presence(self, conn, presence):
         nick = presence.getFrom().getResource()
+        node = presence.getFrom().getNode()
         jid = presence.getJid()
         if jid is not None:
-            self.nick_dict[nick] = jid
+            if node not in self.nick_dict:
+                self.nick_dict[node] = {}
+            self.nick_dict[node][nick] = jid
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
@@ -155,11 +159,6 @@ class VMBot(MUCJabberBot):
             return 'You will need to provide a question for me to answer.'
         else:
             return random.choice(self.eball_answers)
-
-    @botcmd
-    def tst(self, mess, args):
-        for entry in self.nicdic.items():
-            print entry
 
     @botcmd
     def evetime(self, mess, args):
