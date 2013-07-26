@@ -45,6 +45,7 @@ class MUCJabberBot(JabberBot):
 
     def __init__(self, *args, **kwargs):
         ''' Initialize variables. '''
+        self.nick_dict = {}
 
         # answer only direct messages or not?
         self.only_direct = kwargs.pop('only_direct', False)
@@ -60,6 +61,17 @@ class MUCJabberBot(JabberBot):
     def unknown_command(self, mess, cmd, args):
         # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
         return ''
+
+    def get_uname_from_mess(self, mess):
+        juid = self.nick_dict[self.get_sender_username(mess)]
+        return juid.split('@')[0]
+
+    def callback_presence(self, conn, presence):
+        nick = presence.getFrom().getResource()
+        jid = presence.getJid()
+        if jid is not None:
+            self.nick_dict[nick] = jid
+        return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
         ''' Changes the behaviour of the JabberBot in order to allow
@@ -144,6 +156,10 @@ class VMBot(MUCJabberBot):
         else:
             return random.choice(self.eball_answers)
 
+    @botcmd
+    def tst(self, mess, args):
+        for entry in self.nicdic.items():
+            print entry
 
     @botcmd
     def evetime(self, mess, args):
@@ -273,7 +289,7 @@ class VMBot(MUCJabberBot):
         if args[:2] != 'vm' or len(args) <= 3:
             return
 
-        srjid = self.senderRjid(mess)
+        srjid = self.get_uname_from_mess(mess)
 
         try:
             if str(mess.getFrom()).split("@")[0] != 'vm_dir':
@@ -292,8 +308,8 @@ class VMBot(MUCJabberBot):
             reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
         except VMBotError, e:
             reply = str(e)
-        finally:
-            return reply
+
+        return reply
 
     @botcmd
     def pickone(self, mess, args):
@@ -316,7 +332,7 @@ class VMBot(MUCJabberBot):
     def reload(self, mess, args):
         '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
         if len(args) == 0:
-            if self.senderRjid(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
+            if self.get_uname_from_mess(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
                 reply = 'afk shower'
                 self.quit()
             else:
@@ -341,16 +357,10 @@ class VMBot(MUCJabberBot):
         r = requests.post(url=vmc.url, data=result, headers=headers)
         return True
 
-    def senderRjid(self, mess):
-        show, status, rjid = self.seen.get(mess.getFrom())
-        return rjid.split('@')[0]
-
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
-
-        srjid = self.senderRjid(mess)
-
+        srjid = self.get_uname_from_mess(mess)
         try:
             if str(mess.getFrom()).split("@")[0] != 'vm_dir':
                 raise VMBotError("git pull is only enabled in director chat.")
@@ -360,11 +370,11 @@ class VMBot(MUCJabberBot):
 
             p = subprocess.Popen(['git', 'pull', ], cwd=r'/home/sjuengling/vmbot/', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
-            reply = ('\n').join([out, err])
+            reply = ('\n').join([out, err]).strip()
         except VMBotError, e:
             reply = str(e)
-        finally:
-            return reply
+
+        return reply
 
 
 if __name__ == '__main__':

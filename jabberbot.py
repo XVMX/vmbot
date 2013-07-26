@@ -3,8 +3,7 @@
 
 # JabberBot: A simple jabber/xmpp bot framework
 # Copyright (c) 2007-2012 Thomas Perl <thp.io/about>
-# Copyright (c) 2013 Sascha J�ngling <sjuengling@gmail.com>
-# $Id: 32c2cb16c60352ee527896f200a8b623147e75ff $
+# $Id$
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -138,7 +137,7 @@ class JabberBot(object):
         self.__finished = False
         self.__show = None
         self.__status = None
-        self.seen = {}
+        self.__seen = {}
         self.__threads = {}
         self.__lastping = time.time()
         self.__privatedomain = privatedomain
@@ -205,7 +204,7 @@ class JabberBot(object):
             else:
                 conn = xmpp.Client(self.jid.getDomain(), debug=[])
 
-            # connection attempt
+            #connection attempt
             conres = conn.connect()
             if not conres:
                 self.log.error('unable to connect to server %s.' %
@@ -383,7 +382,7 @@ class JabberBot(object):
             html = xmpp.Node('html', \
                 {'xmlns': 'http://jabber.org/protocol/xhtml-im'})
             try:
-                html.addChild(node=xmpp.simplexml.XML2Node(\
+                html.addChild(node=xmpp.simplexml.XML2Node( \
                     "<body xmlns='http://www.w3.org/1999/xhtml'>" + \
                     text.encode('utf-8') + "</body>"))
                 message.addChild(node=html)
@@ -434,14 +433,14 @@ class JabberBot(object):
 
         If the parameter 'only_available' is True, the broadcast
         will not go to users whose status is not 'Available'."""
-        for jid, (show, status, rjid) in self.seen.items():
+        for jid, (show, status) in self.__seen.items():
             if not only_available or show is self.AVAILABLE:
                 self.send(jid, message)
 
     def callback_presence(self, conn, presence):
-        jid, type_, show, status, rjid = presence.getFrom(), \
+        jid, type_, show, status = presence.getFrom(), \
                 presence.getType(), presence.getShow(), \
-                presence.getStatus(), presence.getJid()
+                presence.getStatus()
 
         if self.jid.bareMatch(jid):
             # update internal status
@@ -457,17 +456,17 @@ class JabberBot(object):
 
         if type_ is None:
             # Keep track of status message and type changes
-            old_show, old_status, old_rjid = self.seen.get(jid, (self.OFFLINE, None, rjid))
+            old_show, old_status = self.__seen.get(jid, (self.OFFLINE, None))
             if old_show != show:
                 self.status_type_changed(jid, show)
 
             if old_status != status:
                 self.status_message_changed(jid, status)
 
-            self.seen[jid] = (show, status, rjid)
-        elif type_ == self.OFFLINE and jid in self.seen:
+            self.__seen[jid] = (show, status)
+        elif type_ == self.OFFLINE and jid in self.__seen:
             # Notify of user offline status change
-            del self.seen[jid]
+            del self.__seen[jid]
             self.status_type_changed(jid, self.OFFLINE)
 
         try:
@@ -483,7 +482,7 @@ class JabberBot(object):
             self.log.error(presence.getError())
 
         self.log.debug('Got presence: %s (type: %s, show: %s, status: %s, '\
-            'subscription: %s, rjid: %s)' % (jid, type_, show, status, subscription, rjid))
+            'subscription: %s)' % (jid, type_, show, status, subscription))
 
         # If subscription is private,
         # disregard anything not from the private domain
@@ -557,10 +556,10 @@ class JabberBot(object):
             return
 
         # Ignore messages from users not seen by this bot
-        if jid not in self.seen:
+        if jid not in self.__seen:
             self.log.info('Ignoring message from unseen guest: %s' % jid)
             self.log.debug("I've seen: %s" %
-                ["%s" % x for x in self.seen.keys()])
+                ["%s" % x for x in self.__seen.keys()])
             return
 
         # Remember the last-talked-in message thread for replies
@@ -686,12 +685,12 @@ class JabberBot(object):
         if self.PING_FREQUENCY \
             and time.time() - self.__lastping > self.PING_FREQUENCY:
             self.__lastping = time.time()
-            # logging.debug('Pinging the server.')
+            #logging.debug('Pinging the server.')
             ping = xmpp.Protocol('iq', typ='get', \
                 payload=[xmpp.Node('ping', attrs={'xmlns':'urn:xmpp:ping'})])
             try:
                 res = self.conn.SendAndWaitForResponse(ping, self.PING_TIMEOUT)
-                # logging.debug('Got response: ' + str(res))
+                #logging.debug('Got response: ' + str(res))
                 if res is None:
                     self.on_ping_timeout()
             except IOError, e:
