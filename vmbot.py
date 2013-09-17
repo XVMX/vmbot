@@ -241,6 +241,7 @@ class VMBot(MUCJabberBot):
             pass
 
         # HI THERE JACK, HOW ARE YOU TODAY?
+	# HI FISH, I'M FINE, THANKS. HOW ABOUT YOU?
         return random.choice(remotes).split()[-1]
 
     @botcmd
