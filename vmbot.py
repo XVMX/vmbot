@@ -239,10 +239,8 @@ class VMBot(MUCJabberBot):
 
         while not remotes.pop(0).startswith('[default]'):
             pass
-        if self.get_uname_from_mess(mess) != "jack_haydn":
-            return random.choice(remotes).split()[-1]
-        else:
-            return "no get out jack"
+
+        return random.choice(remotes).split()[-1]
 
     @botcmd
     def dice(self, mess, args):
