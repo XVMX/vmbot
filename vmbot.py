@@ -240,6 +240,7 @@ class VMBot(MUCJabberBot):
         while not remotes.pop(0).startswith('[default]'):
             pass
 
+        # HI THERE JACK, HOW ARE YOU TODAY?
         return random.choice(remotes).split()[-1]
 
     @botcmd
