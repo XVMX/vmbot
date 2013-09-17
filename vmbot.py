@@ -260,9 +260,9 @@ class VMBot(MUCJabberBot):
             except IndexError:
                 pass
 
-            if dice not in xrange(1000):
+            if dice not in xrange(50):
                 raise VMBotError("That's an absurd number of dice, try again")
-            if sides not in xrange(1, 2 ** 15):
+            if sides not in xrange(1, 2 ** 8):
                 raise VMBotError("That's an absurd number of sides, try again")
 
             result = ''
