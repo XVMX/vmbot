@@ -26,6 +26,7 @@ import errno
 import os
 import signal
 import subprocess
+import json
 
 from sympy.parsing.sympy_parser import parse_expr
 import vmbot_config as vmc
@@ -240,8 +241,6 @@ class VMBot(MUCJabberBot):
         while not remotes.pop(0).startswith('[default]'):
             pass
 
-        # HI THERE JACK, HOW ARE YOU TODAY?
-	# HI FISH, I'M FINE, THANKS. HOW ABOUT YOU?
         return random.choice(remotes).split()[-1]
 
     @botcmd
@@ -358,6 +357,28 @@ class VMBot(MUCJabberBot):
         r = requests.post(url=vmc.url, data=result, headers=headers)
         return True
 
+    @botcmd
+    def google(self, mess, args):
+        '''<query> - Forwards <query> to the google calculator API and returns the results. Try "50 fahrenheit in celsius" for example.'''
+        response = requests.get("http://www.google.com/ig/calculator", params = {"hl" : "en", "q" : args})
+        
+        # Fix the Google Calc's faulty API responses
+        fixed = u"{"    
+        for touple in response.text[1:-1].split(','):
+            (k,v) = touple.split(':')
+            fixed += '"%s" : %s,' % (k,v)
+        fixed = fixed[:-1] + "}"
+        fixed = json.loads(fixed)
+        try:
+            if fixed['error']:
+                raise VMBotError("An error occurred. Sometimes Google accepts unit shorthands (40f in c), sometimes it doesn't (4 megabyte in megabit). Check if that's the issue. Alternatively, it simply might not be able to do what you are trying.")
+            else:
+                reply = ''.join([fixed['lhs'], ' = <b>', fixed['rhs'], '</b>'])
+        except VMBotError, e:
+            reply = str(e)
+        
+        return reply
+    
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
