@@ -235,7 +235,11 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True)
     def chasesay(self, mess, args):
         '''Please'''
-        return self.get_sender_username(mess) + ', ' + self.chaseisms[0]
+        if len(args) > 0:
+            name = args
+        else:
+            name = self.get_sender_username(mess)
+        return name + ', ' + self.chaseisms[0]
 
     @botcmd
     def rtd(self, mess, args):
@@ -409,6 +413,6 @@ if __name__ == '__main__':
 
     # Grabbing values from imported config file
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, acceptownmsgs=True)
-#     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
+    morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.serve_forever()
