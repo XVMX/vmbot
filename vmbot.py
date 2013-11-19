@@ -235,7 +235,7 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True)
     def chasesay(self, mess, args):
         '''Please'''
-        return mess.getFrom() + ', ' + self.chaseisms[0]
+        return self.get_sender_username(mess) + ', ' + self.chaseisms[0]
 
     @botcmd
     def rtd(self, mess, args):
@@ -366,13 +366,13 @@ class VMBot(MUCJabberBot):
     @botcmd
     def google(self, mess, args):
         '''<query> - Forwards <query> to the google calculator API and returns the results. Try "50 fahrenheit in celsius" for example.'''
-        response = requests.get("http://www.google.com/ig/calculator", params = {"hl" : "en", "q" : args})
-        
+        response = requests.get("http://www.google.com/ig/calculator", params={"hl" : "en", "q" : args})
+
         # Fix the Google Calc's faulty API responses
-        fixed = u"{"    
+        fixed = u"{"
         for touple in response.text[1:-1].split(','):
-            (k,v) = touple.split(':')
-            fixed += '"%s" : %s,' % (k,v)
+            (k, v) = touple.split(':')
+            fixed += '"%s" : %s,' % (k, v)
         fixed = fixed[:-1] + "}"
         fixed = json.loads(fixed)
         try:
@@ -382,9 +382,9 @@ class VMBot(MUCJabberBot):
                 reply = ''.join([fixed['lhs'], ' = <b>', fixed['rhs'], '</b>'])
         except VMBotError, e:
             reply = str(e)
-        
+
         return reply
-    
+
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
@@ -409,6 +409,6 @@ if __name__ == '__main__':
 
     # Grabbing values from imported config file
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, acceptownmsgs=True)
-    morgooglie.join_room(vmc.chatroom1, vmc.nickname)
+#     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.serve_forever()
