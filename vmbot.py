@@ -128,6 +128,7 @@ class VMBot(MUCJabberBot):
     eball_answers = ['Probably.', 'Rather likely.', 'Definitely.', 'Of course.', 'Probably not.', 'This is very questionable.', 'Unlikely.', 'Absolutely not.']
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     pimpisms = ["eabod"]
+    chaseisms = ["would you PLEASE"]
     # The following are the first part of the jabber id
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim"]
     admins = ["jack_haydn", "thirteen_fish"]
@@ -230,6 +231,11 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''Like fishsay but blacker'''
         return random.choice(self.pimpisms)
+
+    @botcmd(hidden=True)
+    def chasesay(self, mess, args):
+        '''Please'''
+        return mess.getFrom() + ', ' + self.chaseisms[0]
 
     @botcmd
     def rtd(self, mess, args):
