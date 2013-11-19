@@ -235,8 +235,11 @@ class VMBot(MUCJabberBot):
     @botcmd(hidden=True)
     def chasesay(self, mess, args):
         '''Please'''
+        cmdname = self.chasesay._jabberbot_command_name
+        if args[:len(cmdname)] == cmdname:
+            return "nope"
         if len(args) > 0:
-            name = args
+            name = args.strip()
         else:
             name = self.get_sender_username(mess)
         return name + ', ' + self.chaseisms[0]
