@@ -39,7 +39,7 @@ logger.addHandler(ch)
 class MUCJabberBot(JabberBot):
 
     ''' Add features in JabberBot to allow it to handle specific
-    caractheristics of multiple users chatroom (MUC). '''
+    characteristics of multiple users chatroom (MUC). '''
 
     PING_FREQUENCY = 60  # overriding JabberBot base class
     PING_TIMEOUT = 5
@@ -372,7 +372,8 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def google(self, mess, args):
-        '''<query> - Forwards <query> to the google calculator API and returns the results. Try "50 fahrenheit in celsius" for example.'''
+        # Currently defunct since Google nuked the Calc api with the removal of iGoogle
+        '''<query> - Forwards <query> to the google calculator API and returns the results. Try "50 fahrenheit in celsius" for example. Currently defunct since Google nuked the Calc api with the removal of iGoogle'''
         response = requests.get("http://www.google.com/ig/calculator", params={"hl" : "en", "q" : args})
 
         # Fix the Google Calc's faulty API responses
@@ -392,6 +393,75 @@ class VMBot(MUCJabberBot):
 
         return reply
 
+    @botcmd(hidden=True)
+    # Very rough hack, needs validation and shit
+    def goosolve(self, mess, args):
+        '''goosolve - Calculates R16 price points. Params: <r64 price> <r32 price> <alch profit/mo>, defaults are 60k, 25k, 400m.'''
+        if len(args) == 0:
+            r64 = '60000';
+            r32 = '25000';
+            maxAlch = '400000000';
+        else:
+            (r64, r32, maxAlch) = args.split(" ")[:3]
+        
+        recipes = []
+        recipe = []
+        recipe += ["Fluxed Condensates"]
+        recipe += [parse_expr("("+r64+"*100*2)/200*1.15")]
+        recipe += ["100 <b>plat</b> + 5 van"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-(14000*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+        
+        recipe += ["Neo Mercurite"]
+        recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
+        recipe += ["100 <b>plat</b> + 5 merc"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+        
+        recipe += ["Thulium Hafnite"]
+        recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
+        recipe += ["100 <b>van</b> + 5 haf"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+        
+        recipe += ["Dysporite"]
+        recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
+        recipe += ["100 <b>cad</b> + 5 merc"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+        
+        recipe += ["Ferrofluid"]
+        recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
+        recipe += ["100 <b>cad</b> + 5 haf"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+
+        recipe += ["Hyperflurite"]
+        recipe += [parse_expr("(14000*100+"+r64+"*100)/200*1.15")]
+        recipe += ["100 <b>chrom</b> + 5 van"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-(14000*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+        
+        recipe += ["Prometium"]
+        recipe += [parse_expr("(14000*100+"+r64+"*100)/200*1.15")]
+        recipe += ["100 <b>chrom</b> + 5 cad"]
+        recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-(14000*5+x*100.))*24*30, "+maxAlch+".), x)")]
+        recipes += [recipe]
+        recipe = []
+        
+        reply = "Calculating R16 price points, with R64s = {:,}, R32s = {:,}, max. monthly alchemy profit = {:,}.<br />".format(int(r64),int(r32),int(maxAlch))
+        reply += "<span style=\"font-family:Courier\">{:32}{:23}{:30}{:20}".format("<b>Normal reaction</b>", "<b>Price Target</b>", "<b>Alchemy Reaction</b>", "<b>R16 price target</b><br />")
+
+        for i in range(len(recipes)):
+            reply += "{:25}{:<16,d}{:<30}{:<20,d}<br />".format(recipes[i][0], int(recipes[i][1]), recipes[i][2], int(str(recipes[i][3])[1:-12]))
+        return reply+"</span>"
+        
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
