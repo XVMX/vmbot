@@ -130,7 +130,7 @@ class VMBot(MUCJabberBot):
     pimpisms = ["eabod"]
     chaseisms = ["would you PLEASE"]
     # The following are the first part of the jabber id
-    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim"]
+    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
