@@ -221,6 +221,24 @@ class VMBot(MUCJabberBot):
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
             return ":bravo:"
+            
+    @botcmd(hidden=True, name="z")
+    def bot_z(self, mess, args):
+        '''z0r'''
+        if not args and random.randint(1, 3) == 1:
+            return "0"
+            
+    @botcmd(hidden=True, name="0")
+    def bot_0(self, mess, args):
+        '''z0r'''
+        if not args and random.randint(1, 3) == 1:
+            return "r"
+            
+    @botcmd(hidden=True, name="r")
+    def bot_r(self, mess, args):
+        '''z0r'''
+        if not args and random.randint(1, 3) == 1:
+            return "z"
 
     @botcmd
     def fishsay(self, mess, args):
@@ -231,6 +249,11 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''Like fishsay but blacker'''
         return random.choice(self.pimpisms)
+        
+    @botcmd(hidden=True)
+    def reiksay(self, mess, args):
+        '''Like fishsay but friendlier'''
+        return '<span style=\'color: #53196a;\'>Friendship is magic! :ranbowdash:</span>'
 
     @botcmd(hidden=True)
     def chasesay(self, mess, args):
@@ -370,7 +393,7 @@ class VMBot(MUCJabberBot):
         r = requests.post(url=vmc.url, data=result, headers=headers)
         return True
 
-    @botcmd
+    #@botcmd
     def google(self, mess, args):
         # Currently defunct since Google nuked the Calc api with the removal of iGoogle
         '''<query> - Forwards <query> to the google calculator API and returns the results. Try "50 fahrenheit in celsius" for example. Currently defunct since Google nuked the Calc api with the removal of iGoogle'''
