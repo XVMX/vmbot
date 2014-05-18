@@ -416,6 +416,27 @@ class VMBot(MUCJabberBot):
 
         return reply
 
+    @botcmd(hidden=False)
+    def rcbl(self, mess, args):
+        '''<pilot name> - Asks the RC API if <pilot name> has an entry in the blacklist. Multiple pilots possible via comma separated list (no spaces around commas).'''
+        try:
+            reply = 'Sorry, something went wrong.'
+            args = args.split(',')
+            result = ''
+            # Remove verify=False as soon as python 2.7.7 hits (exp. May 31, 2014). Needed due to self-signed cert with multiple domains + requests/urllib3
+            # Ref.: https://github.com/kennethreitz/requests/issues/1977 http://legacy.python.org/dev/peps/pep-0466/ http://legacy.python.org/dev/peps/pep-0373/
+            for pilot in args:
+                response = requests.get(''.join([vmc.blurl, vmc.blkey, '/', pilot]), verify=False)
+                print response.json()[0]['output']
+                result += ''.join([pilot, ' is ', response.json()[0]['output'], ' <br />'])
+
+            reply = result
+        except VMBotError, e:
+            reply = str(e)
+        finally:
+            return reply
+    
+    
     @botcmd(hidden=True)
     # Very rough hack, needs validation and shit
     def goosolve(self, mess, args):
@@ -511,4 +532,5 @@ if __name__ == '__main__':
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, acceptownmsgs=True)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
+    morgooglie.join_room(vmc.chatroom3, vmc.nickname)
     morgooglie.serve_forever()
