@@ -5,6 +5,7 @@ res       = ''
 nickname  = ''
 chatroom1 = ''
 chatroom2 = ''
+chatroom3 = ''
 
 # GSF broadcast API
 url = ''
