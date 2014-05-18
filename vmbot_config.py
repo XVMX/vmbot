@@ -11,3 +11,7 @@ url = ''
 id = ''
 key = ''
 target = ''
+
+# RC blacklist API
+blurl = ''
+blkey = ''
