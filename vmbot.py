@@ -125,7 +125,8 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
 class VMBot(MUCJabberBot):
     # Lists for use in the various methods
-    eball_answers = ['Probably.', 'Rather likely.', 'Definitely.', 'Of course.', 'Probably not.', 'This is very questionable.', 'Unlikely.', 'Absolutely not.']
+    # 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
+    eball_answers = ['It is certain', 'It is decidedly so', 'Without a doubt', 'Yes definitely', 'You may rely on it', 'As I see it, yes', 'Most likely', 'Outlook good', 'Yes', 'Signs point to yes', 'Reply hazy try again', 'Ask again later', 'Better not tell you now', 'Cannot predict now', 'Concentrate and ask again', 'Don\'t count on it', 'My reply is no', 'My sources say no', 'Outlook not so good', 'Very doubtful']
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     pimpisms = ["eabod"]
     chaseisms = ["would you PLEASE"]
