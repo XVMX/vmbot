@@ -28,6 +28,7 @@ import signal
 import subprocess
 import json
 
+from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
 import vmbot_config as vmc
 
@@ -144,10 +145,14 @@ class VMBot(MUCJabberBot):
 
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
-            return str(parse_expr(args))
+            return pretty(parse_expr(args), full_prec=False, use_unicode=True)
 
         try:
             reply = do_math(args)
+            if '\n' in reply:
+                reply = '\n' + reply
+
+            reply = '<font face="monospace">' + re.sub('[\n]','</font><br/><font face="monospace">',reply) + '</font>'
         except Exception, e:
             reply = str(e)
 
@@ -222,19 +227,19 @@ class VMBot(MUCJabberBot):
         '''Every lion except for at most one'''
         if not args and random.randint(1, 5) == 1:
             return ":bravo:"
-            
+
     @botcmd(hidden=True, name="z")
     def bot_z(self, mess, args):
         '''z0r'''
         if not args and random.randint(1, 3) == 1:
             return "0"
-            
+
     @botcmd(hidden=True, name="0")
     def bot_0(self, mess, args):
         '''z0r'''
         if not args and random.randint(1, 3) == 1:
             return "r"
-            
+
     @botcmd(hidden=True, name="r")
     def bot_r(self, mess, args):
         '''z0r'''
@@ -250,7 +255,7 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''Like fishsay but blacker'''
         return random.choice(self.pimpisms)
-        
+
     @botcmd(hidden=True)
     def reiksay(self, mess, args):
         '''Like fishsay but friendlier'''
@@ -436,8 +441,8 @@ class VMBot(MUCJabberBot):
             reply = str(e)
         finally:
             return reply
-    
-    
+
+
     @botcmd(hidden=True)
     # Very rough hack, needs validation and shit
     def goosolve(self, mess, args):
@@ -448,7 +453,7 @@ class VMBot(MUCJabberBot):
             maxAlch = '400000000';
         else:
             (r64, r32, maxAlch) = args.split(" ")[:3]
-        
+
         recipes = []
         recipe = []
         recipe += ["Fluxed Condensates"]
@@ -457,28 +462,28 @@ class VMBot(MUCJabberBot):
         recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-(14000*5+x*100.))*24*30, "+maxAlch+".), x)")]
         recipes += [recipe]
         recipe = []
-        
+
         recipe += ["Neo Mercurite"]
         recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
         recipe += ["100 <b>plat</b> + 5 merc"]
         recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
         recipes += [recipe]
         recipe = []
-        
+
         recipe += ["Thulium Hafnite"]
         recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
         recipe += ["100 <b>van</b> + 5 haf"]
         recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
         recipes += [recipe]
         recipe = []
-        
+
         recipe += ["Dysporite"]
         recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
         recipe += ["100 <b>cad</b> + 5 merc"]
         recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-("+r32+"*5+x*100.))*24*30, "+maxAlch+".), x)")]
         recipes += [recipe]
         recipe = []
-        
+
         recipe += ["Ferrofluid"]
         recipe += [parse_expr("("+r32+"*100+"+r64+"*100)/200*1.15")]
         recipe += ["100 <b>cad</b> + 5 haf"]
@@ -492,21 +497,21 @@ class VMBot(MUCJabberBot):
         recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-(14000*5+x*100.))*24*30, "+maxAlch+".), x)")]
         recipes += [recipe]
         recipe = []
-        
+
         recipe += ["Prometium"]
         recipe += [parse_expr("(14000*100+"+r64+"*100)/200*1.15")]
         recipe += ["100 <b>chrom</b> + 5 cad"]
         recipe += [parse_expr("solve(Eq((40*"+str(recipe[1])+"-(14000*5+x*100.))*24*30, "+maxAlch+".), x)")]
         recipes += [recipe]
         recipe = []
-        
+
         reply = "Calculating R16 price points, with R64s = {:,}, R32s = {:,}, max. monthly alchemy profit = {:,}.<br />".format(int(r64),int(r32),int(maxAlch))
         reply += "<span style=\"font-family:Courier\">{:32}{:23}{:30}{:20}".format("<b>Normal reaction</b>", "<b>Price Target</b>", "<b>Alchemy Reaction</b>", "<b>R16 price target</b><br />")
 
         for i in range(len(recipes)):
             reply += "{:25}{:<16,d}{:<30}{:<20,d}<br />".format(recipes[i][0], int(recipes[i][1]), recipes[i][2], int(str(recipes[i][3])[1:-12]))
         return reply+"</span>"
-        
+
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
