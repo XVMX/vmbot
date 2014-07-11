@@ -131,8 +131,7 @@ class VMBot(MUCJabberBot):
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     pimpisms = ["eabod"]
     chaseisms = ["would you PLEASE"]
-    nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!"]
-    # The following are the first part of the jabber id
+    nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!", "D00d, never go full retart!"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
 
