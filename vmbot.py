@@ -131,6 +131,7 @@ class VMBot(MUCJabberBot):
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     pimpisms = ["eabod"]
     chaseisms = ["would you PLEASE"]
+    nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!"]
     # The following are the first part of the jabber id
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
@@ -257,9 +258,9 @@ class VMBot(MUCJabberBot):
         return random.choice(self.pimpisms)
 
     @botcmd(hidden=True)
-    def reiksay(self, mess, args):
-        '''Like fishsay but friendlier'''
-        return '<span style=\'color: #53196a;\'>Friendship is magic! :ranbowdash:</span>'
+    def nicksay(self, mess, args):
+        '''Like fishsay but pubbietasticer'''
+        return random.choice(self.nickisms)
 
     @botcmd(hidden=True)
     def chasesay(self, mess, args):
