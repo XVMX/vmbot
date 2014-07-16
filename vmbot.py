@@ -251,17 +251,17 @@ class VMBot(MUCJabberBot):
         '''Fishy wisdom.'''
         return random.choice(self.fishisms)
 
-    @botcmd(hidden=True)
+    @botcmd
     def pimpsay(self, mess, args):
         '''Like fishsay but blacker'''
         return random.choice(self.pimpisms)
 
-    @botcmd(hidden=True)
+    @botcmd
     def nicksay(self, mess, args):
         '''Like fishsay but pubbietasticer'''
         return random.choice(self.nickisms)
 
-    @botcmd(hidden=True)
+    @botcmd
     def chasesay(self, mess, args):
         '''Please'''
         cmdname = self.chasesay._jabberbot_command_name
