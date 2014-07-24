@@ -198,14 +198,14 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def route(self, mess, args):
-        '''<start system> <destination system> - Calculates the shortest route. System names are case-sensitive. Do not  spam this with wrong system names or EVE-Central will ban the server.'''
+        '''<start system> <destination system> - Calculates the shortest route (experimental). System names are case-sensitive. Do not  spam this with wrong system names or EVE-Central will ban the server.'''
         try:
             args = args.strip().split()
             if (len(args) != 2):
                 raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
             r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=3)
             if (r.status_code != 200):
-                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist.')
+                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
             all_waypoints = r.json()
             jumps = 0
             reply = 'Format: <FROM> -> <TO>'
@@ -213,6 +213,8 @@ class VMBot(MUCJabberBot):
                 jumps += 1
                 reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/' + str(waypoint['from']['region']['name']) + ') -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/' + str(waypoint['to']['region']['name']) + ')'
             reply += '\n' + str(jumps) + ' jumps total'
+            if (len(reply) <= 36):
+                reply = 'Can\'t calculate a route.'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
