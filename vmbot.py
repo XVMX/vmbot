@@ -251,7 +251,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def sayhi(self, mess, args):
-        '''Says hi to you!'''
+        '''[name] - Says hi to you or name if provided!'''
         if len(args) > 0:
             name = args.strip()
         else:
