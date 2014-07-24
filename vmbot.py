@@ -170,7 +170,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def evetime(self, mess, args):
-        '''[+offset] - Displays the current evetime and the resulting evetime of the offset, if provided'''
+        '''[+offset] - Displays the current evetime, server status and the resulting evetime of the offset, if provided'''
         timefmt = '%Y-%m-%d %H:%M:%S'
         evetime = datetime.utcnow()
         reply = 'The current EVE time is ' + evetime.strftime(timefmt)
@@ -179,7 +179,75 @@ class VMBot(MUCJabberBot):
             reply += ' and {} hour(s) is {}'.format(args.strip(), offset_time.strftime(timefmt))
         except ValueError:
             pass
+        try:
+            r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', timeout=2)
+            if (r.status_code != 200 or r.encoding != 'utf-8'):
+                raise VMBotError('The ServerStatus-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+            xml = ET.fromstring(r.text)
+            if (xml[1][0].text == 'True'):
+                reply += '\nThe server is online and ' + str(xml[1][1].text) + ' players are playing'
+            else:
+                reply += '\nThe server is offline'
+        except requests.exceptions.RequestException as e:
+            reply += '\nThere is a problem with the API server. Can\'t access ServerStatus-API'
+        except VMBotError as e:
+            reply += '\n' + str(e)
+        except:
+            reply += '\nAn unknown error occured.'
         return reply
+
+    @botcmd
+    def route(self, mess, args):
+        '''<start system> <destination system> - Calculates the shortest route. System names are case-sensitive. Do not  spam this with wrong system names or EVE-Central will ban the server.'''
+        try:
+            args = args.strip().split()
+            if (len(args) != 2):
+                raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
+            r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=3)
+            if (r.status_code != 200):
+                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist.')
+            all_waypoints = r.json()
+            jumps = 0
+            reply = 'Format: <FROM> -> <TO>'
+            for waypoint in all_waypoints:
+                jumps += 1
+                reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/' + str(waypoint['from']['region']['name']) + ') -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/' + str(waypoint['to']['region']['name']) + ')'
+            reply += '\n' + str(jumps) + ' jumps total'
+        except requests.exceptions.RequestException as e:
+            reply = 'There is a problem with the API server. Can\'t connect to the server'
+        except VMBotError as e:
+            reply = str(e)
+        except:
+            reply = 'An unknown error occured.'
+        finally:
+            return reply
+
+    @botcmd
+    def character(self, mess, args):
+        '''<character name> - Displays Corporation, Alliance and Faction of this character'''
+        try:
+            if (len(args.strip().split()) < 1 or len(args.strip().split()) > 3):
+                raise VMBotError('Please provide a single character name (it may consist of up to three parts)')
+            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : args}, timeout=2)
+            if (r.status_code != 200 or r.encoding != 'utf-8'):
+                raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+            xml = ET.fromstring(r.text)
+            if (int(xml[1][0][0].attrib['characterID']) == 0):
+                raise VMBotError('This character does not exist.')
+            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : xml[1][0][0].attrib['characterID']}, timeout=2)
+            if (r.status_code != 200 or r.encoding != 'utf-8'):
+                raise VMBotError('The CharacterAffiliation-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+            xml = ET.fromstring(r.text)
+            character = xml[1][0][0].attrib
+            reply = str(character['characterName']) + ' is in corporation ' + str(character['corporationName']) + ((' in alliance ' + str(character['allianceName'])) if str(character['allianceName']) != '' else '') + ((' in faction ' + str(character['factionName'])) if str(character['factionName']) != '' else '')
+        except requests.exceptions.RequestException as e:
+            reply = 'There is a problem with the API server. Can\'t connect to the server'
+        except VMBotError as e:
+            reply = str(e)
+        except:
+            reply = 'An unknown error occured.'
+        finally:
+            return reply
 
     @botcmd
     def sayhi(self, mess, args):
