@@ -184,7 +184,11 @@ class VMBot(MUCJabberBot):
     @botcmd
     def sayhi(self, mess, args):
         '''Says hi to you!'''
-        return "Hi " + self.get_sender_username(mess) + "!"
+        if len(args) > 0:
+            name = args.strip()
+        else:
+            name = self.get_sender_username(mess)
+        return "Hi " + name + "!"
 
     @botcmd(hidden=True)
     def every(self, mess, args):
