@@ -232,6 +232,8 @@ class VMBot(MUCJabberBot):
             args = [item.strip() for item in args.strip().split(',')]
             if (args[0] == ''):
                 raise VMBotError('Please provide character name(s), separated by commas')
+            if (len(args) >= 5):
+                raise VMBotError('Please limit your search to 5 characters at once')
             reply = ''
             r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=2)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
