@@ -7,3 +7,4 @@ VMBot TODO list
 * XML cache for API calls
 * Improve route command (Jump Bridges) - hold for now, route pending removal
 * Split vmbot.py into logical modules in separate files (fun, admin, api lookups, other, ...). It's getting big.
+* Add font formatting (colors, emphasis) to make output easier to read. Bad luck for those using cli clients/disabled user formatting
