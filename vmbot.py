@@ -232,8 +232,8 @@ class VMBot(MUCJabberBot):
             args = [item.strip() for item in args.strip().split(',')]
             if (args[0] == ''):
                 raise VMBotError('Please provide character name(s), separated by commas')
-            if (len(args) >= 5):
-                raise VMBotError('Please limit your search to 5 characters at once')
+            if (len(args) > 10):
+                raise VMBotError('Please limit your search to 10 characters at once')
             reply = ''
             r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=2)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
@@ -270,8 +270,11 @@ class VMBot(MUCJabberBot):
                     raise VMBotError('The EVEWho-API returned error code ' + str(r.status_code))
                 evewhoapi = r.json()
                 reply += 'Security status: ' + str(evewhoapi['info']['sec_status']) + '\n'
-                for corp in evewhoapi['history']:
+                for corp in evewhoapi['history'][-10:]:
                     reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in ' + str(getName(str(corp['corporation_id']))) + '\n'
+                if (len(evewhoapi['history']) > 10):
+                    characterName = xml[1][0][0].attrib['characterName']
+                    reply += 'The full history is available under http://http://evewho.com/pilot/' + str(characterName.replace(' ', '+')) + '\n'
             reply = reply[:-1]
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
