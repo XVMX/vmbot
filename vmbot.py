@@ -207,14 +207,14 @@ class VMBot(MUCJabberBot):
             if (r.status_code != 200):
                 raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
             all_waypoints = r.json()
+            if (all_waypoints == []):
+                raise VMBotError('Can\'t calculate a route.')
             jumps = 0
             reply = 'Format: <FROM> -> <TO>'
             for waypoint in all_waypoints:
                 jumps += 1
                 reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/' + str(waypoint['from']['region']['name']) + ') -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/' + str(waypoint['to']['region']['name']) + ')'
             reply += '\n' + str(jumps) + ' jumps total'
-            if (len(reply) <= 36):
-                reply = 'Can\'t calculate a route.'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
@@ -226,8 +226,8 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def character(self, mess, args):
-        '''<character name,character name,character name,...> - Displays Corporation, Alliance, Faction, SecStatus and Employment History of a single character
-        Displays Corporation, Alliance and Faction of multiple characters. Separate names with commas'''
+        '''<character name> - Displays Corporation, Alliance, Faction, SecStatus and Employment History of a single character
+        <character name,character name,character name,...> Displays Corporation, Alliance and Faction of multiple characters'''
         try:
             args = [item.strip() for item in args.strip().split(',')]
             if (args[0] == ''):
@@ -308,8 +308,8 @@ class VMBot(MUCJabberBot):
             marketdata = xml[0][0]
             if (int(marketdata[2][0].text) == 0):
                 raise VMBotError('This system does not exist')
-            reply = args[1] + ' Buyorders for ' + args[0] + ': There is a total volume of ' + str(marketdata[0][0].text) + ' items of this type in this system for a buyprice from ' + str(marketdata[0][2].text) + ' ISK to ' + str(marketdata[0][3].text) + ' Isk. The average buyprice is ' + str(marketdata[0][1].text) + ' Isk\n'
-            reply += args[1] + ' Sellorders for ' + args[0] + ': There is a total volume of ' + str(marketdata[1][0].text) + ' items of this type in this system for a price from ' + str(marketdata[1][3].text) + ' ISK to ' + str(marketdata[1][2].text) + ' Isk. The average price is ' + str(marketdata[1][1].text) + ' Isk'
+            reply = args[1] + ' Buyorders for ' + args[0] + ': The buyprice ranges from ' + str(marketdata[0][2].text) + ' ISK to ' + str(marketdata[0][3].text) + ' ISK. The average buyprice is ' + str(marketdata[0][1].text) + ' ISK and there is a total volume of ' + str(marketdata[0][0].text) + ' items of this type in this system.\n'
+            reply += args[1] + ' Sellorders for ' + args[0] + ': The price ranges from ' + str(marketdata[1][3].text) + ' ISK to ' + str(marketdata[1][2].text) + ' ISK. The average price is ' + str(marketdata[1][1].text) + ' ISK and there is a total volume of ' + str(marketdata[1][0].text) + ' items of this type in this system'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
