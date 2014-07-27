@@ -269,12 +269,15 @@ class VMBot(MUCJabberBot):
                 if (r.status_code != 200):
                     raise VMBotError('The EVEWho-API returned error code ' + str(r.status_code))
                 evewhoapi = r.json()
-                reply += 'Security status: ' + str(evewhoapi['info']['sec_status']) + '\n'
-                for corp in evewhoapi['history'][-10:]:
-                    reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in ' + str(getName(str(corp['corporation_id']))) + '\n'
-                if (len(evewhoapi['history']) > 10):
-                    characterName = xml[1][0][0].attrib['characterName']
-                    reply += 'The full history is available under http://http://evewho.com/pilot/' + str(characterName.replace(' ', '+')) + '\n'
+                if (evewhoapi['info'] == None):
+                    reply += 'Eve Who got no data for this character\n'
+                else:
+                    reply += 'Security status: ' + str(evewhoapi['info']['sec_status']) + '\n'
+                    for corp in evewhoapi['history'][-10:]:
+                        reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in ' + str(getName(str(corp['corporation_id']))) + '\n'
+                    if (len(evewhoapi['history']) > 10):
+                        characterName = xml[1][0][0].attrib['characterName']
+                        reply += 'The full history is available under http://evewho.com/pilot/' + str(characterName.replace(' ', '+')) + '\n'
             reply = reply[:-1]
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
@@ -313,8 +316,8 @@ class VMBot(MUCJabberBot):
             marketdata = xml[0][0]
             if (int(marketdata[2][0].text) == 0):
                 raise VMBotError('This system does not exist')
-            reply = args[1] + ' Buyorders for ' + args[0] + ': The buyprice ranges from ' + str(marketdata[0][2].text) + ' ISK to ' + str(marketdata[0][3].text) + ' ISK. The average buyprice is ' + str(marketdata[0][1].text) + ' ISK and there is a total volume of ' + str(marketdata[0][0].text) + ' items of this type in this system.\n'
-            reply += args[1] + ' Sellorders for ' + args[0] + ': The price ranges from ' + str(marketdata[1][3].text) + ' ISK to ' + str(marketdata[1][2].text) + ' ISK. The average price is ' + str(marketdata[1][1].text) + ' ISK and there is a total volume of ' + str(marketdata[1][0].text) + ' items of this type in this system'
+            reply = args[1] + ' Buyorders for ' + args[0] + ': The buyprice ranges from ' + '{:,}'.format(float(marketdata[0][2].text)) + ' ISK to ' + '{:,}'.format(float(marketdata[0][3].text)) + ' ISK. The average buyprice is ' + '{:,}'.format(float(marketdata[0][1].text)) + ' ISK and there is a total volume of ' + '{:,}'.format(int(marketdata[0][0].text)) + ' items of this type in this system\n'
+            reply += args[1] + ' Sellorders for ' + args[0] + ': The price ranges from ' + '{:,}'.format(float(marketdata[1][3].text)) + ' ISK to ' + '{:,}'.format(float(marketdata[1][2].text)) + ' ISK. The average price is ' + '{:,}'.format(float(marketdata[1][1].text)) + ' ISK and there is a total volume of ' + '{:,}'.format(int(marketdata[1][0].text)) + ' items of this type in this system'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
