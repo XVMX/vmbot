@@ -198,15 +198,17 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def route(self, mess, args):
-        '''<start system> <destination system> - Calculates the shortest route. System names are case-sensitive. Do not  spam this with wrong system names or EVE-Central will ban the server.'''
+        '''<start system> <destination system> - Calculates the shortest route (experimental). System names are case-sensitive. Do not  spam this with wrong system names or EVE-Central will ban the server.'''
         try:
             args = args.strip().split()
             if (len(args) != 2):
                 raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
             r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=3)
             if (r.status_code != 200):
-                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist.')
+                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
             all_waypoints = r.json()
+            if (all_waypoints == []):
+                raise VMBotError('Can\'t calculate a route.')
             jumps = 0
             reply = 'Format: <FROM> -> <TO>'
             for waypoint in all_waypoints:
@@ -224,22 +226,95 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def character(self, mess, args):
-        '''<character name> - Displays Corporation, Alliance and Faction of this character'''
+        '''<character name> - Displays Corporation, Alliance, Faction, SecStatus and Employment History of a single character
+        <character name,character name,character name,...> Displays Corporation, Alliance and Faction of multiple characters'''
         try:
-            if (len(args.strip().split()) < 1 or len(args.strip().split()) > 3):
-                raise VMBotError('Please provide a single character name (it may consist of up to three parts)')
-            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : args}, timeout=2)
+            args = [item.strip() for item in args.strip().split(',')]
+            if (args[0] == ''):
+                raise VMBotError('Please provide character name(s), separated by commas')
+            if (len(args) > 10):
+                raise VMBotError('Please limit your search to 10 characters at once')
+            reply = ''
+            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=2)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
-            if (int(xml[1][0][0].attrib['characterID']) == 0):
-                raise VMBotError('This character does not exist.')
-            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : xml[1][0][0].attrib['characterID']}, timeout=2)
+            args = []
+            for character in xml[1][0]:
+                if (int(character.attrib['characterID']) != 0):
+                    args.append(character.attrib['characterID'])
+                else:
+                    reply += 'Character ' + character.attrib['name'] + ' does not exist\n'
+            if (len(args) == 0):
+                raise VMBotError('None of these character(s) exist')
+            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, timeout=2)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterAffiliation-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
-            character = xml[1][0][0].attrib
-            reply = str(character['characterName']) + ' is in corporation ' + str(character['corporationName']) + ((' in alliance ' + str(character['allianceName'])) if str(character['allianceName']) != '' else '') + ((' in faction ' + str(character['factionName'])) if str(character['factionName']) != '' else '')
+            for row in xml[1][0]:
+                character = row.attrib
+                reply += str(character['characterName']) + ' is in corporation ' + str(character['corporationName']) + ((' in alliance ' + str(character['allianceName'])) if str(character['allianceName']) != '' else '') + ((' in faction ' + str(character['factionName'])) if str(character['factionName']) != '' else '') + '\n'
+            if (len(args) == 1):
+                # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID or typeID
+                def getName(pID):
+                    try:
+                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=2)
+                        xml = ET.fromstring(r.text)
+                        apireply = str(xml[1][0][0].attrib['name'])
+                    except:
+                        apireply = str('API Error')
+                    finally:
+                        return apireply
+                r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=2)
+                if (r.status_code != 200):
+                    raise VMBotError('The EVEWho-API returned error code ' + str(r.status_code))
+                evewhoapi = r.json()
+                reply += 'Security status: ' + str(evewhoapi['info']['sec_status']) + '\n'
+                for corp in evewhoapi['history'][-10:]:
+                    reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in ' + str(getName(str(corp['corporation_id']))) + '\n'
+                if (len(evewhoapi['history']) > 10):
+                    characterName = xml[1][0][0].attrib['characterName']
+                    reply += 'The full history is available under http://http://evewho.com/pilot/' + str(characterName.replace(' ', '+')) + '\n'
+            reply = reply[:-1]
+        except requests.exceptions.RequestException as e:
+            reply = 'There is a problem with the API server. Can\'t connect to the server'
+        except VMBotError as e:
+            reply = str(e)
+        except:
+            reply = 'An unknown error occured.'
+        finally:
+            return reply
+
+    @botcmd
+    def price(self, mess, args):
+        '''<item name>,[system name] - Displays price of item in Jita or given system (separated by comma)' [experimental]'''
+        try:
+            args = [item.strip() for item in args.strip().split(',')]
+            if (len(args) < 1 or len(args) > 2 or args[0] == ''):
+                raise VMBotError('Please specify one item name and optional one system name: <item name>,[system name]')
+            if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
+                args[0] = '30 Day Pilot\'s License Extension (PLEX)'
+            if (len(args) == 1):
+                args.append('Jita')
+            r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, timeout=2)
+            if (r.status_code != 200):
+                raise VMBotError('The TypeID-API returned error code ' + str(r.status_code))
+            item = r.json()
+            if (int(item['typeID']) == 0):
+                raise VMBotError('This item does not exist')
+            r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, timeout=2)
+            if (r.status_code != 200 or r.encoding != 'utf-8'):
+                raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+            xml = ET.fromstring(r.text)
+            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])},timeout=3)
+            if (r.status_code != 200 or r.encoding != 'UTF-8'):
+                raise VMBotError('The marketstat-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+            xml = ET.fromstring(r.text)
+            marketdata = xml[0][0]
+            if (int(marketdata[2][0].text) == 0):
+                raise VMBotError('This system does not exist')
+            reply = args[1] + ' Buyorders for ' + args[0] + ': The buyprice ranges from ' + str(marketdata[0][2].text) + ' ISK to ' + str(marketdata[0][3].text) + ' ISK. The average buyprice is ' + str(marketdata[0][1].text) + ' ISK and there is a total volume of ' + str(marketdata[0][0].text) + ' items of this type in this system.\n'
+            reply += args[1] + ' Sellorders for ' + args[0] + ': The price ranges from ' + str(marketdata[1][3].text) + ' ISK to ' + str(marketdata[1][2].text) + ' ISK. The average price is ' + str(marketdata[1][1].text) + ' ISK and there is a total volume of ' + str(marketdata[1][0].text) + ' items of this type in this system'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:

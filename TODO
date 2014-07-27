@@ -2,6 +2,7 @@ VMBot TODO list
 
 * Add exception handling throughout the code
 * promote/fire commands to act accordingly on the director ACL
-* player lookup method which displays corp history (read from eve api) NOTE: Not possible without API key. Current Corp/Ally/Faction lookup implemented
 * Send replies with many lines via pm instead of channel
 * Implement a FAQ database (URL to important threads/wiki articles, alt api key management, etc)
+* XML cache for API calls
+* Improve route command (Jump Bridges)
