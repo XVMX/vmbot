@@ -290,11 +290,11 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def price(self, mess, args):
-        '''<item name>,[system name] - Displays price of item in Jita or given system (separated by comma) [experimental]'''
+        '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @) [experimental]'''
         try:
-            args = [item.strip() for item in args.strip().split(',')]
+            args = [item.strip() for item in args.strip().split('@')]
             if (len(args) < 1 or len(args) > 2 or args[0] == ''):
-                raise VMBotError('Please specify one item name and optional one system name: <item name>,[system name]')
+                raise VMBotError('Please specify one item name and optional one system name: <item name>@[system name]')
             if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
                 args[0] = '30 Day Pilot\'s License Extension (PLEX)'
             if (len(args) == 1):
