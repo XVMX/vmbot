@@ -205,16 +205,16 @@ class VMBot(MUCJabberBot):
                 raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
             r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=4)
             if (r.status_code != 200):
-                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
+                raise VMBotError('The API returned error code <b>' + str(r.status_code) + '</b>. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
             all_waypoints = r.json()
             if (all_waypoints == []):
                 raise VMBotError('Can\'t calculate a route.')
             jumps = 0
-            reply = 'Format: <FROM> -> <TO>'
+            reply = 'Route from ' + str(args[0]) + ' to ' + str(args[1]) + '.'
             for waypoint in all_waypoints:
                 jumps += 1
-                reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/' + str(waypoint['from']['region']['name']) + ') -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/' + str(waypoint['to']['region']['name']) + ')'
-            reply += '\n' + str(jumps) + ' jumps total'
+                reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/<i>' + str(waypoint['from']['region']['name']) + '</i>) -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/<i>' + str(waypoint['to']['region']['name']) + '</i>)'
+            reply += '\n<b>' + str(jumps) + '</b> jumps total'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
@@ -237,23 +237,23 @@ class VMBot(MUCJabberBot):
             reply = ''
             r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+                raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
             args = []
             for character in xml[1][0]:
                 if (int(character.attrib['characterID']) != 0):
                     args.append(character.attrib['characterID'])
                 else:
-                    reply += 'Character ' + character.attrib['name'] + ' does not exist\n'
+                    reply += 'Character <b>' + character.attrib['name'] + '</b> does not exist\n'
             if (len(args) == 0):
                 raise VMBotError('None of these character(s) exist')
             r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, timeout=4)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The CharacterAffiliation-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+                raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
             for row in xml[1][0]:
                 character = row.attrib
-                reply += str(character['characterName']) + ' is in corporation ' + str(character['corporationName']) + ((' in alliance ' + str(character['allianceName'])) if str(character['allianceName']) != '' else '') + ((' in faction ' + str(character['factionName'])) if str(character['factionName']) != '' else '') + '\n'
+                reply += str(character['characterName']) + ' is in corporation <b>' + str(character['corporationName']) + '</b>' + ((' in alliance <b>' + str(character['allianceName']) + '</b>') if str(character['allianceName']) != '' else '') + ((' in faction <b>' + str(character['factionName']) + '</b>') if str(character['factionName']) != '' else '') + '\n'
             if (len(args) == 1):
                 # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID or typeID
                 def getName(pID):
@@ -267,14 +267,14 @@ class VMBot(MUCJabberBot):
                         return apireply
                 r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=5)
                 if (r.status_code != 200):
-                    raise VMBotError('The EVEWho-API returned error code ' + str(r.status_code))
+                    raise VMBotError('The EVEWho-API returned error code <b>' + str(r.status_code) + '</b>.')
                 evewhoapi = r.json()
                 if (evewhoapi['info'] == None):
                     reply += 'Eve Who got no data for this character\n'
                 else:
                     reply += 'Security status: ' + str(evewhoapi['info']['sec_status']) + '\n'
                     for corp in evewhoapi['history'][-10:]:
-                        reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in ' + str(getName(str(corp['corporation_id']))) + '\n'
+                        reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in <b>' + str(getName(str(corp['corporation_id']))) + '</b>\n'
                     if (len(evewhoapi['history']) > 10):
                         characterName = xml[1][0][0].attrib['characterName']
                         reply += 'The full history is available under http://evewho.com/pilot/' + str(characterName.replace(' ', '+')) + '\n'
