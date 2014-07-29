@@ -316,9 +316,9 @@ class VMBot(MUCJabberBot):
             marketdata = xml[0][0]
             if (int(marketdata[2][0].text) == 0):
                 raise VMBotError('This system does not exist')
-            reply = args[0] + ' in ' + args[1] + ':\n'
-            reply += '<b>Sells</b> Price: <b>{:,}</b> ISK. Volume: {:,} units'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
-            reply += '<b>Buys</b> Price: <b>{:,}</b> ISK. Volume: {:,} units\n'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
+            reply = args[0] + ' in ' + args[1] + ':<br />'
+            reply += '<b>Sells</b> Price: <b>{:,}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
+            reply += '<b>Buys</b> Price: <b>{:,}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
