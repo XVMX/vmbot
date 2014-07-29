@@ -316,8 +316,9 @@ class VMBot(MUCJabberBot):
             marketdata = xml[0][0]
             if (int(marketdata[2][0].text) == 0):
                 raise VMBotError('This system does not exist')
-            reply = args[1] + ' Buyorders for ' + args[0] + ': The buyprice ranges from ' + '{:,}'.format(float(marketdata[0][2].text)) + ' ISK to ' + '{:,}'.format(float(marketdata[0][3].text)) + ' ISK. The average buyprice is ' + '{:,}'.format(float(marketdata[0][1].text)) + ' ISK and there is a total volume of ' + '{:,}'.format(int(marketdata[0][0].text)) + ' items of this type in this system\n'
-            reply += args[1] + ' Sellorders for ' + args[0] + ': The price ranges from ' + '{:,}'.format(float(marketdata[1][3].text)) + ' ISK to ' + '{:,}'.format(float(marketdata[1][2].text)) + ' ISK. The average price is ' + '{:,}'.format(float(marketdata[1][1].text)) + ' ISK and there is a total volume of ' + '{:,}'.format(int(marketdata[1][0].text)) + ' items of this type in this system'
+            reply = args[0] + ' in ' + args[1] + ':\n'
+            reply += '<b>Sells</b> Price: <b>{:,}</b> ISK. Volume: {:,} units'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
+            reply += '<b>Buys</b> Price: <b>{:,}</b> ISK. Volume: {:,} units\n'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
