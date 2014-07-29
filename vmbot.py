@@ -180,7 +180,7 @@ class VMBot(MUCJabberBot):
         except ValueError:
             pass
         try:
-            r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', timeout=2)
+            r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The ServerStatus-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -203,7 +203,7 @@ class VMBot(MUCJabberBot):
             args = args.strip().split()
             if (len(args) != 2):
                 raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
-            r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=3)
+            r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=4)
             if (r.status_code != 200):
                 raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
             all_waypoints = r.json()
@@ -235,7 +235,7 @@ class VMBot(MUCJabberBot):
             if (len(args) > 10):
                 raise VMBotError('Please limit your search to 10 characters at once')
             reply = ''
-            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=2)
+            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -247,7 +247,7 @@ class VMBot(MUCJabberBot):
                     reply += 'Character ' + character.attrib['name'] + ' does not exist\n'
             if (len(args) == 0):
                 raise VMBotError('None of these character(s) exist')
-            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, timeout=2)
+            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, timeout=4)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterAffiliation-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -258,14 +258,14 @@ class VMBot(MUCJabberBot):
                 # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID or typeID
                 def getName(pID):
                     try:
-                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=2)
+                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=3)
                         xml = ET.fromstring(r.text)
                         apireply = str(xml[1][0][0].attrib['name'])
                     except:
                         apireply = str('API Error')
                     finally:
                         return apireply
-                r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=2)
+                r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=5)
                 if (r.status_code != 200):
                     raise VMBotError('The EVEWho-API returned error code ' + str(r.status_code))
                 evewhoapi = r.json()
@@ -290,26 +290,26 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def price(self, mess, args):
-        '''<item name>,[system name] - Displays price of item in Jita or given system (separated by comma)' [experimental]'''
+        '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @) [experimental]'''
         try:
-            args = [item.strip() for item in args.strip().split(',')]
+            args = [item.strip() for item in args.strip().split('@')]
             if (len(args) < 1 or len(args) > 2 or args[0] == ''):
-                raise VMBotError('Please specify one item name and optional one system name: <item name>,[system name]')
+                raise VMBotError('Please specify one item name and optional one system name: <item name>@[system name]')
             if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
                 args[0] = '30 Day Pilot\'s License Extension (PLEX)'
             if (len(args) == 1):
                 args.append('Jita')
-            r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, timeout=2)
+            r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, timeout=4)
             if (r.status_code != 200):
                 raise VMBotError('The TypeID-API returned error code ' + str(r.status_code))
             item = r.json()
             if (int(item['typeID']) == 0):
                 raise VMBotError('This item does not exist')
-            r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, timeout=2)
+            r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
-            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])},timeout=3)
+            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])},timeout=5)
             if (r.status_code != 200 or r.encoding != 'UTF-8'):
                 raise VMBotError('The marketstat-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
