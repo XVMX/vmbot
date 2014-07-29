@@ -205,16 +205,16 @@ class VMBot(MUCJabberBot):
                 raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
             r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=4)
             if (r.status_code != 200):
-                raise VMBotError('The API returned error code ' + str(r.status_code) + '. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
+                raise VMBotError('The API returned error code <b>' + str(r.status_code) + '</b>. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
             all_waypoints = r.json()
             if (all_waypoints == []):
                 raise VMBotError('Can\'t calculate a route.')
             jumps = 0
-            reply = 'Format: <FROM> -> <TO>'
+            reply = 'Route from ' + str(args[0]) + ' to ' + str(args[1]) + '.'
             for waypoint in all_waypoints:
                 jumps += 1
-                reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/' + str(waypoint['from']['region']['name']) + ') -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/' + str(waypoint['to']['region']['name']) + ')'
-            reply += '\n' + str(jumps) + ' jumps total'
+                reply += '\n' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/<i>' + str(waypoint['from']['region']['name']) + '</i>) -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/<i>' + str(waypoint['to']['region']['name']) + '</i>)'
+            reply += '\n<b>' + str(jumps) + '</b> jumps total'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
