@@ -331,7 +331,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def zkb(self,mess,args):
-        '''<zKB link> - Displays statistics of the killmail'''
+        '''<zKB link> - Displays statistics of a killmail'''
         try:
             # Resolves typeIDs to their names
             def getTypeName(pID):
@@ -359,7 +359,7 @@ class VMBot(MUCJabberBot):
             if (regex == None):
                 raise VMBotError('Please provide a link to a zKB Killmail')
             args = regex.group(1)
-            r = requests.get('https://zkillboard.com/api/killID/' + str(args) + '/', headers={'Accept-Encoding' : 'gzip', 'User-Agent' : 'VM JabberBot'}, timeout=5)
+            r = requests.get('https://zkillboard.com/api/killID/' + str(args) + '/', headers={'Accept-Encoding' : 'gzip', 'User-Agent' : 'VM JabberBot'}, timeout=6)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The zKB-API returned error code <b>' + str(r.status_code) + '</b> or the encoding is broken.')
             killdata = r.json()
@@ -370,7 +370,7 @@ class VMBot(MUCJabberBot):
             for char in killdata[0]['attackers']:
                 if (i < 6):
                     reply += '<b>{}</b> did {:,} damage'.format(str(char['characterName']), int(char['damageDone'])) + ('and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
-                elif (char['finalBlow'] == 1):
+                elif (int(char['finalBlow'] == 1)):
                     reply += '<b>{}</b> did {:,} damage and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']))
                 i += 1
             reply = reply[:-6]
