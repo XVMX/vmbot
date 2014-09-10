@@ -330,7 +330,7 @@ class VMBot(MUCJabberBot):
             return reply
 
     @botcmd
-    def zkb(self,mess,args):
+    def zBot(self,mess,args):
         '''<zKB link> - Displays statistics of a killmail'''
         try:
             # Resolves typeIDs to their names
@@ -365,14 +365,14 @@ class VMBot(MUCJabberBot):
             killdata = r.json()
             reply = '<b>' + str(killdata[0]['victim']['characterName']) + '</b> got killed while flying a/an <b>' + str(getTypeName(killdata[0]['victim']['shipTypeID'])) + '</b> in <b>' + str(getName(killdata[0]['solarSystemID'])) + '</b> at ' + str(killdata[0]['killTime']) + '<br />'
             reply += str(killdata[0]['victim']['characterName']) + ' is in corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took {:,} damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
-            reply += 'The total value of the ship was <b>{:,.2f}</b> ISK for {:,} points <i>{}</i><br />'.format(float(killdata[0]['zkb']['totalValue']), int(killdata[0]['zkb']['points']), str(killdata[0]['zkb']['source']))
-            i = 1
+            reply += 'The total value of the ship was <b>{:,.2f}</b> ISK for {:,} point(s) (<i>{}</i>)<br />'.format(float(killdata[0]['zkb']['totalValue']), int(killdata[0]['zkb']['points']), str(killdata[0]['zkb']['source']))
+            attackerCount = 1
             for char in killdata[0]['attackers']:
-                if (i < 6):
-                    reply += '<b>{}</b> did {:,} damage'.format(str(char['characterName']), int(char['damageDone'])) + ('and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
+                if (attackerCount < 6):
+                    reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + ('and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
                 elif (int(char['finalBlow'] == 1)):
-                    reply += '<b>{}</b> did {:,} damage and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']))
-                i += 1
+                    reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
+                attackerCount += 1
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
