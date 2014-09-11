@@ -379,7 +379,7 @@ class VMBot(MUCJabberBot):
         except VMBotError as e:
             reply = str(e)
         except:
-            reply = 'An unknown error occured.'
+            reply = 'An unknown error occured.\nError Message: ' + str(sys.exc_info()[0])
         finally:
             return reply
 
