@@ -262,7 +262,7 @@ class VMBot(MUCJabberBot):
                         xml = ET.fromstring(r.text)
                         apireply = str(xml[1][0][0].attrib['name'])
                     except:
-                        apireply = str('API Error')
+                        apireply = str('[API Error]')
                     finally:
                         return apireply
                 r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=5)
