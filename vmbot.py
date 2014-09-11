@@ -330,7 +330,7 @@ class VMBot(MUCJabberBot):
             return reply
 
     @botcmd
-    def zBot(self,mess,args):
+    def zbot(self,mess,args):
         '''<zKB link> - Displays statistics of a killmail'''
         try:
             # Resolves typeIDs to their names
