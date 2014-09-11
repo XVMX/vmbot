@@ -182,7 +182,7 @@ class VMBot(MUCJabberBot):
         try:
             r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The ServerStatus-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+                raise VMBotError('The ServerStatus-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
             if (xml[1][0].text == 'True'):
                 reply += '\nThe server is online and ' + str(xml[1][1].text) + ' players are playing'
@@ -210,7 +210,7 @@ class VMBot(MUCJabberBot):
             if (all_waypoints == []):
                 raise VMBotError('Can\'t calculate a route.')
             jumps = 0
-            reply = 'Route from ' + str(args[0]) + ' to ' + str(args[1]) + '.'
+            reply = 'Calculated a route from ' + str(args[0]) + ' to ' + str(args[1]) + '.'
             for waypoint in all_waypoints:
                 jumps += 1
                 reply += '<br />' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/<i>' + str(waypoint['from']['region']['name']) + '</i>) -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/<i>' + str(waypoint['to']['region']['name']) + '</i>)'
@@ -255,14 +255,14 @@ class VMBot(MUCJabberBot):
                 character = row.attrib
                 reply += str(character['characterName']) + ' is in corporation <b>' + str(character['corporationName']) + '</b>' + ((' in alliance <b>' + str(character['allianceName']) + '</b>') if str(character['allianceName']) != '' else '') + ((' in faction <b>' + str(character['factionName']) + '</b>') if str(character['factionName']) != '' else '') + '<br />'
             if (len(args) == 1):
-                # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID or typeID
+                # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID
                 def getName(pID):
                     try:
                         r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=3)
                         xml = ET.fromstring(r.text)
                         apireply = str(xml[1][0][0].attrib['name'])
                     except:
-                        apireply = str('API Error')
+                        apireply = str('[API Error]')
                     finally:
                         return apireply
                 r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=5)
@@ -301,25 +301,79 @@ class VMBot(MUCJabberBot):
                 args.append('Jita')
             r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, timeout=4)
             if (r.status_code != 200):
-                raise VMBotError('The TypeID-API returned error code ' + str(r.status_code))
+                raise VMBotError('The TypeID-API returned error code <b>' + str(r.status_code)) + '</b>'
             item = r.json()
             if (int(item['typeID']) == 0):
                 raise VMBotError('This item does not exist')
             r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The CharacterID-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+                raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
             r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])},timeout=5)
             if (r.status_code != 200 or r.encoding != 'UTF-8'):
-                raise VMBotError('The marketstat-API returned error code ' + str(r.status_code) + ' or the XML encoding is broken.')
+                raise VMBotError('The marketstat-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
             marketdata = xml[0][0]
             if (int(marketdata[2][0].text) == 0):
                 raise VMBotError('This system does not exist')
             reply = args[0] + ' in ' + args[1] + ':<br />'
-            reply += '<b>Sells</b> Price: <b>{:,}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
-            reply += '<b>Buys</b> Price: <b>{:,}</b> ISK. Volume: {:,} units<br /><br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
+            reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
+            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br /><br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
             reply += 'Spread: {:,.2%}'.format((float(marketdata[1][3].text)-float(marketdata[0][2].text))/float(marketdata[1][3].text)) # (Sell-Buy)/Sell
+        except requests.exceptions.RequestException as e:
+            reply = 'There is a problem with the API server. Can\'t connect to the server'
+        except VMBotError as e:
+            reply = str(e)
+        except:
+            reply = 'An unknown error occured.'
+        finally:
+            return reply
+
+    @botcmd
+    def zBot(self,mess,args):
+        '''<zKB link> - Displays statistics of a killmail'''
+        try:
+            # Resolves typeIDs to their names
+            def getTypeName(pID):
+                try:
+                    r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : pID}, timeout=3)
+                    xml = ET.fromstring(r.text)
+                    apireply = str(xml[1][0][0].attrib['typeName'])
+                except:
+                    apireply = str('[API Error]')
+                finally:
+                    return apireply
+            # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID
+            def getName(pID):
+                    try:
+                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=3)
+                        xml = ET.fromstring(r.text)
+                        apireply = str(xml[1][0][0].attrib['name'])
+                    except:
+                        apireply = str('[API Error]')
+                    finally:
+                        return apireply
+
+            args = args.strip()
+            regex = re.match('https:\/\/zkillboard\.com\/kill\/(\d+)\/?', args)
+            if (regex == None):
+                raise VMBotError('Please provide a link to a zKB Killmail')
+            args = regex.group(1)
+            r = requests.get('https://zkillboard.com/api/killID/' + str(args) + '/', headers={'Accept-Encoding' : 'gzip', 'User-Agent' : 'VM JabberBot'}, timeout=6)
+            if (r.status_code != 200 or r.encoding != 'utf-8'):
+                raise VMBotError('The zKB-API returned error code <b>' + str(r.status_code) + '</b> or the encoding is broken.')
+            killdata = r.json()
+            reply = '<b>' + str(killdata[0]['victim']['characterName']) + '</b> got killed while flying a/an <b>' + str(getTypeName(killdata[0]['victim']['shipTypeID'])) + '</b> in <b>' + str(getName(killdata[0]['solarSystemID'])) + '</b> at ' + str(killdata[0]['killTime']) + '<br />'
+            reply += str(killdata[0]['victim']['characterName']) + ' is in corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took {:,} damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
+            reply += 'The total value of the ship was <b>{:,.2f}</b> ISK for {:,} point(s) (<i>{}</i>)<br />'.format(float(killdata[0]['zkb']['totalValue']), int(killdata[0]['zkb']['points']), str(killdata[0]['zkb']['source']))
+            attackerCount = 1
+            for char in killdata[0]['attackers']:
+                if (attackerCount < 6):
+                    reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + ('and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
+                elif (int(char['finalBlow'] == 1)):
+                    reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
+                attackerCount += 1
+            reply = reply[:-6]
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
         except VMBotError as e:
