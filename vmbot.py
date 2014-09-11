@@ -363,15 +363,24 @@ class VMBot(MUCJabberBot):
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The zKB-API returned error code <b>' + str(r.status_code) + '</b> or the encoding is broken.')
             killdata = r.json()
-            reply = '<b>' + str(killdata[0]['victim']['characterName']) + '</b> got killed while flying a/an <b>' + str(getTypeName(killdata[0]['victim']['shipTypeID'])) + '</b> in <b>' + str(getName(killdata[0]['solarSystemID'])) + '</b> at ' + str(killdata[0]['killTime']) + '<br />'
-            reply += str(killdata[0]['victim']['characterName']) + ' is in corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took {:,} damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
-            reply += 'The total value of the ship was <b>{:,.2f}</b> ISK for {:,} point(s) (<i>{}</i>)<br />'.format(float(killdata[0]['zkb']['totalValue']), int(killdata[0]['zkb']['points']), str(killdata[0]['zkb']['source']))
+            reply = '<b>' + (str(killdata[0]['victim']['characterName']) if str(killdata[0]['victim']['characterName']) != '' else (str(killdata[0]['victim']['corporationName']) + '\'s POS')) + '</b> got killed while flying a/an <b>' + str(getTypeName(killdata[0]['victim']['shipTypeID'])) + '</b> in <b>' + str(getName(killdata[0]['solarSystemID'])) + '</b> at ' + str(killdata[0]['killTime']) + '<br />'
+            if (str(killdata[0]['victim']['characterName']) != ''):
+                reply += str(killdata[0]['victim']['characterName']) + ' is in corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took <b>{:,}</b> damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
+            else:
+                reply += 'The POS is from corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took <b>{:,}</b> damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
+            reply += 'The total value of the ship was <b>{:,.2f}</b> ISK for <b>{:,}</b> point(s) (<i>{}</i>)<br />'.format(float(killdata[0]['zkb']['totalValue']), int(killdata[0]['zkb']['points']), str(killdata[0]['zkb']['source']))
             attackerCount = 1
             for char in killdata[0]['attackers']:
                 if (attackerCount < 6):
-                    reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + ('and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
+                    if (str(char['characterName']) != ''):
+                        reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + (' and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
+                    else:
+                        reply += '<b>{}\'s POS</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['corporationName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + (' and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
                 elif (int(char['finalBlow'] == 1)):
-                    reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
+                    if (str(char['characterName']) != ''):
+                        reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
+                    else:
+                        reply += '<b>{}\'s POS</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['corporationName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
                 attackerCount += 1
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
@@ -379,7 +388,7 @@ class VMBot(MUCJabberBot):
         except VMBotError as e:
             reply = str(e)
         except:
-            reply = 'An unknown error occured.\nError Message: ' + str(sys.exc_info()[0])
+            reply = 'An unknown error occured.'
         finally:
             return reply
 
