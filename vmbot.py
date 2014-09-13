@@ -369,16 +369,26 @@ class VMBot(MUCJabberBot):
             else:
                 reply += 'The POS is from corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took <b>{:,}</b> damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
             reply += 'The total value of the ship was <b>{:,.2f}</b> ISK for <b>{:,}</b> point(s) (<i>{}</i>)<br />'.format(float(killdata[0]['zkb']['totalValue']), int(killdata[0]['zkb']['points']), str(killdata[0]['zkb']['source']))
+            attackerShips = []
+            for char in killdata[0]['attackers']:
+                attackerShips.append(char['shipTypeID'])
+            r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : ','.join(map(str, attackerShips))}, timeout=3)
+            if (r.status_code != 200 or r.encoding != 'utf-8'):
+                raise VMBotError('The TypeName-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+            attackerShips = []
+            xml = ET.fromstring(r.text)
+            for row in xml[1][0]:
+                attackerShips.append(row.attrib['typeName'])
             attackerCount = 1
             for char in killdata[0]['attackers']:
-                if (attackerCount < 6):
+                if (attackerCount <= 5):
                     if (str(char['characterName']) != ''):
-                        reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + (' and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
+                        reply += '<b>{}</b> did {:,} damage flying a {} (<i>{:,.2%} of total damage</i>)'.format(str(char['characterName']), int(char['damageDone']), str(attackerShips[attackerCount-1]), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + (' and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
                     else:
                         reply += '<b>{}\'s POS</b> did {:,} damage (<i>{:,.2%} of total damage</i>)'.format(str(char['corporationName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken'])) + (' and scored the <b>final blow</b>' if int(char['finalBlow']) == 1 else '') + '<br />'
                 elif (int(char['finalBlow'] == 1)):
                     if (str(char['characterName']) != ''):
-                        reply += '<b>{}</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
+                        reply += '<b>{}</b> did {:,} damage flying a {} (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['characterName']), int(char['damageDone']), str(attackerShips[attackerCount-1]), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
                     else:
                         reply += '<b>{}\'s POS</b> did {:,} damage (<i>{:,.2%} of total damage</i>) and scored the <b>final blow</b><br />'.format(str(char['corporationName']), int(char['damageDone']), float(char['damageDone'])/int(killdata[0]['victim']['damageTaken']))
                 attackerCount += 1
