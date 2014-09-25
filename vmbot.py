@@ -649,23 +649,21 @@ class VMBot(MUCJabberBot):
 
     @botcmd(hidden=False)
     def rcbl(self, mess, args):
-        '''<pilot name> - Asks the RC API if <pilot name> has an entry in the blacklist. Multiple pilots possible via comma separated list (no spaces around commas).'''
-        try:
-            reply = 'Sorry, something went wrong.'
-            args = args.split(',')
-            result = ''
-            # Remove verify=False as soon as python 2.7.7 hits (exp. May 31, 2014). Needed due to self-signed cert with multiple domains + requests/urllib3
-            # Ref.: https://github.com/kennethreitz/requests/issues/1977 http://legacy.python.org/dev/peps/pep-0466/ http://legacy.python.org/dev/peps/pep-0373/
-            for pilot in args:
-                response = requests.get(''.join([vmc.blurl, vmc.blkey, '/', pilot]), verify=False)
-                print response.json()[0]['output']
-                result += ''.join([pilot, ' is ', response.json()[0]['output'], ' <br />'])
+        '''<name>[, ...] - Asks the RC API if <pilot name> has an entry in the blacklist.'''
+        # Remove verify=False as soon as python 2.7.7 hits (exp. May 31, 2014).
+        # Needed due to self-signed cert with multiple domains + requests/urllib3
+        # Ref.:
+        #     https://github.com/kennethreitz/requests/issues/1977
+        #     http://legacy.python.org/dev/peps/pep-0466/
+        #     http://legacy.python.org/dev/peps/pep-0373/
+        result = []
+        for pilot in [a.strip() for a in args.split(',')]:
+            response = requests.get(''.join([vmc.blurl, vmc.blkey, '/', pilot]), verify=False)
+            result.append('{} is {}'.format(pilot, response.json()[0]['output']))
 
-            reply = result
-        except VMBotError, e:
-            reply = str(e)
-        finally:
-            return reply
+        if len(result) > 1:
+            result.insert(0, '')
+        return '<br />'.join(result)
 
 
     @botcmd(hidden=True)
