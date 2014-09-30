@@ -515,32 +515,25 @@ class VMBot(MUCJabberBot):
         '''[dice count] [sides] - Roll the dice. If no dice count/sides are provided, one dice and six sides will be assumed.'''
         dice = 1
         sides = 6
+        args = args.strip().split()
+        if len(args) > 2:
+                return 'You need to provide none, one or two parameters.'
+
         try:
-            args = args.strip().split()
-            if len(args) > 2:
-                raise VMBotError('You need to provide none, one or two parameters.')
+            dice = int(args[0])
+            sides = int(args[1])
+        except ValueError:
+            return 'You need to provide integer parameters.'
+        except IndexError:
+            pass
 
-            try:
-                dice = int(args[0])
-                sides = int(args[1])
-            except ValueError:
-                raise VMBotError('You need to provide integer parameters.')
-            except IndexError:
-                pass
+        if not 0 <= dice <= 50:
+            return "That's an absurd number of dice, try again"
+        if not 1 <= sides <= 2**8:
+            return "That's an absurd number of sides, try again"
 
-            if dice not in xrange(50):
-                raise VMBotError("That's an absurd number of dice, try again")
-            if sides not in xrange(1, 2 ** 8):
-                raise VMBotError("That's an absurd number of sides, try again")
-
-            result = ''
-            for i in range(dice):
-                result += str([random.randint(1, sides)])
-            reply = 'I rolled {} dice with {} sides each. The result is {}'.format(dice, sides, result)
-        except VMBotError, e:
-            reply = str(e)
-        finally:
-            return reply
+        result = [random.randint(1, sides) for i in xrange(dice)]
+        return 'I rolled {} dice with {} sides each. The result is [{}]'.format(dice, sides, ']['.join(map(str, result)))
 
     @botcmd
     def flipcoin(self, mess, args):
