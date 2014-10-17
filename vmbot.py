@@ -180,7 +180,7 @@ class VMBot(MUCJabberBot):
         except ValueError:
             pass
         try:
-            r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', timeout=3)
+            r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The ServerStatus-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -235,7 +235,7 @@ class VMBot(MUCJabberBot):
             if (len(args) > 10):
                 raise VMBotError('Please limit your search to 10 characters at once')
             reply = ''
-            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, timeout=3)
+            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -247,7 +247,7 @@ class VMBot(MUCJabberBot):
                     reply += 'Character <b>' + character.attrib['name'] + '</b> does not exist<br />'
             if (len(args) == 0):
                 raise VMBotError('None of these character(s) exist')
-            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, timeout=4)
+            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -255,17 +255,7 @@ class VMBot(MUCJabberBot):
                 character = row.attrib
                 reply += str(character['characterName']) + ' is in corporation <b>' + str(character['corporationName']) + '</b>' + ((' in alliance <b>' + str(character['allianceName']) + '</b>') if str(character['allianceName']) != '' else '') + ((' in faction <b>' + str(character['factionName']) + '</b>') if str(character['factionName']) != '' else '') + '<br />'
             if (len(args) == 1):
-                # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID
-                def getName(pID):
-                    try:
-                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=3)
-                        xml = ET.fromstring(r.text)
-                        apireply = str(xml[1][0][0].attrib['name'])
-                    except:
-                        apireply = str('[API Error]')
-                    finally:
-                        return apireply
-                r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, timeout=5)
+                r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=5)
                 if (r.status_code != 200):
                     raise VMBotError('The EVEWho-API returned error code <b>' + str(r.status_code) + '</b>.')
                 evewhoapi = r.json()
@@ -273,11 +263,21 @@ class VMBot(MUCJabberBot):
                     reply += 'Eve Who got no data for this character<br />'
                 else:
                     reply += 'Security status: <b>' + str(evewhoapi['info']['sec_status']) + '</b><br />'
+                    corporations = []
                     for corp in evewhoapi['history'][-10:]:
-                        reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in <b>' + str(getName(str(corp['corporation_id']))) + '</b><br />'
+                        corporations.append(corp['corporation_id'])
+                    corporations = list(set(corporations))
+                    r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : ','.join(map(str, corporations))}, timeout=3)
+                    if (r.status_code != 200 or r.encoding != 'utf-8'):
+                        raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                    xml = ET.fromstring(r.text)
+                    corporations = {}
+                    for corp in xml[1][0]:
+                        corporations[corp.attrib['characterID']] = corp.attrib['name']
+                    for corp in evewhoapi['history'][-10:]:
+                        reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in <b>' + str(corporations[corp['corporation_id']]) + '</b><br />'
                     if (len(evewhoapi['history']) > 10):
-                        characterName = xml[1][0][0].attrib['characterName']
-                        reply += 'The full history is available under http://evewho.com/pilot/' + str(characterName.replace(' ', '+')) + '<br />'
+                        reply += 'The full history is available under http://evewho.com/pilot/' + str(evewhoapi['info']['name'].replace(' ', '+')) + '/<br />'
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server'
@@ -299,17 +299,17 @@ class VMBot(MUCJabberBot):
                 args[0] = '30 Day Pilot\'s License Extension (PLEX)'
             if (len(args) == 1):
                 args.append('Jita')
-            r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, timeout=4)
+            r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
             if (r.status_code != 200):
                 raise VMBotError('The TypeID-API returned error code <b>' + str(r.status_code)) + '</b>'
             item = r.json()
             if (int(item['typeID']) == 0):
                 raise VMBotError('This item does not exist')
-            r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, timeout=3)
+            r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
-            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])},timeout=5)
+            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=5)
             if (r.status_code != 200 or r.encoding != 'UTF-8'):
                 raise VMBotError('The marketstat-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             xml = ET.fromstring(r.text)
@@ -336,7 +336,7 @@ class VMBot(MUCJabberBot):
             # Resolves typeIDs to their names
             def getTypeName(pID):
                 try:
-                    r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : pID}, timeout=3)
+                    r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : pID}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
                     xml = ET.fromstring(r.text)
                     apireply = str(xml[1][0][0].attrib['typeName'])
                 except:
@@ -346,7 +346,7 @@ class VMBot(MUCJabberBot):
             # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID
             def getName(pID):
                     try:
-                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, timeout=3)
+                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
                         xml = ET.fromstring(r.text)
                         apireply = str(xml[1][0][0].attrib['name'])
                     except:
@@ -372,7 +372,7 @@ class VMBot(MUCJabberBot):
             attackerShips = []
             for char in killdata[0]['attackers']:
                 attackerShips.append(char['shipTypeID'])
-            r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : ','.join(map(str, attackerShips))}, timeout=3)
+            r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : ','.join(map(str, attackerShips))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
             if (r.status_code != 200 or r.encoding != 'utf-8'):
                 raise VMBotError('The TypeName-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
             attackerShips = []
@@ -478,8 +478,11 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def pimpsay(self, mess, args):
-        '''Like fishsay but blacker'''
-        return random.choice(self.pimpisms)
+        '''[text] - Like fishsay but blacker'''
+        if (len(args) > 0):
+            return " " + args + " " + random.choice(self.pimpisms)
+        else:
+            return random.choice(self.pimpisms)
 
     @botcmd
     def nicksay(self, mess, args):
