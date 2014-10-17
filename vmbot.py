@@ -480,7 +480,7 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''[text] - Like fishsay but blacker'''
         if (len(args) > 0):
-            return args + " " + random.choice(self.pimpisms)
+            return " " + args + " " + random.choice(self.pimpisms)
         else:
             return random.choice(self.pimpisms)
 
