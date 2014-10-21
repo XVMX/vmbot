@@ -132,7 +132,7 @@ class VMBot(MUCJabberBot):
     pimpisms = ["eabod","why do you hate black people?", "i want a bucket full of money covered rainbows","bundle of sticks"]
     chaseisms = ["would you PLEASE"]
     nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!", "D00d, never go full retart!"]
-    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "arele", "kairk_efraim", "lofac", "jons_squire"]
+    directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "ektony", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
