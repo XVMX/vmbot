@@ -27,6 +27,8 @@ import os
 import signal
 import subprocess
 import json
+import sqlite3
+import calendar
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -180,10 +182,15 @@ class VMBot(MUCJabberBot):
         except ValueError:
             pass
         try:
-            r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-            if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The ServerStatus-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-            xml = ET.fromstring(r.text)
+            cached = self.getCache('https://api.eveonline.com/server/serverstatus.xml.aspx')
+            if (not cached):
+                r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                if (r.status_code != 200 or r.encoding != 'utf-8'):
+                    raise VMBotError('The ServerStatus-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/server/serverstatus.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+            else:
+                xml = ET.fromstring(cached)
             if (xml[1][0].text == 'True'):
                 reply += '\nThe server is online and ' + str(xml[1][1].text) + ' players are playing'
             else:
@@ -203,10 +210,15 @@ class VMBot(MUCJabberBot):
             args = args.strip().split()
             if (len(args) != 2):
                 raise VMBotError('You need to provide exactly 2 parameters: <start system> <destination system>')
-            r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=4)
-            if (r.status_code != 200):
-                raise VMBotError('The API returned error code <b>' + str(r.status_code) + '</b>. System names are case-sensitive. Make sure both systems exist (and are reachable from known space. NO JOVE SPACE).')
-            all_waypoints = r.json()
+            cached = self.getCache('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]))
+            if (not cached):
+                r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=4)
+                if (r.status_code != 200):
+                    raise VMBotError('The API returned error code <b>' + str(r.status_code) + '</b>. System names are case-sensitive. Make sure both systems exist and are reachable from known space.')
+                all_waypoints = r.json()
+                self.setCache('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), doc=str(r.text), expiry=int(time.time()+24*60*60))
+            else:
+                all_waypoints = json.loads(cached)
             if (all_waypoints == []):
                 raise VMBotError('Can\'t calculate a route.')
             jumps = 0
@@ -235,10 +247,15 @@ class VMBot(MUCJabberBot):
             if (len(args) > 10):
                 raise VMBotError('Please limit your search to 10 characters at once')
             reply = ''
-            r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-            if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-            xml = ET.fromstring(r.text)
+            cached = self.getCache('https://api.eveonline.com/eve/CharacterID.xml.aspx', params={'names' : ','.join(map(str, args))})
+            if (not cached):
+                r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                if (r.status_code != 200 or r.encoding != 'utf-8'):
+                    raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/CharacterID.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'names' : ','.join(map(str, args))})
+            else:
+                xml = ET.fromstring(cached)
             args = []
             for character in xml[1][0]:
                 if (int(character.attrib['characterID']) != 0):
@@ -247,10 +264,15 @@ class VMBot(MUCJabberBot):
                     reply += 'Character <b>' + character.attrib['name'] + '</b> does not exist<br />'
             if (len(args) == 0):
                 raise VMBotError('None of these character(s) exist')
-            r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
-            if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-            xml = ET.fromstring(r.text)
+            cached = self.getCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', params={'ids' : ','.join(map(str, args))})
+            if (not cached):
+                r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
+                if (r.status_code != 200 or r.encoding != 'utf-8'):
+                    raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : ','.join(map(str, args))})
+            else:
+                xml = ET.fromstring(cached)
             for row in xml[1][0]:
                 character = row.attrib
                 reply += str(character['characterName']) + ' is in corporation <b>' + str(character['corporationName']) + '</b>' + ((' in alliance <b>' + str(character['allianceName']) + '</b>') if str(character['allianceName']) != '' else '') + ((' in faction <b>' + str(character['factionName']) + '</b>') if str(character['factionName']) != '' else '') + '<br />'
@@ -267,10 +289,15 @@ class VMBot(MUCJabberBot):
                     for corp in evewhoapi['history'][-10:]:
                         corporations.append(corp['corporation_id'])
                     corporations = list(set(corporations))
-                    r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : ','.join(map(str, corporations))}, timeout=3)
-                    if (r.status_code != 200 or r.encoding != 'utf-8'):
-                        raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-                    xml = ET.fromstring(r.text)
+                    cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx', params={'ids' : ','.join(map(str, corporations))})
+                    if (not cached):
+                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : ','.join(map(str, corporations))}, timeout=3)
+                        if (r.status_code != 200 or r.encoding != 'utf-8'):
+                            raise VMBotError('The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                        xml = ET.fromstring(r.text)
+                        self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : ','.join(map(str, corporations))})
+                    else:
+                        xml = ET.fromstring(cached)
                     corporations = {}
                     for corp in xml[1][0]:
                         corporations[corp.attrib['characterID']] = corp.attrib['name']
@@ -299,16 +326,26 @@ class VMBot(MUCJabberBot):
                 args[0] = '30 Day Pilot\'s License Extension (PLEX)'
             if (len(args) == 1):
                 args.append('Jita')
-            r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
-            if (r.status_code != 200):
-                raise VMBotError('The TypeID-API returned error code <b>' + str(r.status_code)) + '</b>'
-            item = r.json()
+            cached = self.getCache('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]})
+            if (not cached):
+                r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
+                if (r.status_code != 200):
+                    raise VMBotError('The TypeID-API returned error code <b>' + str(r.status_code)) + '</b>'
+                item = r.json()
+                self.setCache('https://www.fuzzwork.co.uk/api/typeid.php', doc=str(r.text), expiry=int(time.time()+24*60*60), params={'typename' : args[0]})
+            else:
+                item = json.loads(cached)
             if (int(item['typeID']) == 0):
                 raise VMBotError('This item does not exist')
-            r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-            if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-            xml = ET.fromstring(r.text)
+            cached = self.getCache('https://api.eveonline.com/eve/characterid.xml.aspx', params={'names' : args[1]})
+            if (not cached):
+                r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                if (r.status_code != 200 or r.encoding != 'utf-8'):
+                    raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/characterid.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'names' : args[1]})
+            else:
+                xml = ET.fromstring(cached)
             r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=5)
             if (r.status_code != 200 or r.encoding != 'UTF-8'):
                 raise VMBotError('The marketstat-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
@@ -336,8 +373,13 @@ class VMBot(MUCJabberBot):
             # Resolves typeIDs to their names
             def getTypeName(pID):
                 try:
-                    r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : pID}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-                    xml = ET.fromstring(r.text)
+                    cached = self.getCache('https://api.eveonline.com/eve/TypeName.xml.aspx', params={'ids' : pID})
+                    if (not cached):
+                        r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : pID}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                        xml = ET.fromstring(r.text)
+                        self.setCache('https://api.eveonline.com/eve/TypeName.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : pID})
+                    else:
+                        xml = ET.fromstring(cached)
                     apireply = str(xml[1][0][0].attrib['typeName'])
                 except:
                     apireply = str('[API Error]')
@@ -346,8 +388,13 @@ class VMBot(MUCJabberBot):
             # Resolves IDs to their names; can be used to resolve characterID, agentID, corporationID, allianceID, factionID
             def getName(pID):
                     try:
-                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-                        xml = ET.fromstring(r.text)
+                        cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx', params={'ids' : pID})
+                        if (not cached):
+                            r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : pID}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                            xml = ET.fromstring(r.text)
+                            self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : pID})
+                        else:
+                            xml = ET.fromstring(cached)
                         apireply = str(xml[1][0][0].attrib['name'])
                     except:
                         apireply = str('[API Error]')
@@ -359,10 +406,15 @@ class VMBot(MUCJabberBot):
             if (regex == None):
                 raise VMBotError('Please provide a link to a zKB Killmail')
             args = regex.group(1)
-            r = requests.get('https://zkillboard.com/api/killID/' + str(args) + '/', headers={'Accept-Encoding' : 'gzip', 'User-Agent' : 'VM JabberBot'}, timeout=6)
-            if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The zKB-API returned error code <b>' + str(r.status_code) + '</b> or the encoding is broken.')
-            killdata = r.json()
+            cached = self.getCache('https://zkillboard.com/api/killID/' + str(args) + '/')
+            if (not cached):
+                r = requests.get('https://zkillboard.com/api/killID/' + str(args) + '/', headers={'Accept-Encoding' : 'gzip', 'User-Agent' : 'VM JabberBot'}, timeout=6)
+                if (r.status_code != 200 or r.encoding != 'utf-8'):
+                    raise VMBotError('The zKB-API returned error code <b>' + str(r.status_code) + '</b> or the encoding is broken.')
+                killdata = r.json()
+                self.setCache('https://zkillboard.com/api/killID/' + str(args) + '/', doc=str(r.text), expiry=int(time.time()+60*60))
+            else:
+                killdata = json.loads(cached)
             reply = '<b>' + (str(killdata[0]['victim']['characterName']) if str(killdata[0]['victim']['characterName']) != '' else (str(killdata[0]['victim']['corporationName']) + '\'s POS')) + '</b> got killed while flying a/an <b>' + str(getTypeName(killdata[0]['victim']['shipTypeID'])) + '</b> in <b>' + str(getName(killdata[0]['solarSystemID'])) + '</b> at ' + str(killdata[0]['killTime']) + '<br />'
             if (str(killdata[0]['victim']['characterName']) != ''):
                 reply += str(killdata[0]['victim']['characterName']) + ' is in corporation ' + str(killdata[0]['victim']['corporationName']) + ((' in alliance ' + str(killdata[0]['victim']['allianceName'])) if str(killdata[0]['victim']['allianceName']) != '' else '') + ((' in faction ' + str(killdata[0]['victim']['factionName'])) if str(killdata[0]['victim']['factionName']) != '' else '') + ' and took <b>{:,}</b> damage'.format(int(killdata[0]['victim']['damageTaken'])) + '<br />'
@@ -372,11 +424,16 @@ class VMBot(MUCJabberBot):
             attackerShips = []
             for char in killdata[0]['attackers']:
                 attackerShips.append(char['shipTypeID'])
-            r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : ','.join(map(str, attackerShips))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-            if (r.status_code != 200 or r.encoding != 'utf-8'):
-                raise VMBotError('The TypeName-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+            cached = self.getCache('https://api.eveonline.com/eve/TypeName.xml.aspx', params={'ids' : ','.join(map(str, attackerShips))})
+            if (not cached):
+                r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx', data={'ids' : ','.join(map(str, attackerShips))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                if (r.status_code != 200 or r.encoding != 'utf-8'):
+                    raise VMBotError('The TypeName-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/TypeName.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : ','.join(map(str, attackerShips))})
+            else:
+                xml = ET.fromstring(cached)
             attackerShips = []
-            xml = ET.fromstring(r.text)
             for row in xml[1][0]:
                 attackerShips.append(row.attrib['typeName'])
             attackerCount = 1
@@ -597,6 +654,7 @@ class VMBot(MUCJabberBot):
         if len(args) == 0:
             if self.get_uname_from_mess(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
                 reply = 'afk shower'
+                self.clearCache()
                 self.quit()
             else:
                 reply = 'You are not authorized to reload the bot, please go and DIAF!'
@@ -660,7 +718,6 @@ class VMBot(MUCJabberBot):
         if len(result) > 1:
             result.insert(0, '')
         return '<br />'.join(result)
-
 
     @botcmd(hidden=True)
     # Very rough hack, needs validation and shit
@@ -750,6 +807,78 @@ class VMBot(MUCJabberBot):
 
         return reply
 
+    def getCache(self, path, params=dict()):
+        try:
+            if (type(params) != type(dict()) or type(path) != type(str())):
+                return None
+
+            conn = sqlite3.connect("api.cache")
+            cur = conn.cursor()
+
+            if (len(params) == 0):
+                cur.execute("SELECT response FROM cache WHERE path=:path AND expiry>:expiry;", {"path":path,"expiry":time.time()})
+                res = cur.fetchall()
+                cur.close()
+                conn.close()
+                if (len(res) == 0 or len(res) > 1):
+                    return None
+                return res[0][0]
+
+            paramlist = ""
+            for val in params.values():
+                paramlist += val + "+"
+            params = paramlist[:-1]
+            cur.execute("SELECT response FROM cache WHERE path=:path AND params=:params AND expiry>:expiry;", {"path":path, "params":params, "expiry":int(time.time())})
+            res = cur.fetchall()
+            cur.close()
+            conn.close()
+            if (len(res) == 0 or len(res) > 1):
+                return None
+            return res[0][0]
+        except:
+            return None
+
+    def setCache(self, path, doc, expiry, params=dict()):
+        try:
+            if (type(params) != type(dict()) or type(path) != type(str()) or type(doc) != type(str()) or type(expiry) != type(int())):
+                return False
+            conn = sqlite3.connect("api.cache")
+            cur = conn.cursor()
+            cur.execute("CREATE TABLE IF NOT EXISTS cache (path VARCHAR(255), params VARCHAR(255), response TEXT, expiry INT unsigned);")
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS Query ON cache (path, params);")
+            cur.execute("DELETE FROM cache WHERE expiry<=:expiry;", {"expiry":int(time.time())})
+
+            if (len(params) == 0):
+                cur.execute("INSERT INTO cache VALUES (:path, :params, :response, :expiry);", {"path":path, "params":"", "response":doc, "expiry":expiry})
+                conn.commit()
+                cur.close()
+                conn.close()
+                return True
+
+            # Fix for params (dict) in table
+            paramlist = ""
+            for val in params.values():
+                paramlist += val + "+"
+            params = paramlist[:-1]
+            cur.execute("INSERT INTO cache VALUES (:path, :params, :response, :expiry);", {"path":path, "params":params, "response":doc, "expiry":expiry})
+            conn.commit()
+            cur.close()
+            conn.close()
+            return True
+        except:
+            return False
+
+    def clearCache(self):
+        try:
+            conn = sqlite3.connect("api.cache")
+            cur = conn.cursor()
+            cur.execute("DELETE FROM cache")
+            conn.commit()
+            cur.close()
+            conn.close()
+            return True
+        except:
+            return False
 
 if __name__ == '__main__':
 
