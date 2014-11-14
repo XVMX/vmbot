@@ -136,6 +136,7 @@ class VMBot(MUCJabberBot):
     nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!", "D00d, never go full retart!"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "ektony", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
+    cache_version = 1
 
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
@@ -654,7 +655,6 @@ class VMBot(MUCJabberBot):
         if len(args) == 0:
             if self.get_uname_from_mess(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
                 reply = 'afk shower'
-                self.clearCache()
                 self.quit()
             else:
                 reply = 'You are not authorized to reload the bot, please go and DIAF!'
@@ -844,7 +844,16 @@ class VMBot(MUCJabberBot):
                 return False
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
-            cur.execute("CREATE TABLE IF NOT EXISTS cache (path VARCHAR(255), params VARCHAR(255), response TEXT, expiry INT unsigned);")
+            cur.execute("CREATE TABLE IF NOT EXISTS metadata (type VARCHAR(255) NOT NULL UNIQUE, value INT NOT NULL);")
+
+            cur.execute("SELECT value FROM metadata WHERE type='version';")
+            res = cur.fetchall()
+            if (len(res) == 1 and res[0][0] != self.cache_version):
+                cur.execute("DELETE FROM cache")
+            conn.commit()
+
+            cur.execute("INSERT OR REPLACE INTO metadata VALUES (:type, :version);", {"type":"version","version":self.cache_version})
+            cur.execute("CREATE TABLE IF NOT EXISTS cache (path VARCHAR(255) NOT NULL, params VARCHAR(255), response TEXT NOT NULL, expiry INT);")
             cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS Query ON cache (path, params);")
             cur.execute("DELETE FROM cache WHERE expiry<=:expiry;", {"expiry":int(time.time())})
 
@@ -861,18 +870,6 @@ class VMBot(MUCJabberBot):
                 paramlist += val + "+"
             params = paramlist[:-1]
             cur.execute("INSERT INTO cache VALUES (:path, :params, :response, :expiry);", {"path":path, "params":params, "response":doc, "expiry":expiry})
-            conn.commit()
-            cur.close()
-            conn.close()
-            return True
-        except:
-            return False
-
-    def clearCache(self):
-        try:
-            conn = sqlite3.connect("api.cache")
-            cur = conn.cursor()
-            cur.execute("DELETE FROM cache")
             conn.commit()
             cur.close()
             conn.close()
