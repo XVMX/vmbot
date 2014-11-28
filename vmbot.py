@@ -197,7 +197,7 @@ class VMBot(MUCJabberBot):
             else:
                 reply += '\nThe server is offline'
         except requests.exceptions.RequestException as e:
-            reply += '\nThere is a problem with the API server. Can\'t access ServerStatus-API'
+            reply += '\nThere is a problem with the API server. Can\'t access ServerStatus-API.'
         except VMBotError as e:
             reply += '\n' + str(e)
         except:
@@ -229,7 +229,7 @@ class VMBot(MUCJabberBot):
                 reply += '<br />' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/<i>' + str(waypoint['from']['region']['name']) + '</i>) -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/<i>' + str(waypoint['to']['region']['name']) + '</i>)'
             reply += '<br /><b>' + str(jumps) + '</b> jumps total'
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
@@ -308,7 +308,7 @@ class VMBot(MUCJabberBot):
                         reply += 'The full history is available under http://evewho.com/pilot/' + str(evewhoapi['info']['name'].replace(' ', '+')) + '/<br />'
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
@@ -359,7 +359,7 @@ class VMBot(MUCJabberBot):
             reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br /><br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
             reply += 'Spread: {:,.2%}'.format((float(marketdata[1][3].text)-float(marketdata[0][2].text))/float(marketdata[1][3].text)) # (Sell-Buy)/Sell
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
@@ -452,7 +452,7 @@ class VMBot(MUCJabberBot):
                 attackerCount += 1
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
