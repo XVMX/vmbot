@@ -619,13 +619,12 @@ class VMBot(MUCJabberBot):
             if srjid not in self.directors:
                 raise VMBotError("You don't have the rights to send broadcasts.")
 
-            footer = '\n\n *** This was a broadcast by {} to {} through VMBot at {} EVE. ***'.format(srjid, vmc.target, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()))
-            broadcast = args[3:] + footer
+            broadcast = args[3:]
 
-            if len(broadcast) > 1024:
-                raise VMBotError("This broadcast is too long; max length is 1024 characters including the automatically generated info line at the end. Please try again with less of a tale.")
+            if len(broadcast) > 10240:
+                raise VMBotError("This broadcast has {} characters and is too long; max length is 10240 characters. Please try again with less of a tale. You could try, y'know, a forum post.".format(len(broadcast)))
 
-            self.sendBcast(broadcast)
+            self.sendBcast(broadcast, srjid + " via VMBot")
             reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
         except VMBotError, e:
             reply = str(e)
@@ -661,7 +660,7 @@ class VMBot(MUCJabberBot):
 
             return reply
 
-    def sendBcast(self, broadcast):
+    def sendBcast(self, broadcast, author):
         result = ''
         messaging = ET.Element("messaging")
         messages = ET.SubElement(messaging, "messages")
@@ -670,6 +669,8 @@ class VMBot(MUCJabberBot):
         id.text = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         target = ET.SubElement(message, "target")
         target.text = vmc.target
+        sender = ET.SubElement(message, "from")
+        sender.text = author
         text = ET.SubElement(message, "text")
         text.text = broadcast
         result = '<?xml version="1.0"?>' + ET.tostring(messaging)
