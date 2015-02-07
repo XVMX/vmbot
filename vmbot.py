@@ -29,6 +29,7 @@ import subprocess
 import json
 import sqlite3
 import calendar
+import base64
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -136,6 +137,8 @@ class VMBot(MUCJabberBot):
     nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!", "D00d, never go full retart!"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "ektony", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
+    access_token = ''
+    token_expiry = 0
     cache_version = 1
 
     def __init__(self, *args, **kwargs):
@@ -316,8 +319,8 @@ class VMBot(MUCJabberBot):
         finally:
             return reply
 
-    @botcmd
-    def price(self, mess, args):
+    #@botcmd
+    def oldprice(self, mess, args):
         '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @) [experimental]'''
         try:
             args = [item.strip() for item in args.strip().split('@')]
@@ -358,6 +361,74 @@ class VMBot(MUCJabberBot):
             reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
             reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br /><br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
             reply += 'Spread: {:,.2%}'.format((float(marketdata[1][3].text)-float(marketdata[0][2].text))/float(marketdata[1][3].text)) # (Sell-Buy)/Sell
+        except requests.exceptions.RequestException as e:
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
+        except VMBotError as e:
+            reply = str(e)
+        except:
+            reply = 'An unknown error occured.'
+        finally:
+            return reply
+
+    @botcmd
+    def price(self, mess, args):
+        '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @, partial names supported)'''
+        try:
+            args = [item.strip() for item in args.strip().split('@')]
+            if (len(args) < 1 or len(args) > 2 or args[0] == ''):
+                raise VMBotError('Please specify one item name and optional one system name: <item name>@[system name]')
+            if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
+                args[0] = '30 Day Pilot\'s License Extension (PLEX)'
+            if (len(args) == 1):
+                args.append('Jita')
+
+            conn = sqlite3.connect('vmbot.sqlite')
+            cur = conn.cursor()
+            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems WHERE solarSystemName LIKE :name;", {'name':'%'+args[1]+'%'})
+            systems = cur.fetchall()
+            cur.execute("SELECT typeID, typeName FROM invTypes WHERE typeName LIKE :name;", {'name':'%'+args[0]+'%'})
+            items = cur.fetchall()
+            cur.close()
+            conn.close()
+
+            if (self.token_expiry < time.time()):
+                self.getAccessToken()
+
+            # Sell
+            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(systems[0][0]) +'/orders/sell/?type=https://crest-tq.eveonline.com/types/'+ str(items[0][0]) +'/', headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
+            if (r.status_code != 200):
+                raise VMBotError('The CREST-API returned error code <b>' + str(r.status_code) + '</b>.')
+            res = r.json()
+
+            sellvolume=0
+            sellprice=9223372036854775807 #max signed 64bit integer
+            for order in res['items']:
+                if (order['location']['name'].startswith(systems[0][2])):
+                    sellvolume+=order['volume']
+                    sellprice=order['price'] if (order['price'] < sellprice) else sellprice
+            # Buy
+            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(systems[0][0]) +'/orders/buy/?type=https://crest-tq.eveonline.com/types/'+ str(items[0][0]) +'/', headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
+            if (r.status_code != 200):
+                raise VMBotError('The CREST-API returned error code <b>' + str(r.status_code) + '</b>.')
+            res = r.json()
+
+            buyvolume = 0
+            buyprice = 0
+            for order in res['items']:
+                if (order['location']['name'].startswith(systems[0][2])):
+                    buyvolume+=order['volume']
+                    buyprice=order['price'] if (order['price'] > buyprice) else buyprice
+
+            reply = items[0][1] + ' in ' + systems[0][2] + ':<br />'
+            reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(sellprice), int(sellvolume))
+            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(buyprice), int(buyvolume))
+            reply += 'Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
+            if (len(items)>1):
+                reply += '<br />Other Item(s) like "' + args[0] + '": ' + items[1][1] + '<br/>'
+                if (len(items)>3):
+                    for item in items[2:4]:
+                        reply += item[1] + '<br/>'
+                reply += 'Total of <b>' + str(len(items)) + ' Item(s)</b> and <b>' + str(len(systems)) + ' System(s)</b> found.'
         except requests.exceptions.RequestException as e:
             reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
@@ -877,6 +948,12 @@ class VMBot(MUCJabberBot):
             return True
         except:
             return False
+
+    def getAccessToken(self):
+        r = requests.post('https://login.eveonline.com/oauth/token', data={'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}, headers={'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'})
+        res = r.json()
+        self.access_token = res['access_token']
+        self.token_expiry = time.time()+res['expires_in']
 
 if __name__ == '__main__':
 

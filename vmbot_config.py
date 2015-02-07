@@ -16,3 +16,8 @@ target = ''
 # RC blacklist API
 blurl = ''
 blkey = ''
+
+# SSO-CREST
+client_id = ''
+client_secret = ''
+refresh_token = ''
