@@ -410,6 +410,9 @@ class VMBot(MUCJabberBot):
                 if (order['location']['name'].startswith(systems[0][2])):
                     sellvolume+=order['volume']
                     sellprice=order['price'] if (order['price'] < sellprice) else sellprice
+            if (sellvolume == 0):
+                sellprice=0
+
             # Buy
             r = requests.get('https://crest-tq.eveonline.com/market/'+ str(systems[0][0]) +'/orders/buy/?type=https://crest-tq.eveonline.com/types/'+ str(items[0][0]) +'/', headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
             if (r.status_code != 200):
