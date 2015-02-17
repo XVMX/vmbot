@@ -386,12 +386,12 @@ class VMBot(MUCJabberBot):
             cur = conn.cursor()
             cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems WHERE solarSystemName LIKE :name;", {'name':'%'+args[1]+'%'})
             systems = cur.fetchall()
-            if (len(systems) = 0):
-                raise VMBotError('Can't find a matching system!')
+            if (len(systems) == 0):
+                raise VMBotError('Can\'t find a matching system!')
             cur.execute("SELECT typeID, typeName FROM invTypes WHERE typeName LIKE :name;", {'name':'%'+args[0]+'%'})
             items = cur.fetchall()
-            if (len(items) = 0):
-                raise VMBotError('Can't find a matching item!')
+            if (len(items) == 0):
+                raise VMBotError('Can\'t find a matching item!')
             cur.close()
             conn.close()
 
