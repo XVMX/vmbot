@@ -428,8 +428,9 @@ class VMBot(MUCJabberBot):
 
             reply = items[0][1] + ' in ' + systems[0][2] + ':<br />'
             reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(sellprice), int(sellvolume))
-            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(buyprice), int(buyvolume))
-            reply += 'Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
+            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units'.format(float(buyprice), int(buyvolume))
+            if (sellprice != 0):
+                reply += '<br />Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
             if (len(items)>1):
                 reply += '<br />Other Item(s) like "' + args[0] + '": ' + items[1][1] + '<br/>'
                 if (len(items)>3):
