@@ -373,78 +373,83 @@ class VMBot(MUCJabberBot):
     @botcmd
     def price(self, mess, args):
         '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @, partial names supported)'''
+        args = [item.strip() for item in args.strip().split('@')]
+        if (len(args) < 1 or len(args) > 2 or args[0] == ''):
+            return 'Please specify one item name and optional one system name: <item name>@[system name]'
+        if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
+            args[0] = '30 Day Pilot\'s License Extension (PLEX)'
+        if (len(args) == 1):
+            args.append('Jita')
+        item = args[0]
+        system = args[1]
+
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
+                    "WHERE solarSystemName LIKE :name;", {'name':'%'+system+'%'})
+        systems = cur.fetchall()
+        if (len(systems) < 1):
+            return 'Can\'t find a matching system!'
+        cur.execute("SELECT typeID, typeName FROM invTypes "
+                    "WHERE typeName LIKE :name;", {'name':'%'+item+'%'})
+        items = cur.fetchall()
+        if (len(items) < 1):
+            return 'Can\'t find a matching item!'
+        cur.close()
+        conn.close()
+
+        item = items[0]
+        system = systems[0]
+
+        if (self.token_expiry < time.time()):
+            self.getAccessToken()
+
+        # Sell
         try:
-            args = [item.strip() for item in args.strip().split('@')]
-            if (len(args) < 1 or len(args) > 2 or args[0] == ''):
-                raise VMBotError('Please specify one item name and optional one system name: <item name>@[system name]')
-            if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
-                args[0] = '30 Day Pilot\'s License Extension (PLEX)'
-            if (len(args) == 1):
-                args.append('Jita')
-
-            conn = sqlite3.connect('staticdata.sqlite')
-            cur = conn.cursor()
-            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems WHERE solarSystemName LIKE :name;", {'name':'%'+args[1]+'%'})
-            systems = cur.fetchall()
-            if (len(systems) == 0):
-                raise VMBotError('Can\'t find a matching system!')
-            cur.execute("SELECT typeID, typeName FROM invTypes WHERE typeName LIKE :name;", {'name':'%'+args[0]+'%'})
-            items = cur.fetchall()
-            if (len(items) == 0):
-                raise VMBotError('Can\'t find a matching item!')
-            cur.close()
-            conn.close()
-
-            if (self.token_expiry < time.time()):
-                self.getAccessToken()
-
-            # Sell
-            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(systems[0][0]) +'/orders/sell/?type=https://crest-tq.eveonline.com/types/'+ str(items[0][0]) +'/', headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
-            if (r.status_code != 200):
-                raise VMBotError('The CREST-API returned error code <b>' + str(r.status_code) + '</b>.')
-            res = r.json()
-
-            sellvolume=0
-            sellprice=9223372036854775807 #max signed 64bit integer
-            for order in res['items']:
-                if (order['location']['name'].startswith(systems[0][2])):
-                    sellvolume+=order['volume']
-                    sellprice=order['price'] if (order['price'] < sellprice) else sellprice
-            if (sellvolume == 0):
-                sellprice=0
-
-            # Buy
-            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(systems[0][0]) +'/orders/buy/?type=https://crest-tq.eveonline.com/types/'+ str(items[0][0]) +'/', headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
-            if (r.status_code != 200):
-                raise VMBotError('The CREST-API returned error code <b>' + str(r.status_code) + '</b>.')
-            res = r.json()
-
-            buyvolume = 0
-            buyprice = 0
-            for order in res['items']:
-                if (order['location']['name'].startswith(systems[0][2])):
-                    buyvolume+=order['volume']
-                    buyprice=order['price'] if (order['price'] > buyprice) else buyprice
-
-            reply = items[0][1] + ' in ' + systems[0][2] + ':<br />'
-            reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(sellprice), int(sellvolume))
-            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units'.format(float(buyprice), int(buyvolume))
-            if (sellprice != 0):
-                reply += '<br />Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
-            if (len(items)>1):
-                reply += '<br />Other Item(s) like "' + args[0] + '": ' + items[1][1] + '<br/>'
-                if (len(items)>3):
-                    for item in items[2:4]:
-                        reply += item[1] + '<br/>'
-                reply += 'Total of <b>' + str(len(items)) + ' Item(s)</b> and <b>' + str(len(systems)) + ' System(s)</b> found.'
+            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(system[0]) +'/orders/sell/'
+                             '?type=https://crest-tq.eveonline.com/types/'+ str(item[0]) +'/',
+                             headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server.'
-        except VMBotError as e:
-            reply = str(e)
-        except:
-            reply = 'An unknown error occured.'
-        finally:
-            return reply
+            return 'There is a problem with the API server. Can\'t connect to the server.<br />' + str(e)
+        if (r.status_code != 200):
+            return 'The CREST-API returned error code <b>' + str(r.status_code) + '</b>.'
+        res = r.json()
+
+        sellvolume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        try:
+            sellprice = min([order['price'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        except ValueError:
+            sellprice = 0
+
+        # Buy
+        try:
+            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(system[0]) +'/orders/buy/'
+                             '?type=https://crest-tq.eveonline.com/types/'+ str(item[0]) +'/',
+                             headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
+        except requests.exceptions.RequestException as e:
+            return 'There is a problem with the API server. Can\'t connect to the server.<br />' + str(e)
+        if (r.status_code != 200):
+            return 'The CREST-API returned error code <b>' + str(r.status_code) + '</b>.'
+        res = r.json()
+
+        buyvolume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        try:
+            buyprice = max([order['price'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        except ValueError:
+            buyprice = 0
+
+        reply = item[1] + ' in ' + system[2] + ':<br />'
+        reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(sellprice), int(sellvolume))
+        reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units'.format(float(buyprice), int(buyvolume))
+        if (sellprice != 0):
+            reply += '<br />Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
+        if (len(items)>1):
+            reply += '<br />Other Item(s) like "' + args[0] + '": ' + items[1][1] + '<br/>'
+            if (len(items)>3):
+                for item in items[2:4]:
+                    reply += item[1] + '<br/>'
+            reply += 'Total of <b>' + str(len(items)) + ' Item(s)</b> and <b>' + str(len(systems)) + ' System(s)</b> found.'
+        return reply
 
     @botcmd
     def zbot(self,mess,args):
