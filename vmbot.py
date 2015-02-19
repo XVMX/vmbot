@@ -353,7 +353,8 @@ class VMBot(MUCJabberBot):
             return 'Can\'t find a matching system!'
         if (autocompleteItem):
             cur.execute("SELECT typeID, typeName FROM invTypes "
-                        "WHERE typeName LIKE :name;", {'name' : '%'+item+'%'})
+                        "WHERE typeName LIKE :name AND marketGroupID IS NOT NULL "
+                        "AND marketGroupID < 100000;", {'name' : '%'+item+'%'})
         else:
             cur.execute("SELECT typeID, typeName FROM invTypes "
                         "WHERE UPPER(typeName) = UPPER(:name);", {'name' : item})
