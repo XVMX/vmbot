@@ -319,57 +319,6 @@ class VMBot(MUCJabberBot):
         finally:
             return reply
 
-    #@botcmd
-    def oldprice(self, mess, args):
-        '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @) [experimental]'''
-        try:
-            args = [item.strip() for item in args.strip().split('@')]
-            if (len(args) < 1 or len(args) > 2 or args[0] == ''):
-                raise VMBotError('Please specify one item name and optional one system name: <item name>@[system name]')
-            if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
-                args[0] = '30 Day Pilot\'s License Extension (PLEX)'
-            if (len(args) == 1):
-                args.append('Jita')
-            cached = self.getCache('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]})
-            if (not cached):
-                r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
-                if (r.status_code != 200):
-                    raise VMBotError('The TypeID-API returned error code <b>' + str(r.status_code)) + '</b>'
-                item = r.json()
-                self.setCache('https://www.fuzzwork.co.uk/api/typeid.php', doc=str(r.text), expiry=int(time.time()+24*60*60), params={'typename' : args[0]})
-            else:
-                item = json.loads(cached)
-            if (int(item['typeID']) == 0):
-                raise VMBotError('This item does not exist')
-            cached = self.getCache('https://api.eveonline.com/eve/characterid.xml.aspx', params={'names' : args[1]})
-            if (not cached):
-                r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-                if (r.status_code != 200 or r.encoding != 'utf-8'):
-                    raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-                xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/characterid.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'names' : args[1]})
-            else:
-                xml = ET.fromstring(cached)
-            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=5)
-            if (r.status_code != 200 or r.encoding != 'UTF-8'):
-                raise VMBotError('The marketstat-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-            xml = ET.fromstring(r.text)
-            marketdata = xml[0][0]
-            if (int(marketdata[2][0].text) == 0):
-                raise VMBotError('This system does not exist')
-            reply = args[0] + ' in ' + args[1] + ':<br />'
-            reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
-            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br /><br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
-            reply += 'Spread: {:,.2%}'.format((float(marketdata[1][3].text)-float(marketdata[0][2].text))/float(marketdata[1][3].text)) # (Sell-Buy)/Sell
-        except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server.'
-        except VMBotError as e:
-            reply = str(e)
-        except:
-            reply = 'An unknown error occured.'
-        finally:
-            return reply
-
     @botcmd
     def price(self, mess, args):
         '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @, partial names supported)'''
