@@ -321,26 +321,42 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def price(self, mess, args):
-        '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @, partial names supported)'''
+        '''<item name>@[system name] - Displays price of item in Jita or given system (Autocompletion can be disabled by enclosing item/system name in quotes)'''
+        autocompleteItem = True
+        autocompleteSystem = True
         args = [item.strip() for item in args.strip().split('@')]
         if (len(args) < 1 or len(args) > 2 or args[0] == ''):
             return 'Please specify one item name and optional one system name: <item name>@[system name]'
         if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
             args[0] = '30 Day Pilot\'s License Extension (PLEX)'
-        if (len(args) == 1):
+        if (args[0].startswith('"') and args[0].endswith('"')):
+            args[0] = args[0].strip('"')
+            autocompleteItem = False
+        if (len(args) == 1 or args[1] == ''):
             args.append('Jita')
+        if (args[1].startswith('"') and args[1].endswith('"')):
+            args[1] = args[1].strip('"')
+            autocompleteSystem = False
         item = args[0]
         system = args[1]
 
         conn = sqlite3.connect('staticdata.sqlite')
         cur = conn.cursor()
-        cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
-                    "WHERE solarSystemName LIKE :name;", {'name':'%'+system+'%'})
+        if (autocompleteSystem):
+            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
+                        "WHERE solarSystemName LIKE :name;", {'name' : '%'+system+'%'})
+        else:
+            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
+                        "WHERE UPPER(solarSystemName) = UPPER(:name);", {'name' : system})
         systems = cur.fetchall()
         if (len(systems) < 1):
             return 'Can\'t find a matching system!'
-        cur.execute("SELECT typeID, typeName FROM invTypes "
-                    "WHERE typeName LIKE :name;", {'name':'%'+item+'%'})
+        if (autocompleteItem):
+            cur.execute("SELECT typeID, typeName FROM invTypes "
+                        "WHERE typeName LIKE :name;", {'name' : '%'+item+'%'})
+        else:
+            cur.execute("SELECT typeID, typeName FROM invTypes "
+                        "WHERE UPPER(typeName) = UPPER(:name);", {'name' : item})
         items = cur.fetchall()
         if (len(items) < 1):
             return 'Can\'t find a matching item!'
