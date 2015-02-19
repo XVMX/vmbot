@@ -29,6 +29,7 @@ import subprocess
 import json
 import sqlite3
 import calendar
+import base64
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -136,6 +137,8 @@ class VMBot(MUCJabberBot):
     nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!", "D00d, never go full retart!"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "ektony", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
+    access_token = ''
+    token_expiry = 0
     cache_version = 1
 
     def __init__(self, *args, **kwargs):
@@ -197,7 +200,7 @@ class VMBot(MUCJabberBot):
             else:
                 reply += '\nThe server is offline'
         except requests.exceptions.RequestException as e:
-            reply += '\nThere is a problem with the API server. Can\'t access ServerStatus-API'
+            reply += '\nThere is a problem with the API server. Can\'t access ServerStatus-API.'
         except VMBotError as e:
             reply += '\n' + str(e)
         except:
@@ -229,7 +232,7 @@ class VMBot(MUCJabberBot):
                 reply += '<br />' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/<i>' + str(waypoint['from']['region']['name']) + '</i>) -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/<i>' + str(waypoint['to']['region']['name']) + '</i>)'
             reply += '<br /><b>' + str(jumps) + '</b> jumps total'
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
@@ -308,7 +311,7 @@ class VMBot(MUCJabberBot):
                         reply += 'The full history is available under http://evewho.com/pilot/' + str(evewhoapi['info']['name'].replace(' ', '+')) + '/<br />'
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
@@ -318,54 +321,100 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def price(self, mess, args):
-        '''<item name>@[system name] - Displays price of item in Jita or given system (separated by @) [experimental]'''
+        '''<item name>@[system name] - Displays price of item in Jita or given system (Autocompletion can be disabled by enclosing item/system name in quotes)'''
+        autocompleteItem = True
+        autocompleteSystem = True
+        args = [item.strip() for item in args.strip().split('@')]
+        if (len(args) < 1 or len(args) > 2 or args[0] == ''):
+            return 'Please specify one item name and optional one system name: <item name>@[system name]'
+        if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
+            args[0] = '30 Day Pilot\'s License Extension (PLEX)'
+        if (args[0].startswith('"') and args[0].endswith('"')):
+            args[0] = args[0].strip('"')
+            autocompleteItem = False
+        if (len(args) == 1 or args[1] == ''):
+            args.append('Jita')
+        if (args[1].startswith('"') and args[1].endswith('"')):
+            args[1] = args[1].strip('"')
+            autocompleteSystem = False
+        item = args[0]
+        system = args[1]
+
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        if (autocompleteSystem):
+            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
+                        "WHERE solarSystemName LIKE :name;", {'name' : '%'+system+'%'})
+        else:
+            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
+                        "WHERE UPPER(solarSystemName) = UPPER(:name);", {'name' : system})
+        systems = cur.fetchall()
+        if (len(systems) < 1):
+            return 'Can\'t find a matching system!'
+        if (autocompleteItem):
+            cur.execute("SELECT typeID, typeName FROM invTypes "
+                        "WHERE typeName LIKE :name;", {'name' : '%'+item+'%'})
+        else:
+            cur.execute("SELECT typeID, typeName FROM invTypes "
+                        "WHERE UPPER(typeName) = UPPER(:name);", {'name' : item})
+        items = cur.fetchall()
+        if (len(items) < 1):
+            return 'Can\'t find a matching item!'
+        cur.close()
+        conn.close()
+
+        item = items[0]
+        system = systems[0]
+
+        if (self.token_expiry < time.time()):
+            self.getAccessToken()
+
+        # Sell
         try:
-            args = [item.strip() for item in args.strip().split('@')]
-            if (len(args) < 1 or len(args) > 2 or args[0] == ''):
-                raise VMBotError('Please specify one item name and optional one system name: <item name>@[system name]')
-            if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
-                args[0] = '30 Day Pilot\'s License Extension (PLEX)'
-            if (len(args) == 1):
-                args.append('Jita')
-            cached = self.getCache('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]})
-            if (not cached):
-                r = requests.get('https://www.fuzzwork.co.uk/api/typeid.php', params={'typename' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
-                if (r.status_code != 200):
-                    raise VMBotError('The TypeID-API returned error code <b>' + str(r.status_code)) + '</b>'
-                item = r.json()
-                self.setCache('https://www.fuzzwork.co.uk/api/typeid.php', doc=str(r.text), expiry=int(time.time()+24*60*60), params={'typename' : args[0]})
-            else:
-                item = json.loads(cached)
-            if (int(item['typeID']) == 0):
-                raise VMBotError('This item does not exist')
-            cached = self.getCache('https://api.eveonline.com/eve/characterid.xml.aspx', params={'names' : args[1]})
-            if (not cached):
-                r = requests.post('https://api.eveonline.com/eve/characterid.xml.aspx', data={'names' : args[1]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
-                if (r.status_code != 200 or r.encoding != 'utf-8'):
-                    raise VMBotError('The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-                xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/characterid.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'names' : args[1]})
-            else:
-                xml = ET.fromstring(cached)
-            r = requests.post('http://api.eve-central.com/api/marketstat', data={'typeid' : str(item['typeID']), 'usesystem' : str(xml[1][0][0].attrib['characterID'])}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=5)
-            if (r.status_code != 200 or r.encoding != 'UTF-8'):
-                raise VMBotError('The marketstat-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.')
-            xml = ET.fromstring(r.text)
-            marketdata = xml[0][0]
-            if (int(marketdata[2][0].text) == 0):
-                raise VMBotError('This system does not exist')
-            reply = args[0] + ' in ' + args[1] + ':<br />'
-            reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(marketdata[1][3].text), int(marketdata[1][0].text))
-            reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br /><br />'.format(float(marketdata[0][2].text), int(marketdata[0][0].text))
-            reply += 'Spread: {:,.2%}'.format((float(marketdata[1][3].text)-float(marketdata[0][2].text))/float(marketdata[1][3].text)) # (Sell-Buy)/Sell
+            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(system[0]) +'/orders/sell/'
+                             '?type=https://crest-tq.eveonline.com/types/'+ str(item[0]) +'/',
+                             headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
-        except VMBotError as e:
-            reply = str(e)
-        except:
-            reply = 'An unknown error occured.'
-        finally:
-            return reply
+            return 'There is a problem with the API server. Can\'t connect to the server.<br />' + str(e)
+        if (r.status_code != 200):
+            return 'The CREST-API returned error code <b>' + str(r.status_code) + '</b>.'
+        res = r.json()
+
+        sellvolume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        try:
+            sellprice = min([order['price'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        except ValueError:
+            sellprice = 0
+
+        # Buy
+        try:
+            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(system[0]) +'/orders/buy/'
+                             '?type=https://crest-tq.eveonline.com/types/'+ str(item[0]) +'/',
+                             headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
+        except requests.exceptions.RequestException as e:
+            return 'There is a problem with the API server. Can\'t connect to the server.<br />' + str(e)
+        if (r.status_code != 200):
+            return 'The CREST-API returned error code <b>' + str(r.status_code) + '</b>.'
+        res = r.json()
+
+        buyvolume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        try:
+            buyprice = max([order['price'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        except ValueError:
+            buyprice = 0
+
+        reply = item[1] + ' in ' + system[2] + ':<br />'
+        reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(sellprice), int(sellvolume))
+        reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units'.format(float(buyprice), int(buyvolume))
+        if (sellprice != 0):
+            reply += '<br />Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
+        if (len(items)>1):
+            reply += '<br />Other Item(s) like "' + args[0] + '": ' + items[1][1] + '<br/>'
+            if (len(items)>3):
+                for item in items[2:4]:
+                    reply += item[1] + '<br/>'
+            reply += 'Total of <b>' + str(len(items)) + ' Item(s)</b> and <b>' + str(len(systems)) + ' System(s)</b> found.'
+        return reply
 
     @botcmd
     def zbot(self,mess,args):
@@ -452,7 +501,7 @@ class VMBot(MUCJabberBot):
                 attackerCount += 1
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
-            reply = 'There is a problem with the API server. Can\'t connect to the server'
+            reply = 'There is a problem with the API server. Can\'t connect to the server.'
         except VMBotError as e:
             reply = str(e)
         except:
@@ -877,6 +926,12 @@ class VMBot(MUCJabberBot):
             return True
         except:
             return False
+
+    def getAccessToken(self):
+        r = requests.post('https://login.eveonline.com/oauth/token', data={'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}, headers={'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'})
+        res = r.json()
+        self.access_token = res['access_token']
+        self.token_expiry = time.time()+res['expires_in']
 
 if __name__ == '__main__':
 
