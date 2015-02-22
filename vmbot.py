@@ -596,7 +596,7 @@ class VMBot(MUCJabberBot):
     @botcmd
     def arelesay(self, mess, args):
         '''Like fishsay but more fucked up'''
-        return "https://www.youtube.com/watch?v=" + random.choice(self.pimpisms)
+        return "https://www.youtube.com/watch?v=" + random.choice(self.areleisms)
 
     @botcmd
     def nicksay(self, mess, args):
