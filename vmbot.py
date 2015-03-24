@@ -30,6 +30,7 @@ import json
 import sqlite3
 import calendar
 import base64
+import shlex
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -141,6 +142,8 @@ class VMBot(MUCJabberBot):
     access_token = ''
     token_expiry = 0
     cache_version = 1
+    faq_version = 1
+    max_chat_chars = 1000
 
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
@@ -519,6 +522,223 @@ class VMBot(MUCJabberBot):
         else:
             name = self.get_sender_username(mess)
         return "Hi " + name + "!"
+
+    @botcmd
+    def faq(self, mess, args):
+        '''show <needle> - Show a matching article and it's ID (<needle> is either the ID, a list of keywords ("<keyword 1>[,keyword 2][,keyword 3][...]"), a part of the title or a part of the content)
+        insert "<title>" "<keyword 1>[,keyword 2][,keyword 3][...]" "<text>" - Creates a new article and replies the ID
+        edit <ID> "[keyword 1][,keyword 2][,keyword 3][...]" "[text]" - Replace article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
+        log <ID> - Shows author and history of article with <ID>
+        delete <ID> - Deletes the article with <ID>'''
+        args = shlex.split(args.strip())
+        cmd = args[0].upper()
+        argsCount = len(args)
+        if (cmd == "SHOW" and argsCount == 2):
+            return self.faq_show(mess, args[1])
+        elif (cmd == "INSERT" and argsCount == 4):
+            return self.faq_insert(mess, args[1], args[2], args[3])
+        elif (cmd == "EDIT" and argsCount == 4):
+            return self.faq_edit(mess, args[1], args[2], args[3])
+        elif (cmd == "LOG" and argsCount == 2):
+            return self.faq_log(mess, args[1])
+        elif (cmd == "DELETE" and argsCount == 2):
+            return self.faq_delete(mess, args[1])
+        else:
+            return " faq " + " ".join(map(str, args)) + " is not an accepted command"
+
+    def faq_show(self, mess, needle):
+        def searchKeywords(needles, stack):
+            needleList = [item.strip().upper() for item in needles.strip().split(",")]
+            stackList = [item.strip().upper() for item in stack.strip().split(",")]
+            matches = 0
+            for needle in needleList:
+                matches += len([s for s in stackList if needle in s])
+            return matches
+
+        conn = sqlite3.connect("faq.sqlite")
+        conn.create_function("searchKeywords", 2, searchKeywords)
+        cur = conn.cursor()
+
+        # ID based search
+        try:
+            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `ID` = :id;", {"id":int(needle)})
+        except ValueError:
+            pass
+        res = cur.fetchall()
+        if (len(res) > 0):
+            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
+            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
+            reply += "<b>Keywords</b>: {}".format(res[0][1])
+            if (self.longreply(mess, reply)):
+                return "Sent a PM to you."
+            else:
+                return reply
+
+        # Keyword based search
+        keyList = [item.strip() for item in needle.strip().split(',')]
+        cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE searchKeywords(:keys, `keywords`);", {"keys":",".join(map(str, keyList))})
+        res = cur.fetchall()
+        if (len(res) > 0):
+            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
+            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
+            reply += "<b>Keywords</b>: {}".format(res[0][1])
+            if (len(res) > 1):
+                reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
+                for (idx, article) in enumerate(res[1:5]):
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+            if (self.longreply(mess, reply)):
+                return "Sent a PM to you."
+            else:
+                return reply
+
+        # Title based search
+        try:
+            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `title` LIKE :title;", {"title":"%"+str(needle)+"%"})
+        except ValueError:
+            pass
+        res = cur.fetchall()
+        if (len(res) > 0):
+            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
+            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
+            reply += "<b>Keywords</b>: {}".format(res[0][1])
+            if (len(res) > 1):
+                reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
+                for (idx, article) in enumerate(res[1:5]):
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+            if (self.longreply(mess, reply)):
+                return "Sent a PM to you."
+            else:
+                return reply
+
+        # Content based search
+        try:
+            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM articles WHERE `content` LIKE :content;", {"content":"%"+str(needle)+"%"})
+        except ValueError:
+            pass
+        res = cur.fetchall()
+        if (len(res) > 0):
+            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
+            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
+            reply += "<b>Keywords</b>: {}".format(res[0][1])
+            if (len(res) > 1):
+                reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
+                for (idx, article) in enumerate(res[1:5]):
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+            if (self.longreply(mess, reply)):
+                return "Sent a PM to you."
+            else:
+                return reply
+        return "Error: No matches"
+
+    def faq_insert(self, mess, title, keywords, text):
+        if (self.get_sender_username(mess) not in (self.directors + self.admins)):
+            return "Only directors and admins can insert new entries"
+
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        cur.execute("CREATE TABLE IF NOT EXISTS `metadata` (`type` TEXT NOT NULL UNIQUE, `value` INT NOT NULL);")
+        cur.execute("SELECT `value` FROM `metadata` WHERE `type` = 'version';")
+        res = cur.fetchall()
+        if (len(res) == 1 and res[0][0] != self.cache_version):
+            cur.execute("DELETE FROM `articles`")
+        conn.commit()
+
+        cur.execute("INSERT OR REPLACE INTO `metadata` (`type`, `value`) VALUES (:type, :version);", {"type":"version", "version":self.faq_version})
+        cur.execute("CREATE TABLE IF NOT EXISTS `articles` (`ID` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `keywords` TEXT NOT NULL, "
+                    "`title` TEXT NOT NULL UNIQUE ON CONFLICT ABORT, `content` TEXT NOT NULL, "
+                    "`createdBy` TEXT NOT NULL, `modifiedBy` TEXT NOT NULL);")
+        keyList = [item.strip() for item in keywords.strip().split(',') if item]
+        cur.execute("INSERT INTO `articles` (`keywords`, `title`, `content`, `createdBy`, `modifiedBy`) VALUES (:keys, :title, :content, :author, :history);", 
+                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text), "author":str(self.get_sender_username(mess)), "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
+        conn.commit()
+        return "ID of inserted article: " + str(cur.lastrowid)
+
+    def faq_edit(self, mess, id, keywords, newText):
+        if (len(keywords) == 0 and len(newText) == 0):
+            return "Please provide new text and/or new keywords"
+
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id;", {"id":int(id)});
+        except ValueError:
+            return "Can't parse the ID"
+        res = cur.fetchall()
+        if (len(res) == 0):
+            return "Error: No match"
+
+        owner = res[0][0]
+        sentBy = self.get_sender_username(mess)
+        history = res[0][1] + ",{} {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sentBy)
+        keyList = [item.strip() for item in keywords.strip().split(',') if item]
+        if (sentBy == owner or sentBy in (self.directors + self.admins)):
+            try:
+                cur.execute("UPDATE `articles` SET `modifiedBy` = :hist, " + ("`content` = :text" if (len(newText)) else "") +
+                            (", " if (len(newText) and len(keyList)) else "") + ("`keywords` = :keys" if (len(keyList)) else "") +
+                            " WHERE `ID` = :id;", {"id":int(id), "text":str(newText), "keys":",".join(map(str, keyList)), "hist":history})
+            except:
+                return "Edit failed"
+            conn.commit()
+            return "Article with ID {} edited".format(id)
+        else:
+            return "Only {}, directors and admins can edit this entry".format(owner)
+
+    def faq_log(self, mess, id):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT `title`, `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id;", {"id":int(id)})
+        except ValueError:
+            return "Can't parse the ID"
+        res = cur.fetchall()
+        if (len(res) == 0):
+            return "Error: No match"
+
+        title = res[0][0]
+        author = res[0][1]
+        editorList = [item.strip() for item in res[0][2].strip().split(",")]
+        reply = "Article '{}' was created by {}<br />".format(title, author)
+        reply += "History: 1) {}".format(editorList[0])
+        for (idx, editorLog) in enumerate(editorList[1:]):
+            reply += "<br/>{}) {}".format(idx+2, editorLog)
+        if (self.longreply(mess, reply)):
+            return "Sent a PM to you."
+        else:
+            return reply
+
+    def faq_delete(self, mess, id):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id;", {"id":int(id)});
+        except ValueError:
+            return "Can't parse the ID"
+        res = cur.fetchall()
+        if (len(res) == 0):
+            return "Error: No match"
+
+        owner = res[0][0]
+        sentBy = self.get_sender_username(mess)
+        if (sentBy == owner or sentBy in (self.directors + self.admins)):
+            try:
+                cur.execute("DELETE FROM `articles` WHERE `ID` = :id;", {"id":id})
+            except:
+                return "Deletion failed"
+            conn.commit()
+            return "Article with ID {} deleted".format(id)
+        else:
+            return "Only {}, directors and admins can delete this entry".format(owner)
+
+    def longreply(self, mess, text):
+        if (len(text) > self.max_chat_chars):
+            self.send(self.get_sender_username(mess) + '@' + vmc.username.split('@')[1], text)
+            return True
+        else:
+            return False
 
     @botcmd(hidden=True)
     def every(self, mess, args):
