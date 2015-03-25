@@ -143,7 +143,7 @@ class VMBot(MUCJabberBot):
     token_expiry = 0
     cache_version = 1
     faq_version = 1
-    max_chat_chars = 1000
+    max_chat_chars = 2000
 
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
@@ -525,7 +525,7 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def faq(self, mess, args):
-        '''show <needle> - Show a matching article and it's ID (<needle> is either the ID, a list of keywords ("<keyword 1>[,keyword 2][,keyword 3][...]"), a part of the title or a part of the content)
+        '''show "<needle>" "[receiver]" - Show a matching article and it's ID or send it to [receiver] (<needle> is either the ID, a list of keywords ("<keyword 1>[,keyword 2][,keyword 3][...]"), a part of the title or a part of the content)
         insert "<title>" "<keyword 1>[,keyword 2][,keyword 3][...]" "<text>" - Creates a new article and replies the ID
         edit <ID> "[keyword 1][,keyword 2][,keyword 3][...]" "[text]" - Replace article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
         log <ID> - Shows author and history of article with <ID>
@@ -535,6 +535,8 @@ class VMBot(MUCJabberBot):
         argsCount = len(args)
         if (cmd == "SHOW" and argsCount == 2):
             return self.faq_show(mess, args[1])
+        elif (cmd == "SHOW" and argsCount == 3):
+            return self.faq_show(mess, args[1], args[2])
         elif (cmd == "INDEX" and argsCount == 1):
             return self.faq_index(mess)
         elif (cmd == "INSERT" and argsCount == 4):
@@ -548,7 +550,7 @@ class VMBot(MUCJabberBot):
         else:
             return " faq " + " ".join(map(str, args)) + " is not an accepted command"
 
-    def faq_show(self, mess, needle):
+    def faq_show(self, mess, needle, receiver = None):
         def searchKeywords(needles, stack):
             needleList = [item.strip().upper() for item in needles.strip().split(",")]
             stackList = [item.strip().upper() for item in stack.strip().split(",")]
@@ -567,58 +569,30 @@ class VMBot(MUCJabberBot):
         except ValueError:
             pass
         res = cur.fetchall()
-        if (len(res) > 0):
-            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
-            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
-            reply += "<b>Keywords</b>: {}".format(res[0][1])
-            if (self.longreply(mess, reply)):
-                return "Sent a PM to you."
-            else:
-                return reply
 
         # Keyword based search
-        keyList = [item.strip() for item in needle.strip().split(',')]
-        cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE searchKeywords(:keys, `keywords`);", {"keys":",".join(map(str, keyList))})
-        res = cur.fetchall()
-        if (len(res) > 0):
-            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
-            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
-            reply += "<b>Keywords</b>: {}".format(res[0][1])
-            if (len(res) > 1):
-                reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
-                for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
-            if (self.longreply(mess, reply)):
-                return "Sent a PM to you."
-            else:
-                return reply
+        if (not len(res)):
+            keyList = [item.strip() for item in needle.strip().split(',')]
+            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE searchKeywords(:keys, `keywords`);", {"keys":",".join(map(str, keyList))})
+            res = cur.fetchall()
 
         # Title based search
-        try:
-            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `title` LIKE :title;", {"title":"%"+str(needle)+"%"})
-        except ValueError:
-            pass
-        res = cur.fetchall()
-        if (len(res) > 0):
-            reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
-            reply += str(res[0][3]).replace("\n","<br />") + "<br />"
-            reply += "<b>Keywords</b>: {}".format(res[0][1])
-            if (len(res) > 1):
-                reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
-                for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
-            if (self.longreply(mess, reply)):
-                return "Sent a PM to you."
-            else:
-                return reply
+        if (not len(res)):
+            try:
+                cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `title` LIKE :title;", {"title":"%"+str(needle)+"%"})
+            except ValueError:
+                pass
+            res = cur.fetchall()
 
         # Content based search
-        try:
-            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM articles WHERE `content` LIKE :content;", {"content":"%"+str(needle)+"%"})
-        except ValueError:
-            pass
-        res = cur.fetchall()
-        if (len(res) > 0):
+        if (not len(res)):
+            try:
+                cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM articles WHERE `content` LIKE :content;", {"content":"%"+str(needle)+"%"})
+            except ValueError:
+                pass
+            res = cur.fetchall()
+
+        if (len(res)):
             reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
             reply += str(res[0][3]).replace("\n","<br />") + "<br />"
             reply += "<b>Keywords</b>: {}".format(res[0][1])
@@ -626,11 +600,17 @@ class VMBot(MUCJabberBot):
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
                     reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
+            if (receiver):
+                if (self.longreply(mess, reply, receiver)):
+                    return "Sent a PM to {}.".format(receiver)
+                else:
+                    return " {}: ".format(receiver) + reply
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
                 return reply
-        return "Error: No matches"
+        else:
+            return "Error: No matches"
 
     def faq_index(self, mess):
         conn = sqlite3.connect("faq.sqlite")
@@ -748,8 +728,11 @@ class VMBot(MUCJabberBot):
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
 
-    def longreply(self, mess, text, forcePM = False):
-        if (len(text) > self.max_chat_chars or forcePM):
+    def longreply(self, mess, text, forcePM = False, receiver = None):
+        if ((len(text) > self.max_chat_chars or forcePM) and receiver):
+            self.send(str(receiver) + '@' + vmc.username.split('@')[1], text)
+            return True
+        elif (len(text) > self.max_chat_chars or forcePM):
             self.send(self.get_uname_from_mess(mess) + '@' + vmc.username.split('@')[1], text)
             return True
         else:
