@@ -665,7 +665,7 @@ class VMBot(MUCJabberBot):
                     "`createdBy` TEXT NOT NULL, `modifiedBy` TEXT NOT NULL);")
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
         cur.execute("INSERT INTO `articles` (`keywords`, `title`, `content`, `createdBy`, `modifiedBy`) VALUES (:keys, :title, :content, :author, :history);", 
-                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text), "author":str(self.get_sender_username(mess)), "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
+                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text).replace("&", "&amp;"), "author":str(self.get_sender_username(mess)), "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
         conn.commit()
         return "ID of inserted article: " + str(cur.lastrowid)
 
@@ -690,9 +690,9 @@ class VMBot(MUCJabberBot):
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
         if (sentBy == owner or sentBy in (self.directors + self.admins)):
             try:
-                cur.execute("UPDATE `articles` SET `modifiedBy` = :hist, " + ("`content` = :text" if (len(newText)) else "") +
+                cur.execute("UPDATE `articles` SET `modifiedBy` = :hist, " + ("`content` = :content" if (len(newText)) else "") +
                             (", " if (len(newText) and len(keyList)) else "") + ("`keywords` = :keys" if (len(keyList)) else "") +
-                            " WHERE `ID` = :id;", {"id":int(id), "text":str(newText), "keys":",".join(map(str, keyList)), "hist":history})
+                            " WHERE `ID` = :id;", {"id":int(id), "content":str(newText).replace("&", "&amp;"), "keys":",".join(map(str, keyList)), "hist":history})
             except:
                 return "Edit failed"
             conn.commit()
