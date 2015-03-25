@@ -601,7 +601,7 @@ class VMBot(MUCJabberBot):
                 for (idx, article) in enumerate(res[1:5]):
                     reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
             if (receiver):
-                if (self.longreply(mess, reply, receiver)):
+                if (self.longreply(mess, reply, receiver = receiver)):
                     return "Sent a PM to {}.".format(receiver)
                 else:
                     return " {}: ".format(receiver) + reply
