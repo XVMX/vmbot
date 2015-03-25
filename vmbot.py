@@ -535,6 +535,8 @@ class VMBot(MUCJabberBot):
         argsCount = len(args)
         if (cmd == "SHOW" and argsCount == 2):
             return self.faq_show(mess, args[1])
+        elif (cmd == "INDEX" and argsCount == 1):
+            return self.faq_index(mess)
         elif (cmd == "INSERT" and argsCount == 4):
             return self.faq_insert(mess, args[1], args[2], args[3])
         elif (cmd == "EDIT" and argsCount == 4):
@@ -604,7 +606,7 @@ class VMBot(MUCJabberBot):
             if (len(res) > 1):
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
@@ -623,15 +625,28 @@ class VMBot(MUCJabberBot):
             if (len(res) > 1):
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
                 return reply
         return "Error: No matches"
 
+    def faq_index(self, mess):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        cur.execute("SELECT `ID`, `title` FROM `articles`")
+        res = cur.fetchall()
+
+        reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
+        for (idx, article) in enumerate(res[1:]):
+            reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+2, article[1], article[0])
+        self.longreply(mess, reply, True)
+        return "Sent a PM to you."
+
     def faq_insert(self, mess, title, keywords, text):
-        if (self.get_sender_username(mess) not in (self.directors + self.admins)):
+        if (self.get_uname_from_mess(mess) not in (self.directors + self.admins)):
             return "Only directors and admins can insert new entries"
 
         conn = sqlite3.connect("faq.sqlite")
@@ -650,7 +665,7 @@ class VMBot(MUCJabberBot):
                     "`createdBy` TEXT NOT NULL, `modifiedBy` TEXT NOT NULL);")
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
         cur.execute("INSERT INTO `articles` (`keywords`, `title`, `content`, `createdBy`, `modifiedBy`) VALUES (:keys, :title, :content, :author, :history);", 
-                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text), "author":str(self.get_sender_username(mess)), "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
+                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text).replace("&", "&amp;"), "author":str(self.get_sender_username(mess)), "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
         conn.commit()
         return "ID of inserted article: " + str(cur.lastrowid)
 
@@ -670,14 +685,14 @@ class VMBot(MUCJabberBot):
             return "Error: No match"
 
         owner = res[0][0]
-        sentBy = self.get_sender_username(mess)
+        sentBy = self.get_uname_from_mess(mess)
         history = res[0][1] + ",{} {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sentBy)
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
         if (sentBy == owner or sentBy in (self.directors + self.admins)):
             try:
-                cur.execute("UPDATE `articles` SET `modifiedBy` = :hist, " + ("`content` = :text" if (len(newText)) else "") +
+                cur.execute("UPDATE `articles` SET `modifiedBy` = :hist, " + ("`content` = :content" if (len(newText)) else "") +
                             (", " if (len(newText) and len(keyList)) else "") + ("`keywords` = :keys" if (len(keyList)) else "") +
-                            " WHERE `ID` = :id;", {"id":int(id), "text":str(newText), "keys":",".join(map(str, keyList)), "hist":history})
+                            " WHERE `ID` = :id;", {"id":int(id), "content":str(newText).replace("&", "&amp;"), "keys":",".join(map(str, keyList)), "hist":history})
             except:
                 return "Edit failed"
             conn.commit()
@@ -722,7 +737,7 @@ class VMBot(MUCJabberBot):
             return "Error: No match"
 
         owner = res[0][0]
-        sentBy = self.get_sender_username(mess)
+        sentBy = self.get_uname_from_mess(mess)
         if (sentBy == owner or sentBy in (self.directors + self.admins)):
             try:
                 cur.execute("DELETE FROM `articles` WHERE `ID` = :id;", {"id":id})
@@ -733,9 +748,9 @@ class VMBot(MUCJabberBot):
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
 
-    def longreply(self, mess, text):
-        if (len(text) > self.max_chat_chars):
-            self.send(self.get_sender_username(mess) + '@' + vmc.username.split('@')[1], text)
+    def longreply(self, mess, text, forcePM = False):
+        if (len(text) > self.max_chat_chars or forcePM):
+            self.send(self.get_uname_from_mess(mess) + '@' + vmc.username.split('@')[1], text)
             return True
         else:
             return False
