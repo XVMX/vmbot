@@ -604,7 +604,7 @@ class VMBot(MUCJabberBot):
             if (len(res) > 1):
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
@@ -623,7 +623,7 @@ class VMBot(MUCJabberBot):
             if (len(res) > 1):
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[1], article[0])
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
