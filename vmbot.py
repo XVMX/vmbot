@@ -143,7 +143,7 @@ class VMBot(MUCJabberBot):
     token_expiry = 0
     cache_version = 1
     faq_version = 1
-    max_chat_chars = 1000
+    max_chat_chars = 2000
 
     def __init__(self, *args, **kwargs):
         # initialize jabberbot
