@@ -535,6 +535,8 @@ class VMBot(MUCJabberBot):
         argsCount = len(args)
         if (cmd == "SHOW" and argsCount == 2):
             return self.faq_show(mess, args[1])
+        elif (cmd == "INDEX" and argsCount == 1):
+            return self.faq_index(mess)
         elif (cmd == "INSERT" and argsCount == 4):
             return self.faq_insert(mess, args[1], args[2], args[3])
         elif (cmd == "EDIT" and argsCount == 4):
@@ -629,6 +631,19 @@ class VMBot(MUCJabberBot):
             else:
                 return reply
         return "Error: No matches"
+
+    def faq_index(self, mess):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        cur.execute("SELECT `ID`, `title` FROM `articles`")
+        res = cur.fetchall()
+
+        reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
+        for (idx, article) in enumerate(res[1:]):
+            reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+2, article[1], article[0])
+        self.longreply(mess, reply, True)
+        return "Sent a PM to you."
 
     def faq_insert(self, mess, title, keywords, text):
         if (self.get_sender_username(mess) not in (self.directors + self.admins)):
@@ -733,9 +748,9 @@ class VMBot(MUCJabberBot):
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
 
-    def longreply(self, mess, text):
-        if (len(text) > self.max_chat_chars):
-            self.send(self.get_sender_username(mess) + '@' + vmc.username.split('@')[1], text)
+    def longreply(self, mess, text, forcePM = False):
+        if (len(text) > self.max_chat_chars or forcePM):
+            self.send(self.get_uname_from_mess(mess) + '@' + vmc.username.split('@')[1], text)
             return True
         else:
             return False
