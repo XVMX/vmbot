@@ -646,7 +646,7 @@ class VMBot(MUCJabberBot):
         return "Sent a PM to you."
 
     def faq_insert(self, mess, title, keywords, text):
-        if (self.get_sender_username(mess) not in (self.directors + self.admins)):
+        if (self.get_uname_from_mess(mess) not in (self.directors + self.admins)):
             return "Only directors and admins can insert new entries"
 
         conn = sqlite3.connect("faq.sqlite")
@@ -685,7 +685,7 @@ class VMBot(MUCJabberBot):
             return "Error: No match"
 
         owner = res[0][0]
-        sentBy = self.get_sender_username(mess)
+        sentBy = self.get_uname_from_mess(mess)
         history = res[0][1] + ",{} {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sentBy)
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
         if (sentBy == owner or sentBy in (self.directors + self.admins)):
@@ -737,7 +737,7 @@ class VMBot(MUCJabberBot):
             return "Error: No match"
 
         owner = res[0][0]
-        sentBy = self.get_sender_username(mess)
+        sentBy = self.get_uname_from_mess(mess)
         if (sentBy == owner or sentBy in (self.directors + self.admins)):
             try:
                 cur.execute("DELETE FROM `articles` WHERE `ID` = :id;", {"id":id})
