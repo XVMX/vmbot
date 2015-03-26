@@ -651,7 +651,7 @@ class VMBot(MUCJabberBot):
         cur.execute("SELECT `value` FROM `metadata` WHERE `type` = 'version';")
         res = cur.fetchall()
         if (len(res) == 1 and res[0][0] != self.faq_version):
-            cur.execute("DROP TABLE `articles`")
+            cur.execute("DROP TABLE `articles`;")
         conn.commit()
 
         cur.execute("INSERT OR REPLACE INTO `metadata` (`type`, `value`) VALUES (:type, :version);",
