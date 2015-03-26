@@ -618,7 +618,7 @@ class VMBot(MUCJabberBot):
                 if (self.longreply(mess, reply, receiver = receiver)):
                     return "Sent a PM to {}.".format(receiver)
                 else:
-                    return " {}: ".format(receiver) + reply
+                    return "&#8203;{}: {}".format(receiver, reply)
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
@@ -890,7 +890,7 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''[text] - Like fishsay but blacker'''
         if (len(args) > 0):
-            return " " + args + " " + random.choice(self.pimpisms)
+            return "&#8203;{} {}".format(args, random.choice(self.pimpisms))
         else:
             return random.choice(self.pimpisms)
     
