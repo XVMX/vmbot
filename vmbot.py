@@ -574,6 +574,8 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(needle)})
         except ValueError:
             pass
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
 
         # Keyword based search
@@ -625,7 +627,10 @@ class VMBot(MUCJabberBot):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
-        cur.execute("SELECT `ID`, `title` FROM `articles`" + (" WHERE NOT `hidden`" if (not showHidden) else "") + ";")
+        try:
+            cur.execute("SELECT `ID`, `title` FROM `articles`" + (" WHERE NOT `hidden`" if (not showHidden) else "") + ";")
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
 
         reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
@@ -677,6 +682,8 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)});
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
             return "Error: No match"
@@ -705,6 +712,8 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT `title`, `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)})
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
             return "Error: No articles"
@@ -729,6 +738,8 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)});
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
             return "Error: No match"
@@ -753,6 +764,8 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id AND `hidden`;", {"id":int(id)});
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
             return "Error: No match"
