@@ -618,6 +618,7 @@ class VMBot(MUCJabberBot):
                 if (self.longreply(mess, reply, receiver = receiver)):
                     return "Sent a PM to {}.".format(receiver)
                 else:
+                    # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
                     return "&#8203;{}: {}".format(receiver, reply)
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
@@ -890,6 +891,7 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''[text] - Like fishsay but blacker'''
         if (len(args) > 0):
+            # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
             return "&#8203;{} {}".format(args, random.choice(self.pimpisms))
         else:
             return random.choice(self.pimpisms)
