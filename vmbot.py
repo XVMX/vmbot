@@ -892,7 +892,7 @@ class VMBot(MUCJabberBot):
         '''[text] - Like fishsay but blacker'''
         if (len(args) > 0):
             # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
-            return "&#8203;{} {}".format(args, random.choice(self.pimpisms))
+            return "<span>&#8203;</span>{} {}".format(args, random.choice(self.pimpisms))
         else:
             return random.choice(self.pimpisms)
     
