@@ -636,7 +636,7 @@ class VMBot(MUCJabberBot):
         cur.execute("SELECT `value` FROM `metadata` WHERE `type` = 'version';")
         res = cur.fetchall()
         if (len(res) == 1 and res[0][0] != self.cache_version):
-            cur.execute("DELETE FROM `articles`")
+            cur.execute("DROP TABLE `articles`")
         conn.commit()
 
         cur.execute("INSERT OR REPLACE INTO `metadata` (`type`, `value`) VALUES (:type, :version);", {"type":"version", "version":self.faq_version})
@@ -1124,7 +1124,7 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT value FROM metadata WHERE type='version';")
             res = cur.fetchall()
             if (len(res) == 1 and res[0][0] != self.cache_version):
-                cur.execute("DELETE FROM cache")
+                cur.execute("DROP TABLE cache;")
             conn.commit()
 
             cur.execute("INSERT OR REPLACE INTO metadata VALUES (:type, :version);", {"type":"version","version":self.cache_version})
