@@ -529,6 +529,7 @@ class VMBot(MUCJabberBot):
         insert "<title>" "<keyword 1>[,keyword 2][,keyword 3][...]" "<text>" - Creates a new article and replies the ID
         index [show hidden] - PMs a list of all entries (including deleted ones if [show hidden] is set)
         edit <ID> "[keyword 1][,keyword 2][,keyword 3][...]" "[text]" - Replaces article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
+        chown <ID> <new Author> - Changes ownership to <new Author> to make the article editable by him
         log <ID> - Shows author and history of article with <ID>
         delete <ID> - Deletes the article with <ID>
         revert <ID> - Reverts deletion of article with <ID>'''
@@ -547,6 +548,8 @@ class VMBot(MUCJabberBot):
             return self.faq_insert(mess, args[1], args[2], args[3])
         elif (cmd == "EDIT" and argsCount == 4):
             return self.faq_edit(mess, args[1], args[2], args[3])
+        elif (cmd == "CHOWN" and argsCount == 3):
+            return self.faq_chown(mess, args[1], args[2])
         elif (cmd == "LOG" and argsCount == 2):
             return self.faq_log(mess, args[1])
         elif (cmd == "DELETE" and argsCount == 2):
@@ -703,6 +706,32 @@ class VMBot(MUCJabberBot):
             return "Article with ID {} edited".format(id)
         else:
             return "Only {}, directors and admins can edit this entry".format(owner)
+
+    def faq_chown(self, mess, id, newOwner):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)});
+        except ValueError:
+            return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
+        res = cur.fetchall()
+        if (len(res) == 0):
+            return "Error: No match"
+
+        owner = res[0][0]
+        sentBy = self.get_uname_from_mess(mess)
+        if (sentBy == owner or sentBy in (self.directors + self.admins)):
+            try:
+                cur.execute("UPDATE `articles` SET `createdBy` = :newAuthor WHERE `ID` = :id;", {"id":int(id), "newAuthor":str(newOwner)})
+            except:
+                return "Chown failed"
+            conn.commit()
+            return "Article with ID {} changed ownership to {}".format(id, newOwner)
+        else:
+            return "Only {}, directors and admins can change ownership of this entry".format(owner)
 
     def faq_log(self, mess, id):
         conn = sqlite3.connect("faq.sqlite")
