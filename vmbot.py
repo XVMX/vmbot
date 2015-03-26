@@ -142,7 +142,7 @@ class VMBot(MUCJabberBot):
     access_token = ''
     token_expiry = 0
     cache_version = 1
-    faq_version = 1
+    faq_version = 2
     max_chat_chars = 2000
 
     def __init__(self, *args, **kwargs):
@@ -525,11 +525,14 @@ class VMBot(MUCJabberBot):
 
     @botcmd
     def faq(self, mess, args):
-        '''show "<needle>" "[receiver]" - Show a matching article and it's ID or send it to [receiver] (<needle> is either the ID, a list of keywords ("<keyword 1>[,keyword 2][,keyword 3][...]"), a part of the title or a part of the content)
+        '''show "<needle>" [receiver] - Shows a matching article and it's ID or sends it to [receiver] (<needle> is either the ID, a list of keywords ("<keyword 1>[,keyword 2][,keyword 3][...]"), a part of the title or a part of the content)
         insert "<title>" "<keyword 1>[,keyword 2][,keyword 3][...]" "<text>" - Creates a new article and replies the ID
-        edit <ID> "[keyword 1][,keyword 2][,keyword 3][...]" "[text]" - Replace article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
+        index [show hidden] - PMs a list of all entries (including deleted ones if [show hidden] is set)
+        edit <ID> "[keyword 1][,keyword 2][,keyword 3][...]" "[text]" - Replaces article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
+        chown <ID> <new Author> - Changes ownership to <new Author> to make the article editable by him
         log <ID> - Shows author and history of article with <ID>
-        delete <ID> - Deletes the article with <ID>'''
+        delete <ID> - Deletes the article with <ID>
+        revert <ID> - Reverts deletion of article with <ID>'''
         args = shlex.split(args.strip())
         cmd = args[0].upper()
         argsCount = len(args)
@@ -539,14 +542,20 @@ class VMBot(MUCJabberBot):
             return self.faq_show(mess, args[1], args[2])
         elif (cmd == "INDEX" and argsCount == 1):
             return self.faq_index(mess)
+        elif (cmd == "INDEX" and argsCount == 2):
+            return self.faq_index(mess, True)
         elif (cmd == "INSERT" and argsCount == 4):
             return self.faq_insert(mess, args[1], args[2], args[3])
         elif (cmd == "EDIT" and argsCount == 4):
             return self.faq_edit(mess, args[1], args[2], args[3])
+        elif (cmd == "CHOWN" and argsCount == 3):
+            return self.faq_chown(mess, args[1], args[2])
         elif (cmd == "LOG" and argsCount == 2):
             return self.faq_log(mess, args[1])
         elif (cmd == "DELETE" and argsCount == 2):
             return self.faq_delete(mess, args[1])
+        elif (cmd == "REVERT" and argsCount == 2):
+            return self.faq_revert(mess, args[1])
         else:
             return " faq " + " ".join(map(str, args)) + " is not an accepted command"
 
@@ -565,21 +574,25 @@ class VMBot(MUCJabberBot):
 
         # ID based search
         try:
-            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `ID` = :id;", {"id":int(needle)})
+            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(needle)})
         except ValueError:
             pass
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
 
         # Keyword based search
         if (not len(res)):
             keyList = [item.strip() for item in needle.strip().split(',')]
-            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE searchKeywords(:keys, `keywords`);", {"keys":",".join(map(str, keyList))})
+            cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE searchKeywords(:keys, `keywords`) AND NOT `hidden`;",
+                        {"keys":",".join(map(str, keyList))})
             res = cur.fetchall()
 
         # Title based search
         if (not len(res)):
             try:
-                cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `title` LIKE :title;", {"title":"%"+str(needle)+"%"})
+                cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM `articles` WHERE `title` LIKE :title AND NOT `hidden`;",
+                            {"title":"%"+str(needle)+"%"})
             except ValueError:
                 pass
             res = cur.fetchall()
@@ -587,7 +600,8 @@ class VMBot(MUCJabberBot):
         # Content based search
         if (not len(res)):
             try:
-                cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM articles WHERE `content` LIKE :content;", {"content":"%"+str(needle)+"%"})
+                cur.execute("SELECT `ID`, `keywords`, `title`, `content` FROM articles WHERE `content` LIKE :content AND NOT `hidden`;",
+                            {"content":"%"+str(needle)+"%"})
             except ValueError:
                 pass
             res = cur.fetchall()
@@ -604,7 +618,8 @@ class VMBot(MUCJabberBot):
                 if (self.longreply(mess, reply, receiver = receiver)):
                     return "Sent a PM to {}.".format(receiver)
                 else:
-                    return " {}: ".format(receiver) + reply
+                    # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
+                    return "&#8203;{}: {}".format(receiver, reply)
             if (self.longreply(mess, reply)):
                 return "Sent a PM to you."
             else:
@@ -612,11 +627,14 @@ class VMBot(MUCJabberBot):
         else:
             return "Error: No matches"
 
-    def faq_index(self, mess):
+    def faq_index(self, mess, showHidden = False):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
-        cur.execute("SELECT `ID`, `title` FROM `articles`")
+        try:
+            cur.execute("SELECT `ID`, `title` FROM `articles`" + (" WHERE NOT `hidden`" if (not showHidden) else "") + ";")
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
 
         reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
@@ -632,20 +650,28 @@ class VMBot(MUCJabberBot):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
-        cur.execute("CREATE TABLE IF NOT EXISTS `metadata` (`type` TEXT NOT NULL UNIQUE, `value` INT NOT NULL);")
+        cur.execute("CREATE TABLE IF NOT EXISTS `metadata` "
+                    "(`type` TEXT NOT NULL UNIQUE, `value` INT NOT NULL);")
         cur.execute("SELECT `value` FROM `metadata` WHERE `type` = 'version';")
         res = cur.fetchall()
-        if (len(res) == 1 and res[0][0] != self.cache_version):
-            cur.execute("DELETE FROM `articles`")
+        if (len(res) == 1 and res[0][0] != self.faq_version):
+            cur.execute("DROP TABLE `articles`;")
         conn.commit()
 
-        cur.execute("INSERT OR REPLACE INTO `metadata` (`type`, `value`) VALUES (:type, :version);", {"type":"version", "version":self.faq_version})
-        cur.execute("CREATE TABLE IF NOT EXISTS `articles` (`ID` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `keywords` TEXT NOT NULL, "
-                    "`title` TEXT NOT NULL UNIQUE ON CONFLICT ABORT, `content` TEXT NOT NULL, "
-                    "`createdBy` TEXT NOT NULL, `modifiedBy` TEXT NOT NULL);")
+        cur.execute("INSERT OR REPLACE INTO `metadata` (`type`, `value`) VALUES (:type, :version);",
+                    {"type":"version", "version":self.faq_version})
+        cur.execute("CREATE TABLE IF NOT EXISTS `articles` ("
+                    "`ID` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    "`keywords` TEXT NOT NULL, "
+                    "`title` TEXT NOT NULL UNIQUE ON CONFLICT ABORT, "
+                    "`content` TEXT NOT NULL, "
+                    "`createdBy` TEXT NOT NULL, "
+                    "`modifiedBy` TEXT NOT NULL, "
+                    "`hidden` INTEGER NOT NULL DEFAULT 0);")
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
         cur.execute("INSERT INTO `articles` (`keywords`, `title`, `content`, `createdBy`, `modifiedBy`) VALUES (:keys, :title, :content, :author, :history);", 
-                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text).replace("&", "&amp;"), "author":str(self.get_sender_username(mess)), "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
+                   {"keys":",".join(map(str, keyList)), "title":str(title), "content":str(text).replace("&", "&amp;"), "author":str(self.get_sender_username(mess)), 
+                   "history":datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + str(self.get_sender_username(mess))})
         conn.commit()
         return "ID of inserted article: " + str(cur.lastrowid)
 
@@ -657,9 +683,11 @@ class VMBot(MUCJabberBot):
         cur = conn.cursor()
 
         try:
-            cur.execute("SELECT `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id;", {"id":int(id)});
+            cur.execute("SELECT `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)});
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
             return "Error: No match"
@@ -680,17 +708,45 @@ class VMBot(MUCJabberBot):
         else:
             return "Only {}, directors and admins can edit this entry".format(owner)
 
+    def faq_chown(self, mess, id, newOwner):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)});
+        except ValueError:
+            return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
+        res = cur.fetchall()
+        if (len(res) == 0):
+            return "Error: No match"
+
+        owner = res[0][0]
+        sentBy = self.get_uname_from_mess(mess)
+        if (sentBy == owner or sentBy in (self.directors + self.admins)):
+            try:
+                cur.execute("UPDATE `articles` SET `createdBy` = :newAuthor WHERE `ID` = :id;", {"id":int(id), "newAuthor":str(newOwner)})
+            except:
+                return "Chown failed"
+            conn.commit()
+            return "Article with ID {} changed ownership to {}".format(id, newOwner)
+        else:
+            return "Only {}, directors and admins can change ownership of this entry".format(owner)
+
     def faq_log(self, mess, id):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
         try:
-            cur.execute("SELECT `title`, `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id;", {"id":int(id)})
+            cur.execute("SELECT `title`, `createdBy`, `modifiedBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)})
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
-            return "Error: No match"
+            return "Error: No articles"
 
         title = res[0][0]
         author = res[0][1]
@@ -709,9 +765,11 @@ class VMBot(MUCJabberBot):
         cur = conn.cursor()
 
         try:
-            cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id;", {"id":int(id)});
+            cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id AND NOT `hidden`;", {"id":int(id)});
         except ValueError:
             return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
         res = cur.fetchall()
         if (len(res) == 0):
             return "Error: No match"
@@ -720,11 +778,37 @@ class VMBot(MUCJabberBot):
         sentBy = self.get_uname_from_mess(mess)
         if (sentBy == owner or sentBy in (self.directors + self.admins)):
             try:
-                cur.execute("DELETE FROM `articles` WHERE `ID` = :id;", {"id":id})
+                cur.execute("UPDATE `articles` SET `hidden` = 1 WHERE `ID` = :id;", {"id":id})
             except:
                 return "Deletion failed"
             conn.commit()
             return "Article with ID {} deleted".format(id)
+        else:
+            return "Only {}, directors and admins can delete this entry".format(owner)
+
+    def faq_revert(self, mess, id):
+        conn = sqlite3.connect("faq.sqlite")
+        cur = conn.cursor()
+
+        try:
+            cur.execute("SELECT `createdBy` FROM `articles` WHERE `ID` = :id AND `hidden`;", {"id":int(id)});
+        except ValueError:
+            return "Can't parse the ID"
+        except sqlite3.OperationalError:
+            return "Error: Data is missing"
+        res = cur.fetchall()
+        if (len(res) == 0):
+            return "Error: No match"
+
+        owner = res[0][0]
+        sentBy = self.get_uname_from_mess(mess)
+        if (sentBy == owner or sentBy in (self.directors + self.admins)):
+            try:
+                cur.execute("UPDATE `articles` SET `hidden` = 0 WHERE `ID` = :id;", {"id":id})
+            except:
+                return "Reversion failed"
+            conn.commit()
+            return "Article with ID {} reverted".format(id)
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
 
@@ -807,7 +891,8 @@ class VMBot(MUCJabberBot):
     def pimpsay(self, mess, args):
         '''[text] - Like fishsay but blacker'''
         if (len(args) > 0):
-            return " " + args + " " + random.choice(self.pimpisms)
+            # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
+            return "&#8203;{} {}".format(args, random.choice(self.pimpisms))
         else:
             return random.choice(self.pimpisms)
     
@@ -1124,7 +1209,7 @@ class VMBot(MUCJabberBot):
             cur.execute("SELECT value FROM metadata WHERE type='version';")
             res = cur.fetchall()
             if (len(res) == 1 and res[0][0] != self.cache_version):
-                cur.execute("DELETE FROM cache")
+                cur.execute("DROP TABLE cache;")
             conn.commit()
 
             cur.execute("INSERT OR REPLACE INTO metadata VALUES (:type, :version);", {"type":"version","version":self.cache_version})
