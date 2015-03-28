@@ -527,7 +527,8 @@ class VMBot(MUCJabberBot):
     def faq(self, mess, args):
         '''show "<needle>" [receiver] - Shows a matching article and it's ID or sends it to [receiver] (<needle> is either the ID, a list of keywords ("<keyword 1>[,keyword 2][,keyword 3][...]"), a part of the title or a part of the content)
         insert "<title>" "<keyword 1>[,keyword 2][,keyword 3][...]" "<text>" - Creates a new article and replies the ID
-        index [show hidden] - PMs a list of all entries (including deleted ones if [show hidden] is set)
+        index - PMs a list of all visible entries
+        index all - PMs a list of all entries (including deleted ones)
         edit <ID> "[keyword 1][,keyword 2][,keyword 3][...]" "[text]" - Replaces article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
         chown <ID> <new Author> - Changes ownership to <new Author> to make the article editable by him
         log <ID> - Shows author and history of article with <ID>
@@ -632,14 +633,14 @@ class VMBot(MUCJabberBot):
         cur = conn.cursor()
 
         try:
-            cur.execute("SELECT `ID`, `title` FROM `articles`" + (" WHERE NOT `hidden`" if (not showHidden) else "") + ";")
+            cur.execute("SELECT `ID`, `title`, `hidden` FROM `articles`" + (" WHERE NOT `hidden`" if (not showHidden) else "") + ";")
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
 
-        reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
+        reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0]) + (" <i>hidden</i>" if (res[0][2]) else "")
         for (idx, article) in enumerate(res[1:]):
-            reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+2, article[1], article[0])
+            reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+2, article[1], article[0]) + (" <i>hidden</i>" if (article[2]) else "")
         self.longreply(mess, reply, True)
         return "Sent a PM to you."
 
