@@ -557,8 +557,9 @@ class VMBot(MUCJabberBot):
             return self.faq_delete(mess, args[1])
         elif (cmd == "REVERT" and argsCount == 2):
             return self.faq_revert(mess, args[1])
+        # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
         else:
-            return " faq " + " ".join(map(str, args)) + " is not an accepted command"
+            return "<span>&#8203;faq " + " ".join(map(str, args)) + " is not an accepted command</span>"
 
     def faq_show(self, mess, needle, receiver = None):
         def searchKeywords(needles, stack):
