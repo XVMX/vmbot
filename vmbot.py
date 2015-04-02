@@ -905,7 +905,7 @@ class VMBot(MUCJabberBot):
     @botcmd
     
     def nicksay(self, mess, args):
-    '''Like fishsay but pubbietasticer'''
+       '''Like fishsay but pubbietasticer'''
        nickrandom=random.choice(self.nickisms)
        if  nickrandom=='randomd00d':
 	   return ('d'+'0'*int(2+random.expovariate(.25)) + 'd!')
