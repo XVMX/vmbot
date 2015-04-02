@@ -135,7 +135,7 @@ class VMBot(MUCJabberBot):
     fishisms = ["~The Python Way!~", "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!", "DIVERGENT ZONES!", "BONUSSCHWEIN! BONUSSCHWEIN!"]
     pimpisms = ["eabod","why do you hate black people?", "i want a bucket full of money covered rainbows","bundle of sticks"]
     chaseisms = ["would you PLEASE"]
-    nickisms = ["D00d!", "But d00d!", "Come on d00d...", "Oh d00d", "D0000000000000000000000000000000d!", "D00d, never go full retart!"]
+    nickisms = ["randomd00d", "But d00d!", "Come on d00d...", "Oh d00d", "D00d, never go full retart!"]
     areleisms = ["5R8At-Qno_o", "MZwXoDyj9Vc", "So9LshyaHd0", "sW4JRSzPJQo", "evCj25UtfLM", "aneUrHBRyhg", "9XHqg7mTizE", "gtM9xD-Ky7E"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "ektony", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
@@ -904,9 +904,14 @@ class VMBot(MUCJabberBot):
         return "https://www.youtube.com/watch?v=" + random.choice(self.areleisms)
 
     @botcmd
+    
     def nicksay(self, mess, args):
-        '''Like fishsay but pubbietasticer'''
-        return random.choice(self.nickisms)
+       '''Like fishsay but pubbietasticer'''
+       nickrandom=random.choice(self.nickisms)
+       if  nickrandom=='randomd00d':
+	   return ('d'+'0'*int(2+random.expovariate(.25)) + 'd!')
+       else:
+	   return nickrandom
 
     @botcmd
     def chasesay(self, mess, args):
