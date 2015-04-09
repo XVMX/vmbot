@@ -10,110 +10,145 @@ import base64
 import vmbot_config as vmc
 import sqlite3
 
-class EveUtils(object):
-    access_token = ''
-    token_expiry = 0
-    cache_version = 1
+class Price(object):
+
+    class PriceError(StandardError):
+        pass
+
+    def getAccessToken(self):
+        self.access_token = ''
+        self.token_expiry = 0
+
+        if self.token_expiry >= time.time():
+            return self.access_token
+
+        assert(vmc.refresh_token)  #FIXME: check on instantiation
+        assert(vmc.client_secret)
+
+        data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
+        headers = {'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'}
+        r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
+
+        res = r.json()
+        try:
+            self.access_token = res['access_token']
+            self.token_expiry = time.time()+res['expires_in']
+        except KeyError:
+            raise self.PriceError('Error: {}: {}'.format(res['error'], res['error_description']))
+        return self.access_token
+
+    def getPriceVolume(self, order, region, system, item):
+        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, order, item)
+        header = {'Authorization' : 'Bearer '+self.getAccessToken(), 'User-Agent' : 'VM JabberBot'}
+        try:
+            r = requests.get(url, headers=header, timeout=5)
+        except requests.exceptions.RequestException as e:
+            raise self.PriceError("Error connecting to CREST servers: " + str(e))
+        if (r.status_code != 200):
+            raise self.PriceError('The CREST-API returned error code <b>{}</b>'.format(r.status_code))
+        res = r.json()
+
+        volume = sum([line['volume'] for line in res['items'] if line['location']['name'].startswith(system)])
+        direction = min if order == 'sell' else max
+        try:
+            price = direction([line['price'] for line in res['items'] if line['location']['name'].startswith(system)])
+        except ValueError:
+            price = 0
+
+        return (volume, price)
+
+
+    def disambiguate(self, given, like, category):
+        if len(like) > 1:
+            reply = '<br />{} like "{}": '.format(category, given)
+            for thing in like[:3]:
+                reply += thing[1] + ', '
+            if len(like) > 3:
+                reply += 'and {} others'.format(len(like)-3)
+            return reply
+        else:
+            return ''
 
     @botcmd
     def price(self, mess, args):
-        '''<item name>@[system name] - Displays price of item in Jita or given system (Autocompletion can be disabled by enclosing item/system name in quotes)'''
-        autocompleteItem = True
-        autocompleteSystem = True
+        '''<item>@[system] - Displays price of item in system, defaulting to Jita
+(Autocompletion can be disabled by enclosing item/system name in quotes)'''
         args = [item.strip() for item in args.strip().split('@')]
-        if (len(args) < 1 or len(args) > 2 or args[0] == ''):
-            return 'Please specify one item name and optional one system name: <item name>@[system name]'
-        if (args[0] in ('plex','Plex','PLEX','Pilot License Extension','Pilot\'s License Extension')):
-            args[0] = '30 Day Pilot\'s License Extension (PLEX)'
-        if (args[0].startswith('"') and args[0].endswith('"')):
-            args[0] = args[0].strip('"')
-            autocompleteItem = False
-        if (len(args) == 1 or args[1] == ''):
-            args.append('Jita')
-        if (args[1].startswith('"') and args[1].endswith('"')):
-            args[1] = args[1].strip('"')
-            autocompleteSystem = False
+        if len(args) < 1 or len(args) > 2 or args[0] == '':
+            return 'Please specify one item name and optional one system name: <item>@[system]'
+
         item = args[0]
-        system = args[1]
+        try:
+            system = args[1]
+        except IndexError:
+            system = 'Jita'
+
+        if item.lower() in ('plex','pilot license extension',"pilot's license extension"):
+            item = "30 Day Pilot's License Extension (PLEX)"
+
+        if item.startswith('"') and item.endswith('"'):
+            item = item.strip('"')
+        else:
+            item = '%'+item+'%'
+
+        if system.startswith('"') and system.endswith('"'):
+            system = system.strip('"')
+        else:
+            system = '%'+system+'%'
 
         conn = sqlite3.connect('staticdata.sqlite')
         cur = conn.cursor()
-        if (autocompleteSystem):
-            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
-                        "WHERE solarSystemName LIKE :name;", {'name' : '%'+system+'%'})
-        else:
-            cur.execute("SELECT regionID, solarSystemID, solarSystemName FROM mapSolarSystems "
-                        "WHERE UPPER(solarSystemName) = UPPER(:name);", {'name' : system})
+        cur.execute('''
+            SELECT regionID, solarSystemName
+                FROM mapSolarSystems
+                WHERE solarSystemName LIKE :name;''',
+            {'name' : system}
+        )
         systems = cur.fetchall()
-        if (len(systems) < 1):
-            return 'Can\'t find a matching system!'
-        if (autocompleteItem):
-            cur.execute("SELECT typeID, typeName FROM invTypes "
-                        "WHERE typeName LIKE :name AND marketGroupID IS NOT NULL "
-                        "AND marketGroupID < 100000;", {'name' : '%'+item+'%'})
-        else:
-            cur.execute("SELECT typeID, typeName FROM invTypes "
-                        "WHERE UPPER(typeName) = UPPER(:name);", {'name' : item})
+        if not systems:
+            return "Can't find a matching system!"
+
+        cur.execute('''
+            SELECT typeID, typeName
+              FROM invTypes
+              WHERE typeName LIKE :name
+                AND marketGroupID IS NOT NULL
+                AND marketGroupID < 100000;''',
+            {'name' : item}
+        )
         items = cur.fetchall()
-        if (len(items) < 1):
-            return 'Can\'t find a matching item!'
+        if not items:
+            return "Can't find a matching item!"
         cur.close()
         conn.close()
 
-        item = items[0]
-        system = systems[0]
+        typeID, typeName = items[0]
+        region, system = systems[0]
 
-        if (self.token_expiry < time.time()):
-            er = self.getAccessToken()
-            if er:
-                return er
-
-        # Sell
         try:
-            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(system[0]) +'/orders/sell/'
-                             '?type=https://crest-tq.eveonline.com/types/'+ str(item[0]) +'/',
-                             headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
-        except requests.exceptions.RequestException as e:
-            return 'There is a problem with the API server. Can\'t connect to the server.<br />' + str(e)
-        if (r.status_code != 200):
-            return 'The CREST-API returned error code <b>' + str(r.status_code) + '</b>.'
-        res = r.json()
+            sellvolume, sellprice = self.getPriceVolume('sell', region, system, typeID)
+            buyvolume, buyprice = self.getPriceVolume('buy', region, system, typeID)
+        except self.PriceError as e:
+            return str(e)
 
-        sellvolume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system[2])])
+        reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, system)
+        reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
+        reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
+        if sellprice != 0:
+            reply += '<br />Spread: {:,.2%}'.format((sellprice-buyprice)/sellprice)
+        else:
+            reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!' #by request from Jack
+
+        reply += self.disambiguate(args[0], items, "Items")
         try:
-            sellprice = min([order['price'] for order in res['items'] if order['location']['name'].startswith(system[2])])
-        except ValueError:
-            sellprice = 0
+            reply += self.disambiguate(args[1], systems, "Systems")
+        except IndexError:
+            pass
 
-        # Buy
-        try:
-            r = requests.get('https://crest-tq.eveonline.com/market/'+ str(system[0]) +'/orders/buy/'
-                             '?type=https://crest-tq.eveonline.com/types/'+ str(item[0]) +'/',
-                             headers={'Authorization' : 'Bearer '+self.access_token, 'User-Agent' : 'VM JabberBot'}, timeout=5)
-        except requests.exceptions.RequestException as e:
-            return 'There is a problem with the API server. Can\'t connect to the server.<br />' + str(e)
-        if (r.status_code != 200):
-            return 'The CREST-API returned error code <b>' + str(r.status_code) + '</b>.'
-        res = r.json()
-
-        buyvolume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system[2])])
-        try:
-            buyprice = max([order['price'] for order in res['items'] if order['location']['name'].startswith(system[2])])
-        except ValueError:
-            buyprice = 0
-
-        reply = item[1] + ' in ' + system[2] + ':<br />'
-        reply += '<b>Sells</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units<br />'.format(float(sellprice), int(sellvolume))
-        reply += '<b>Buys</b> Price: <b>{:,.2f}</b> ISK. Volume: {:,} units'.format(float(buyprice), int(buyvolume))
-        if (sellprice != 0):
-            reply += '<br />Spread: {:,.2%}'.format((float(sellprice)-float(buyprice))/float(sellprice)) # (Sell-Buy)/Sell
-        if (len(items)>1):
-            reply += '<br />Other Item(s) like "' + args[0] + '": ' + items[1][1] + '<br/>'
-            if (len(items)>3):
-                for item in items[2:4]:
-                    reply += item[1] + '<br/>'
-            reply += 'Total of <b>' + str(len(items)) + ' Item(s)</b> and <b>' + str(len(systems)) + ' System(s)</b> found.'
         return reply
+
+class EveUtils(object):
+    cache_version = 1
 
     @botcmd
     def character(self, mess, args):
@@ -463,18 +498,4 @@ class EveUtils(object):
             return True
         except:
             return False
-
-    def getAccessToken(self):
-        data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
-        headers = {'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'}
-        r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
-
-        res = r.json()
-        try:
-            self.access_token = res['access_token']
-            self.token_expiry = time.time()+res['expires_in']
-        except KeyError:
-            #FIXME: raise exception with description
-            return 'Error: {}: {}'.format(res['error'], res['error_description'])
-
 
