@@ -136,7 +136,7 @@ class VMBot(MUCJabberBot):
     pimpisms = ["eabod","why do you hate black people?", "i want a bucket full of money covered rainbows","bundle of sticks"]
     chaseisms = ["would you PLEASE"]
     nickisms = ["randomd00d", "But d00d!", "Come on d00d...", "Oh d00d", "D00d, never go full retart!"]
-    areleisms = ["5R8At-Qno_o", "MZwXoDyj9Vc", "So9LshyaHd0", "sW4JRSzPJQo", "evCj25UtfLM", "aneUrHBRyhg", "9XHqg7mTizE", "gtM9xD-Ky7E"]
+    areleisms = ["PzbjWI3EhyI", "5R8At-Qno_o", "MZwXoDyj9Vc", "So9LshyaHd0", "sW4JRSzPJQo", "UepAzio1eyU", "aneUrHBRyhg", "9XHqg7mTizE", "gtM9xD-Ky7E"]
     directors = ["jack_haydn", "thirteen_fish", "pimpin_yourhos", "johann_tollefson", "petyr_baelich", "ektony", "kairk_efraim", "lofac", "jons_squire"]
     admins = ["jack_haydn", "thirteen_fish"]
     access_token = ''
