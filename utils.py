@@ -189,36 +189,6 @@ class EveUtils(object):
             return 'There is a problem with the API server. Can\'t connect to the server.'
         return reply
 
-
-    @botcmd
-    def route(self, mess, args):
-        '''<start system> <destination system> - Calculates the shortest route (experimental). System names are case-sensitive. Do not  spam this with wrong system names or EVE-Central will ban the server.'''
-        try:
-            args = args.strip().split()
-            if (len(args) != 2):
-                return 'You need to provide exactly 2 parameters: <start system> <destination system>'
-            cached = self.getCache('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]))
-            if (not cached):
-                r = requests.get('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), timeout=4)
-                if (r.status_code != 200):
-                    return 'The API returned error code <b>' + str(r.status_code) + '</b>. System names are case-sensitive. Make sure both systems exist and are reachable from known space.'
-                all_waypoints = r.json()
-                self.setCache('http://api.eve-central.com/api/route/from/'+str(args[0])+'/to/'+str(args[1]), doc=str(r.text), expiry=int(time.time()+24*60*60))
-            else:
-                all_waypoints = json.loads(cached)
-            if (all_waypoints == []):
-                return 'Can\'t calculate a route.'
-            jumps = 0
-            reply = 'Calculated a route from ' + str(args[0]) + ' to ' + str(args[1]) + '.'
-            for waypoint in all_waypoints:
-                jumps += 1
-                reply += '<br />' + str(waypoint['from']['name']) + '(' + str(waypoint['from']['security']) + '/<i>' + str(waypoint['from']['region']['name']) + '</i>) -> ' + str(waypoint['to']['name']) + '(' + str(waypoint['to']['security']) + '/<i>' + str(waypoint['to']['region']['name']) + '</i>)'
-            reply += '<br /><b>' + str(jumps) + '</b> jumps total'
-        except requests.exceptions.RequestException as e:
-            return 'There is a problem with the API server. Can\'t connect to the server.'
-
-        return reply
-
     @botcmd
     def evetime(self, mess, args):
         '''[+offset] - Displays the current evetime, server status and the resulting evetime of the offset, if provided'''
