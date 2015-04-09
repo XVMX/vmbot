@@ -8,7 +8,7 @@ import json
 import calendar
 import base64
 import vmbot_config as vmc
-
+import sqlite3
 
 class EveUtils(object):
     access_token = ''
