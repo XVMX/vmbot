@@ -64,7 +64,9 @@ class EveUtils(object):
         system = systems[0]
 
         if (self.token_expiry < time.time()):
-            self.getAccessToken()
+            er = self.getAccessToken()
+            if er:
+                return er
 
         # Sell
         try:
@@ -493,9 +495,16 @@ class EveUtils(object):
             return False
 
     def getAccessToken(self):
-        r = requests.post('https://login.eveonline.com/oauth/token', data={'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}, headers={'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'})
+        data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
+        headers = {'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'}
+        r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
+
         res = r.json()
-        self.access_token = res['access_token']
-        self.token_expiry = time.time()+res['expires_in']
+        try:
+            self.access_token = res['access_token']
+            self.token_expiry = time.time()+res['expires_in']
+        except KeyError:
+            #FIXME: raise exception with description
+            return 'Error: {}: {}'.format(res['error'], res['error_description'])
 
 
