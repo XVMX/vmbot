@@ -47,10 +47,10 @@ class Price(object):
             raise self.PriceError('The CREST-API returned error code <b>{}</b>'.format(r.status_code))
         res = r.json()
 
-        volume = sum([line['volume'] for line in res['items'] if line['location']['name'].startswith(system)])
+        volume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system)])
         direction = min if order == 'sell' else max
         try:
-            price = direction([line['price'] for line in res['items'] if line['location']['name'].startswith(system)])
+            price = direction([order['price'] for order in res['items'] if order['location']['name'].startswith(system)])
         except ValueError:
             price = 0
 
@@ -122,15 +122,15 @@ class Price(object):
         conn.close()
 
         typeID, typeName = items[0]
-        region, system = systems[0]
+        regionID, systemName = systems[0]
 
         try:
-            sellvolume, sellprice = self.getPriceVolume('sell', region, system, typeID)
-            buyvolume, buyprice = self.getPriceVolume('buy', region, system, typeID)
+            sellvolume, sellprice = self.getPriceVolume('sell', regionID, systemName, typeID)
+            buyvolume, buyprice = self.getPriceVolume('buy', regionID, systemName, typeID)
         except self.PriceError as e:
             return str(e)
 
-        reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, system)
+        reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)
         reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
         reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
         if sellprice != 0:
