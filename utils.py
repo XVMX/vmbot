@@ -36,8 +36,8 @@ class Price(object):
             raise self.PriceError('Error: {}: {}'.format(res['error'], res['error_description']))
         return self.access_token
 
-    def getPriceVolume(self, order, region, system, item):
-        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, order, item)
+    def getPriceVolume(self, orderType, region, system, item):
+        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, orderType, item)
         header = {'Authorization' : 'Bearer '+self.getAccessToken(), 'User-Agent' : 'VM JabberBot'}
         try:
             r = requests.get(url, headers=header, timeout=5)
