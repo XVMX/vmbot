@@ -11,14 +11,13 @@ import vmbot_config as vmc
 import sqlite3
 
 class Price(object):
+    access_token = ''
+    token_expiry = 0
 
     class PriceError(StandardError):
         pass
 
     def getAccessToken(self):
-        self.access_token = ''
-        self.token_expiry = 0
-
         if self.token_expiry >= time.time():
             return self.access_token
 
