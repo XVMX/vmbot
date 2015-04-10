@@ -62,7 +62,7 @@ class Price(object):
             reply = '<br />{} like "{}": '.format(category, given)
             for thing in like[1:4]:
                 reply += thing[1] + ', '
-            if len(like) > 3:
+            if len(like) > 4:
                 reply += 'and {} others'.format(len(like)-4)
             return reply
         else:
