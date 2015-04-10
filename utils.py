@@ -48,7 +48,7 @@ class Price(object):
         res = r.json()
 
         volume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system)])
-        direction = min if order == 'sell' else max
+        direction = min if orderType == 'sell' else max
         try:
             price = direction([order['price'] for order in res['items'] if order['location']['name'].startswith(system)])
         except ValueError:
