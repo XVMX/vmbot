@@ -60,10 +60,10 @@ class Price(object):
     def disambiguate(self, given, like, category):
         if len(like) > 1:
             reply = '<br />{} like "{}": '.format(category, given)
-            for thing in like[:3]:
+            for thing in like[1:4]:
                 reply += thing[1] + ', '
             if len(like) > 3:
-                reply += 'and {} others'.format(len(like)-3)
+                reply += 'and {} others'.format(len(like)-4)
             return reply
         else:
             return ''
