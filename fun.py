@@ -62,7 +62,8 @@ class Say(object):
         "congratulations, you passed the security check.",
         "I regret to tell you that your application to join VM has been rejected.",
         "thank you for your interest in VM, and I wish you luck in your future endeavours in Eve.",
-        ""
+        "in 48h your membership of Valar Morghulis. will be terminated.",
+        "you've got to improve, or I'll be sending out more kick notices, and I hate doing that."
     ]
     @botcmd
     def fishsay(self, mess, args):
@@ -106,8 +107,11 @@ class Say(object):
     @botcmd
     def kairksay(self, mess, args):
         'Like fishsay but more Kafkaesque'
-        sender = self.get_sender_username(mess)
-        return "{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
+        if args.strip():
+            sender = args.strip()
+        else:
+            sender = self.get_sender_username(mess)
+        return "<span>&#8203;</span>{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
