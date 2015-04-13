@@ -10,6 +10,7 @@ import base64
 import vmbot_config as vmc
 import sqlite3
 
+
 def getAccessToken():
     try:
         getAccessToken.access_token
@@ -45,18 +46,19 @@ class Price(object):
     class PriceError(StandardError):
         pass
 
-
-
-
     def getPriceVolume(self, orderType, region, system, item):
-        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, orderType, item)
-        header = {'Authorization' : 'Bearer '+self.getAccessToken(), 'User-Agent' : 'VM JabberBot'}
+        url  = 'https://crest-tq.eveonline.com/market/{}/orders/{}/'.format(region, orderType)
+        url += '?type=https://crest-tq.eveonline.com/types/{}/'.format(item)
+        header = {
+            'Authorization' : 'Bearer ' + getAccessToken(),
+            'User-Agent' : 'VM JabberBot'
+        }
         try:
             r = requests.get(url, headers=header, timeout=5)
         except requests.exceptions.RequestException as e:
             raise self.PriceError("Error connecting to CREST servers: " + str(e))
         if (r.status_code != 200):
-            raise self.PriceError('The CREST-API returned error code <b>{}</b>'.format(r.status_code))
+            raise self.PriceError('The CREST-API returned error <b>{}</b>'.format(r.status_code))
         res = r.json()
 
         volume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system)])
@@ -70,20 +72,17 @@ class Price(object):
 
 
     def disambiguate(self, given, like, category):
-        if len(like) > 1:
-            reply = '<br />{} like "{}": '.format(category, given)
-            for thing in like[1:4]:
-                reply += thing[1] + ', '
-            if len(like) > 4:
-                reply += 'and {} others'.format(len(like)-4)
+        if like:
+            reply = '<br />Other {} like "{}": {}'.format(category, given, ', '.join(like[:3]))
+            if len(like) > 3:
+                reply += ', and {} others'.format(len(like)-3)
             return reply
         else:
             return ''
 
     @botcmd
     def price(self, mess, args):
-        '''<item>@[system] - Displays price of item in system, defaulting to Jita
-(Autocompletion can be disabled by enclosing item/system name in quotes)'''
+        '''<item>@[system] - Displays price of item in system, defaulting to Jita'''
         args = [item.strip() for item in args.strip().split('@')]
         if len(args) < 1 or len(args) > 2 or args[0] == '':
             return 'Please specify one item name and optional one system name: <item>@[system]'
@@ -97,23 +96,13 @@ class Price(object):
         if item.lower() in ('plex','pilot license extension',"pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
-        if item.startswith('"') and item.endswith('"'):
-            item = item.strip('"')
-        else:
-            item = '%'+item+'%'
-
-        if system.startswith('"') and system.endswith('"'):
-            system = system.strip('"')
-        else:
-            system = '%'+system+'%'
-
         conn = sqlite3.connect('staticdata.sqlite')
         cur = conn.cursor()
         cur.execute('''
             SELECT regionID, solarSystemName
                 FROM mapSolarSystems
                 WHERE solarSystemName LIKE :name;''',
-            {'name' : system}
+            {'name' : '%'+system+'%'}
         )
         systems = cur.fetchall()
         if not systems:
@@ -125,7 +114,7 @@ class Price(object):
               WHERE typeName LIKE :name
                 AND marketGroupID IS NOT NULL
                 AND marketGroupID < 100000;''',
-            {'name' : item}
+            {'name' : '%'+item+'%'}
         )
         items = cur.fetchall()
         if not items:
@@ -133,8 +122,12 @@ class Price(object):
         cur.close()
         conn.close()
 
-        typeID, typeName = items[0]
-        regionID, systemName = systems[0]
+        #sort by length of name so that the most similar item is first
+        items.sort(lambda x, y: cmp(len(x[1]), len(y[1])))
+        systems.sort(lambda x, y: cmp(len(x[1]), len(y[1])))
+
+        typeID, typeName = items.pop(0)
+        regionID, systemName = systems.pop(0)
 
         try:
             sellvolume, sellprice = self.getPriceVolume('sell', regionID, systemName, typeID)
@@ -150,9 +143,9 @@ class Price(object):
         else:
             reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!' #by request from Jack
 
-        reply += self.disambiguate(args[0], items, "Items")
+        reply += self.disambiguate(args[0], zip(*items)[1], "items")
         try:
-            reply += self.disambiguate(args[1], systems, "Systems")
+            reply += self.disambiguate(args[1], zip(*systems)[1], "systems")
         except IndexError:
             pass
 
