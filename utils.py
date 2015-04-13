@@ -138,9 +138,9 @@ class Price(object):
         reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)
         reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
         reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
-        if sellprice != 0:
+        try:
             reply += '<br />Spread: {:,.2%}'.format((sellprice-buyprice)/sellprice)
-        else:
+        except ZeroDivisionError:
             reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!' #by request from Jack
 
         reply += self.disambiguate(args[0], zip(*items)[1], "items")
