@@ -11,14 +11,13 @@ import vmbot_config as vmc
 import sqlite3
 
 class Price(object):
+    access_token = ''
+    token_expiry = 0
 
     class PriceError(StandardError):
         pass
 
     def getAccessToken(self):
-        self.access_token = ''
-        self.token_expiry = 0
-
         if self.token_expiry >= time.time():
             return self.access_token
 
@@ -37,8 +36,8 @@ class Price(object):
             raise self.PriceError('Error: {}: {}'.format(res['error'], res['error_description']))
         return self.access_token
 
-    def getPriceVolume(self, order, region, system, item):
-        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, order, item)
+    def getPriceVolume(self, orderType, region, system, item):
+        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, orderType, item)
         header = {'Authorization' : 'Bearer '+self.getAccessToken(), 'User-Agent' : 'VM JabberBot'}
         try:
             r = requests.get(url, headers=header, timeout=5)
@@ -48,10 +47,10 @@ class Price(object):
             raise self.PriceError('The CREST-API returned error code <b>{}</b>'.format(r.status_code))
         res = r.json()
 
-        volume = sum([line['volume'] for line in res['items'] if line['location']['name'].startswith(system)])
-        direction = min if order == 'sell' else max
+        volume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system)])
+        direction = min if orderType == 'sell' else max
         try:
-            price = direction([line['price'] for line in res['items'] if line['location']['name'].startswith(system)])
+            price = direction([order['price'] for order in res['items'] if order['location']['name'].startswith(system)])
         except ValueError:
             price = 0
 
@@ -61,10 +60,10 @@ class Price(object):
     def disambiguate(self, given, like, category):
         if len(like) > 1:
             reply = '<br />{} like "{}": '.format(category, given)
-            for thing in like[:3]:
+            for thing in like[1:4]:
                 reply += thing[1] + ', '
-            if len(like) > 3:
-                reply += 'and {} others'.format(len(like)-3)
+            if len(like) > 4:
+                reply += 'and {} others'.format(len(like)-4)
             return reply
         else:
             return ''
@@ -123,15 +122,15 @@ class Price(object):
         conn.close()
 
         typeID, typeName = items[0]
-        region, system = systems[0]
+        regionID, systemName = systems[0]
 
         try:
-            sellvolume, sellprice = self.getPriceVolume('sell', region, system, typeID)
-            buyvolume, buyprice = self.getPriceVolume('buy', region, system, typeID)
+            sellvolume, sellprice = self.getPriceVolume('sell', regionID, systemName, typeID)
+            buyvolume, buyprice = self.getPriceVolume('buy', regionID, systemName, typeID)
         except self.PriceError as e:
             return str(e)
 
-        reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, system)
+        reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)
         reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
         reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
         if sellprice != 0:

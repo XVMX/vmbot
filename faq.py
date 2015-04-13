@@ -22,29 +22,29 @@ delete <ID> - Deletes the article with <ID>
 revert <ID> - Reverts deletion of article with <ID>'''
         args = shlex.split(args.strip())
         if args:
-            cmd = args[0]
+            cmd = args[0].upper()
         else:
-            return "requires one of show, index, edit, chown, log, delete, or revert as an argument"
+            return "Requires one of show, index, edit, chown, log, delete or revert as an argument"
         argsCount = len(args)
-        if (cmd == "show" and argsCount == 2):
+        if (cmd == "SHOW" and argsCount == 2):
             return self.faq_show(mess, args[1])
-        elif (cmd == "show" and argsCount == 3):
+        elif (cmd == "SHOW" and argsCount == 3):
             return self.faq_show(mess, args[1], args[2])
-        elif (cmd == "index" and argsCount == 1):
+        elif (cmd == "INDEX" and argsCount == 1):
             return self.faq_index(mess)
-        elif (cmd == "index" and argsCount == 2):
+        elif (cmd == "INDEX" and argsCount == 2):
             return self.faq_index(mess, True)
-        elif (cmd == "insert" and argsCount == 4):
+        elif (cmd == "INSERT" and argsCount == 4):
             return self.faq_insert(mess, args[1], args[2], args[3])
-        elif (cmd == "edit" and argsCount == 4):
+        elif (cmd == "EDIT" and argsCount == 4):
             return self.faq_edit(mess, args[1], args[2], args[3])
-        elif (cmd == "chown" and argsCount == 3):
+        elif (cmd == "CHOWN" and argsCount == 3):
             return self.faq_chown(mess, args[1], args[2])
-        elif (cmd == "log" and argsCount == 2):
+        elif (cmd == "LOG" and argsCount == 2):
             return self.faq_log(mess, args[1])
-        elif (cmd == "delete" and argsCount == 2):
+        elif (cmd == "DELETE" and argsCount == 2):
             return self.faq_delete(mess, args[1])
-        elif (cmd == "revert" and argsCount == 2):
+        elif (cmd == "REVERT" and argsCount == 2):
             return self.faq_revert(mess, args[1])
         # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
         else:
@@ -78,7 +78,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         res = cur.fetchall()
 
         # Keyword based search
-        if (not len(res)):
+        if not res:
             keyList = [item.strip() for item in needle.strip().split(',')]
             cur.execute('''
                 SELECT `ID`, `keywords`, `title`, `content`
@@ -90,7 +90,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             res = cur.fetchall()
 
         # Title based search
-        if (not len(res)):
+        if not res:
             try:
                 cur.execute('''
                     SELECT `ID`, `keywords`, `title`, `content`
@@ -105,7 +105,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             res = cur.fetchall()
 
         # Content based search
-        if (not len(res)):
+        if not res:
             try:
                 cur.execute('''
                     SELECT `ID`, `keywords`, `title`, `content`
@@ -118,7 +118,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                 pass
             res = cur.fetchall()
 
-        if (len(res)):
+        if res:
             reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
             reply += str(res[0][3]).replace("\n","<br />") + "<br />"
             reply += "<b>Keywords</b>: {}".format(res[0][1])
