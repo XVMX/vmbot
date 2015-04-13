@@ -93,7 +93,7 @@ class Price(object):
         except IndexError:
             system = 'Jita'
 
-        if item.lower() in ('plex','pilot license extension',"pilot's license extension"):
+        if item.lower() in ('plex', 'pilot license', 'pilot license extension',"pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
         conn = sqlite3.connect('staticdata.sqlite')
