@@ -10,31 +10,43 @@ import base64
 import vmbot_config as vmc
 import sqlite3
 
+def getAccessToken():
+    try:
+        getAccessToken.access_token
+        getAccessToken.token_expiry
+    except AttributeError:
+        getAccessToken.access_token = ''
+        getAccessToken.token_expiry = 0
+
+    if getAccessToken.token_expiry >= time.time():
+        return getAccessToken.access_token
+
+    assert(vmc.refresh_token)  #FIXME: check on instantiation
+    assert(vmc.client_secret)
+
+    data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
+    headers = {
+        'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret),
+        'User-Agent' : 'VM JabberBot'
+    }
+    r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
+
+    res = r.json()
+    try:
+        getAccessToken.access_token = res['access_token']
+        getAccessToken.token_expiry = time.time()+res['expires_in']
+    except KeyError:
+        raise self.PriceError('Error: {}: {}'.format(res['error'], res['error_description']))
+    return getAccessToken.access_token
+
+
 class Price(object):
-    access_token = ''
-    token_expiry = 0
 
     class PriceError(StandardError):
         pass
 
-    def getAccessToken(self):
-        if self.token_expiry >= time.time():
-            return self.access_token
 
-        assert(vmc.refresh_token)  #FIXME: check on instantiation
-        assert(vmc.client_secret)
 
-        data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
-        headers = {'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret), 'User-Agent' : 'VM JabberBot'}
-        r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
-
-        res = r.json()
-        try:
-            self.access_token = res['access_token']
-            self.token_expiry = time.time()+res['expires_in']
-        except KeyError:
-            raise self.PriceError('Error: {}: {}'.format(res['error'], res['error_description']))
-        return self.access_token
 
     def getPriceVolume(self, orderType, region, system, item):
         url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/?type=https://crest-tq.eveonline.com/types/{}/'.format(region, orderType, item)
