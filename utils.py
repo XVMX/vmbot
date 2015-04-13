@@ -143,11 +143,10 @@ class Price(object):
         except ZeroDivisionError:
             reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!' #by request from Jack
 
-        reply += self.disambiguate(args[0], zip(*items)[1], "items")
-        try:
+        if args and items:
+            reply += self.disambiguate(args[0], zip(*items)[1], "items")
+        if len(args) > 1 and systems:
             reply += self.disambiguate(args[1], zip(*systems)[1], "systems")
-        except IndexError:
-            pass
 
         return reply
 
