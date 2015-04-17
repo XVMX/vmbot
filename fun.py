@@ -54,7 +54,8 @@ class Say(object):
         "UepAzio1eyU",
         "aneUrHBRyhg",
         "9XHqg7mTizE",
-        "gtM9xD-Ky7E"
+        "gtM9xD-Ky7E",
+        "ZTidn2dBYbY"
     ]
     kairkisms = [
         "thanks for filling this out.",
