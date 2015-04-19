@@ -11,35 +11,39 @@ import vmbot_config as vmc
 import sqlite3
 
 
-def getAccessToken():
-    try:
-        getAccessToken.access_token
-        getAccessToken.token_expiry
-    except AttributeError:
-        getAccessToken.access_token = ''
-        getAccessToken.token_expiry = 0
+class CREST(object):
 
-    if getAccessToken.token_expiry >= time.time():
+    class CRESTError(StandardError):
+        pass
+
+    def getAccessToken(self):
+        try:
+            getAccessToken.access_token
+            getAccessToken.token_expiry
+        except AttributeError:
+            getAccessToken.access_token = ''
+            getAccessToken.token_expiry = 0
+        
+        if getAccessToken.token_expiry >= time.time():
+            return getAccessToken.access_token
+        
+        assert(vmc.refresh_token)  #FIXME: check on instantiation
+        assert(vmc.client_secret)
+        
+        data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
+        headers = {
+            'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret),
+            'User-Agent' : 'VM JabberBot'
+        }
+        r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
+        
+        res = r.json()
+        try:
+            getAccessToken.access_token = res['access_token']
+            getAccessToken.token_expiry = time.time()+res['expires_in']
+        except KeyError:
+            raise self.CRESTError('Error: {}: {}'.format(res['error'], res['error_description']))
         return getAccessToken.access_token
-
-    assert(vmc.refresh_token)  #FIXME: check on instantiation
-    assert(vmc.client_secret)
-
-    data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
-    headers = {
-        'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret),
-        'User-Agent' : 'VM JabberBot'
-    }
-    r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
-
-    res = r.json()
-    try:
-        getAccessToken.access_token = res['access_token']
-        getAccessToken.token_expiry = time.time()+res['expires_in']
-    except KeyError:
-        raise self.PriceError('Error: {}: {}'.format(res['error'], res['error_description']))
-    return getAccessToken.access_token
-
 
 class Price(object):
 
@@ -50,7 +54,7 @@ class Price(object):
         url  = 'https://crest-tq.eveonline.com/market/{}/orders/{}/'.format(region, orderType)
         url += '?type=https://crest-tq.eveonline.com/types/{}/'.format(item)
         header = {
-            'Authorization' : 'Bearer ' + getAccessToken(),
+            'Authorization' : 'Bearer ' + self.getAccessToken(),
             'User-Agent' : 'VM JabberBot'
         }
         try:
@@ -132,7 +136,7 @@ class Price(object):
         try:
             sellvolume, sellprice = self.getPriceVolume('sell', regionID, systemName, typeID)
             buyvolume, buyprice = self.getPriceVolume('buy', regionID, systemName, typeID)
-        except self.PriceError as e:
+        except (self.CRESTError, self.PriceError) as e:
             return str(e)
 
         reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)

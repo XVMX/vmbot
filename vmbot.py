@@ -32,7 +32,7 @@ import vmbot_config as vmc
 
 from fun import Say, Chains
 from faq import Faq
-from utils import Price, EveUtils
+from utils import CREST, Price, EveUtils
 
 logger = logging.getLogger('jabberbot')
 logger.setLevel(logging.DEBUG)
@@ -142,7 +142,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
     return decorator
 
-class VMBot(MUCJabberBot, Say, Chains, Faq, Price, EveUtils):
+class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
     # Lists for use in the various methods
     directors = [
         "jack_haydn",
