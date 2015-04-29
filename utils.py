@@ -12,20 +12,19 @@ import sqlite3
 
 
 class CREST(object):
-
     class CRESTError(StandardError):
         pass
 
     def getAccessToken(self):
         try:
-            getAccessToken.access_token
-            getAccessToken.token_expiry
+            self._access_token
+            self._token_expiry
         except AttributeError:
-            getAccessToken.access_token = ''
-            getAccessToken.token_expiry = 0
+            self._access_token = ''
+            self._token_expiry = 0
         
-        if getAccessToken.token_expiry >= time.time():
-            return getAccessToken.access_token
+        if self._token_expiry >= time.time():
+            return self._access_token
         
         assert(vmc.refresh_token)  #FIXME: check on instantiation
         assert(vmc.client_secret)
@@ -39,11 +38,11 @@ class CREST(object):
         
         res = r.json()
         try:
-            getAccessToken.access_token = res['access_token']
-            getAccessToken.token_expiry = time.time()+res['expires_in']
+            self._access_token = res['access_token']
+            self._token_expiry = time.time()+res['expires_in']
         except KeyError:
             raise self.CRESTError('Error: {}: {}'.format(res['error'], res['error_description']))
-        return getAccessToken.access_token
+        return self._access_token
 
 class Price(object):
 
