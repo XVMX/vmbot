@@ -76,9 +76,7 @@ class Say(object):
     def pimpsay(self, mess, args):
         'Like fishsay but blacker'
         if args:
-            # &#8203; is a zero-width space
-            # http://en.wikipedia.org/wiki/Zero-width_space#Encoding
-            return "<span>&#8203;</span>{} {}".format(args, random.choice(self.pimpisms))
+            return "{} {}".format(args, random.choice(self.pimpisms))
         else:
             return random.choice(self.pimpisms)
 
@@ -100,15 +98,13 @@ class Say(object):
         if args.startswith(cmdname):
             return "nope"
         sender = args.strip() if args else self.get_sender_username(mess)
-        # &#8203; is a zero-width space
-        # http://en.wikipedia.org/wiki/Zero-width_space#Encoding
-        return "<span>&#8203;</span>{}, {}".format(sender, self.chaseisms[0])
+        return "{}, {}".format(sender, self.chaseisms[0])
 
     @botcmd
     def kairksay(self, mess, args):
         'Like fishsay but more Kafkaesque'
         sender = args.strip() if args else self.get_sender_username(mess)
-        return "<span>&#8203;</span>{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
+        return "{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
