@@ -66,6 +66,7 @@ class Say(object):
         "in 48h your membership of Valar Morghulis. will be terminated.",
         "you've got to improve, or I'll be sending out more kick notices, and I hate doing that."
     ]
+
     @botcmd
     def fishsay(self, mess, args):
         'Fishy wisdom.'
@@ -74,7 +75,7 @@ class Say(object):
     @botcmd
     def pimpsay(self, mess, args):
         'Like fishsay but blacker'
-        if (len(args) > 0):
+        if (args):
             # &#8203; is a zero-width space
             # http://en.wikipedia.org/wiki/Zero-width_space#Encoding
             return "<span>&#8203;</span>{} {}".format(args, random.choice(self.pimpisms))
@@ -89,35 +90,30 @@ class Say(object):
     @botcmd
     def nicksay(self, mess, args):
         'Like fishsay but pubbietasticer'
-        nickrandom=random.choice(self.nickisms)
+        nickrandom = random.choice(self.nickisms)
         return nickrandom.replace('00', '0'*int(2+random.expovariate(.25)))
-
 
     @botcmd
     def chasesay(self, mess, args):
         'Please'
         cmdname = self.chasesay._jabberbot_command_name
-        if args[:len(cmdname)] == cmdname:
+        if (args[:len(cmdname)] == cmdname):
             return "nope"
-        if len(args) > 0:
-            name = args.strip()
-        else:
-            name = self.get_sender_username(mess)
-        return name + ', ' + self.chaseisms[0]
+        sender = args.strip() if args else self.get_sender_username(mess)
+        # &#8203; is a zero-width space
+        # http://en.wikipedia.org/wiki/Zero-width_space#Encoding
+        return "<span>&#8203;</span>{}, {}".format(sender, self.chaseisms[0])
 
     @botcmd
     def kairksay(self, mess, args):
         'Like fishsay but more Kafkaesque'
-        if args.strip():
-            sender = args.strip()
-        else:
-            sender = self.get_sender_username(mess)
+        sender = args.strip() if args else self.get_sender_username(mess)
         return "<span>&#8203;</span>{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '<question> - Provides insight into the future'
-        if len(args) == 0:
+        if (not args):
             return 'You will need to provide a question for me to answer.'
         else:
             return random.choice(self.eball_answers)
@@ -125,11 +121,8 @@ class Say(object):
     @botcmd
     def sayhi(self, mess, args):
         '[name] - Says hi to you or name if provided!'
-        if len(args) > 0:
-            name = args.strip()
-        else:
-            name = self.get_sender_username(mess)
-        return "Hi " + name + "!"
+        sender = args.strip() if args else self.get_sender_username(mess)
+        return "Hi {}!".format(sender)
 
 
 class Chains(object):
