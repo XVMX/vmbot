@@ -75,7 +75,7 @@ class Say(object):
     @botcmd
     def pimpsay(self, mess, args):
         'Like fishsay but blacker'
-        if (args):
+        if args:
             # &#8203; is a zero-width space
             # http://en.wikipedia.org/wiki/Zero-width_space#Encoding
             return "<span>&#8203;</span>{} {}".format(args, random.choice(self.pimpisms))
@@ -97,7 +97,7 @@ class Say(object):
     def chasesay(self, mess, args):
         'Please'
         cmdname = self.chasesay._jabberbot_command_name
-        if (args[:len(cmdname)] == cmdname):
+        if args.startswith(cmdname):
             return "nope"
         sender = args.strip() if args else self.get_sender_username(mess)
         # &#8203; is a zero-width space
@@ -113,7 +113,7 @@ class Say(object):
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '<question> - Provides insight into the future'
-        if (not args):
+        if not args:
             return 'You will need to provide a question for me to answer.'
         else:
             return random.choice(self.eball_answers)
