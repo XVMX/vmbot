@@ -318,7 +318,7 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
 if __name__ == '__main__':
 
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, acceptownmsgs=True)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.join_room(vmc.chatroom3, vmc.nickname)
