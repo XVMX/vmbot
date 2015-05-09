@@ -96,6 +96,9 @@ class MUCJabberBot(JabberBot):
         if not message:
             return
 
+        if vmc.nickname == self.get_sender_username(mess):
+            return
+
         if self.direct_message_re.match(message):
             mess.setBody(' '.join(message.split(' ', 1)[1:]))
             return super(MUCJabberBot, self).callback_message(conn, mess)
