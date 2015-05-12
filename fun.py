@@ -64,7 +64,7 @@ class Say(object):
         "I regret to tell you that your application to join VM has been rejected.",
         "thank you for your interest in VM, and I wish you luck in your future endeavours in Eve.",
         "in 48h your membership of Valar Morghulis. will be terminated.",
-        "you've got to improve, or I'll be sending out more kick notices, and I hate doing that."
+        "you've got to improve, or I'll be sending out more kick notices, and I hate doing that.",
         "you get a cavity search, your friends get a cavity search, EVERYBODY gets a cavity search!"
     ]
 
