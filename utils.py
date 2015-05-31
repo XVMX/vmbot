@@ -416,7 +416,6 @@ class EveUtils(object):
             reply += "{:25}{:<16,d}{:<30}{:<20,d}<br />".format(recipes[i][0], int(recipes[i][1]), recipes[i][2], int(str(recipes[i][3])[1:-12]))
         return reply+"</span>"
 
-
     @botcmd
     def rcbl(self, mess, args):
         '''<name>[, ...] - Asks the RC API if <pilot name> has an entry in the blacklist.'''

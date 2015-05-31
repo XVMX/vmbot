@@ -46,9 +46,8 @@ revert <ID> - Reverts deletion of article with <ID>'''
             return self.faq_delete(mess, args[1])
         elif (cmd == "REVERT" and argsCount == 2):
             return self.faq_revert(mess, args[1])
-        # &#8203; is a zero-width space (http://en.wikipedia.org/wiki/Zero-width_space#Encoding)
         else:
-            return "<span>&#8203;faq " + " ".join(map(str, args)) + " is not an accepted command</span>"
+            return "faq " + " ".join(map(str, args)) + " is not an accepted command"
 
     def faq_show(self, mess, needle, receiver = None):
         def searchKeywords(needles, stack):
