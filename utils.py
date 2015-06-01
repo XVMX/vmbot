@@ -1,4 +1,5 @@
 from jabberbot import botcmd
+
 from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 import time
@@ -25,17 +26,17 @@ class CREST(object):
         
         if self._token_expiry >= time.time():
             return self._access_token
-        
+
         assert(vmc.refresh_token)  #FIXME: check on instantiation
         assert(vmc.client_secret)
-        
+
         data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
         headers = {
             'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret),
             'User-Agent' : 'VM JabberBot'
         }
         r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
-        
+
         res = r.json()
         try:
             self._access_token = res['access_token']
@@ -45,7 +46,6 @@ class CREST(object):
         return self._access_token
 
 class Price(object):
-
     class PriceError(StandardError):
         pass
 
@@ -434,16 +434,19 @@ class EveUtils(object):
             result.insert(0, '')
         return '<br />'.join(result)
 
-    def getCache(self, path, params=dict()):
+    def getCache(self, path: str, params: dict = dict()):
         try:
-            if (type(params) != type(dict()) or type(path) != type(str())):
-                return None
-
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
 
             if (len(params) == 0):
-                cur.execute("SELECT response FROM cache WHERE path=:path AND expiry>:expiry;", {"path":path,"expiry":time.time()})
+                cur.execute('''
+                    SELECT response
+                      FROM cache
+                      WHERE path = :path
+                        AND expiry > :expiry;''',
+                    {"path" : path,
+                     "expiry" : time.time()})
                 res = cur.fetchall()
                 cur.close()
                 conn.close()
@@ -455,37 +458,68 @@ class EveUtils(object):
             for val in params.values():
                 paramlist += val + "+"
             params = paramlist[:-1]
-            cur.execute("SELECT response FROM cache WHERE path=:path AND params=:params AND expiry>:expiry;", {"path":path, "params":params, "expiry":int(time.time())})
+            cur.execute('''
+                SELECT response
+                  FROM cache
+                  WHERE path = :path
+                    AND params = :params
+                    AND expiry > :expiry;''',
+                {"path" : path,
+                 "params" : params,
+                 "expiry" : int(time.time())})
             res = cur.fetchall()
             cur.close()
             conn.close()
-            if (len(res) == 0 or len(res) > 1):
+            if (len(res) != 1):
                 return None
             return res[0][0]
         except:
             return None
 
-    def setCache(self, path, doc, expiry, params=dict()):
+    def setCache(self, path: str, doc: str, expiry: int, params: dict = dict()):
         try:
-            if (type(params) != type(dict()) or type(path) != type(str()) or type(doc) != type(str()) or type(expiry) != type(int())):
-                return False
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
-            cur.execute("CREATE TABLE IF NOT EXISTS metadata (type VARCHAR(255) NOT NULL UNIQUE, value INT NOT NULL);")
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS metadata
+                  (type VARCHAR(255) NOT NULL UNIQUE,
+                  value INT NOT NULL);''')
 
-            cur.execute("SELECT value FROM metadata WHERE type='version';")
+            cur.execute('''
+                SELECT value
+                  FROM metadata
+                  WHERE type='version';''')
             res = cur.fetchall()
             if (len(res) == 1 and res[0][0] != self.cache_version):
-                cur.execute("DROP TABLE cache;")
+                print("CACHE ERROR: Update cache database")
+                return false
             conn.commit()
 
-            cur.execute("INSERT OR REPLACE INTO metadata VALUES (:type, :version);", {"type":"version","version":self.cache_version})
-            cur.execute("CREATE TABLE IF NOT EXISTS cache (path VARCHAR(255) NOT NULL, params VARCHAR(255), response TEXT NOT NULL, expiry INT);")
+            cur.execute('''
+                INSERT OR REPLACE INTO metadata
+                    VALUES (:type, :version);''',
+                {"type" : "version",
+                 "version" : self.cache_version})
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS cache
+                  (path VARCHAR(255) NOT NULL,
+                  params VARCHAR(255),
+                  response TEXT NOT NULL,
+                  expiry INT);''')
             cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS Query ON cache (path, params);")
-            cur.execute("DELETE FROM cache WHERE expiry<=:expiry;", {"expiry":int(time.time())})
+            cur.execute('''
+                DELETE FROM cache
+                  WHERE expiry <= :expiry;''',
+                {"expiry" : int(time.time())})
 
             if (len(params) == 0):
-                cur.execute("INSERT INTO cache VALUES (:path, :params, :response, :expiry);", {"path":path, "params":"", "response":doc, "expiry":expiry})
+                cur.execute('''
+                    INSERT INTO cache
+                      VALUES (:path, :params, :response, :expiry);''',
+                    {"path" : path,
+                     "params" : "",
+                     "response" : doc,
+                     "expiry" : expiry})
                 conn.commit()
                 cur.close()
                 conn.close()
@@ -496,11 +530,16 @@ class EveUtils(object):
             for val in params.values():
                 paramlist += val + "+"
             params = paramlist[:-1]
-            cur.execute("INSERT INTO cache VALUES (:path, :params, :response, :expiry);", {"path":path, "params":params, "response":doc, "expiry":expiry})
+            cur.execute('''
+                INSERT INTO cache
+                  VALUES (:path, :params, :response, :expiry);''',
+                {"path" : path,
+                 "params" : params,
+                 "response" : doc,
+                 "expiry" : expiry})
             conn.commit()
             cur.close()
             conn.close()
             return True
         except:
             return False
-
