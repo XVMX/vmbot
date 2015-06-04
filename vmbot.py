@@ -188,9 +188,8 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
     @botcmd
     def rtd(self, mess, args):
         '''Like a box of chocolates, you never know what you're gonna get'''
-        emotes = open("emotes.txt", 'r')
-        remotes = emotes.read().split('\n')
-        emotes.close()
+        with open("emotes.txt", 'r') as emotes:
+            remotes = emotes.read().split('\n')
 
         while not remotes.pop(0).startswith('[default]'):
             pass
