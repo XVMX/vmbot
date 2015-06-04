@@ -259,9 +259,9 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
         text.text = broadcast
         result = '<?xml version="1.0"?>' + ET.tostring(messaging)
 
-        headers = {"X-SourceID" : vmc.id, "X-SharedKey" : vmc.key}
+        headers = {"X-SourceID": vmc.id, "X-SharedKey": vmc.key}
         r = requests.post(url=vmc.url, data=result, headers=headers)
-        return True
+        return (r.status_code == 200)
 
     @botcmd
     def bcast(self, mess, args):
@@ -286,8 +286,10 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
         if len(broadcast) > 10240:
             return "This broadcast has {} characters and is too long; max length is 10240 characters. Please try again with less of a tale. You could try, y'know, a forum post.".format(len(broadcast))
 
-        self.sendBcast(broadcast, srjid + " via VMBot")
-        reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
+        if (self.sendBcast(broadcast, "{} via VMBot".format(srjid))):
+            reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
+        else:
+            reply = self.get_sender_username(mess) + ", I failed to sent your broadcast to " + vmc.target
 
         return reply
 
