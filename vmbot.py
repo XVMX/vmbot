@@ -296,7 +296,7 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
     def reload(self, mess, args):
         '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
         if len(args) == 0:
-            if self.get_uname_from_mess(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
+            if (self.get_uname_from_mess(mess) in self.admins):
                 reply = 'afk shower'
                 self.quit()
             else:
