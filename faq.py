@@ -4,7 +4,8 @@ import sqlite3
 import shlex
 from datetime import datetime
 
-class Faq(object):
+
+class FAQ(object):
     faq_version = 2
 
     @botcmd

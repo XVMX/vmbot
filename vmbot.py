@@ -31,7 +31,7 @@ from sympy.parsing.sympy_parser import parse_expr
 import vmbot_config as vmc
 
 from fun import Say, Chains
-from faq import Faq
+from faq import FAQ
 from utils import CREST, Price, EveUtils
 
 logger = logging.getLogger('jabberbot')
@@ -145,7 +145,8 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
     return decorator
 
-class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
+
+class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     # Lists for use in the various methods
     directors = [
         "jack_haydn",
