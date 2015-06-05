@@ -121,11 +121,19 @@ class MUCJabberBot(JabberBot):
     @botcmd
     def help(self, mess, args):
         reply = super(MUCJabberBot, self).help(mess, args)
-        self.longreply(mess, reply, forcePM=True)
-        return "Private message sent"
+        if (not args):
+            self.longreply(mess, reply, forcePM=True)
+            return "Private message sent"
+        else:
+            if (self.longreply(mess, reply)):
+                return "Private message sent"
+            else:
+                return reply
+
 
 class TimeoutError(Exception):
     pass
+
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     def decorator(func):
