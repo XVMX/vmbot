@@ -8,9 +8,9 @@ chatroom2 = ''
 chatroom3 = ''
 
 # GSF broadcast API
-url = ''
-id = ''
-key = ''
+url    = ''
+id     = ''
+key    = ''
 target = ''
 
 # RC blacklist API
@@ -18,6 +18,6 @@ blurl = ''
 blkey = ''
 
 # SSO-CREST
-client_id = ''
+client_id     = ''
 client_secret = ''
 refresh_token = ''
