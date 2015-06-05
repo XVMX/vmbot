@@ -11,6 +11,8 @@ import base64
 import vmbot_config as vmc
 import sqlite3
 
+from sympy.parsing.sympy_parser import parse_expr
+
 
 class CREST(object):
     class CRESTError(StandardError):
@@ -23,19 +25,20 @@ class CREST(object):
         except AttributeError:
             self._access_token = ''
             self._token_expiry = 0
-        
-        if self._token_expiry >= time.time():
+
+        if (self._token_expiry >= time.time()):
             return self._access_token
 
-        assert(vmc.refresh_token)  #FIXME: check on instantiation
+        # FIXME: check on instantiation
+        assert(vmc.refresh_token)
         assert(vmc.client_secret)
 
-        data = {'grant_type' : 'refresh_token', 'refresh_token' : vmc.refresh_token}
-        headers = {
-            'Authorization' : 'Basic '+base64.b64encode(vmc.client_id+':'+vmc.client_secret),
-            'User-Agent' : 'VM JabberBot'
-        }
-        r = requests.post('https://login.eveonline.com/oauth/token', data=data, headers=headers)
+        data = {'grant_type': 'refresh_token',
+                'refresh_token': vmc.refresh_token}
+        headers = {'Authorization': 'Basic ' + base64.b64encode('{}:{}'.format(vmc.client_id, vmc.client_secret)),
+                   'User-Agent': 'VM JabberBot'}
+        r = requests.post('https://login.eveonline.com/oauth/token',
+                          data=data, headers=headers)
 
         res = r.json()
         try:
@@ -45,27 +48,26 @@ class CREST(object):
             raise self.CRESTError('Error: {}: {}'.format(res['error'], res['error_description']))
         return self._access_token
 
+
 class Price(object):
     class PriceError(StandardError):
         pass
 
     def getPriceVolume(self, orderType, region, system, item):
-        url  = 'https://crest-tq.eveonline.com/market/{}/orders/{}/'.format(region, orderType)
+        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/'.format(region, orderType)
         url += '?type=https://crest-tq.eveonline.com/types/{}/'.format(item)
-        header = {
-            'Authorization' : 'Bearer ' + self.getAccessToken(),
-            'User-Agent' : 'VM JabberBot'
-        }
+        header = {'Authorization': 'Bearer {}'.format(self.getAccessToken()),
+                  'User-Agent': 'VM JabberBot'}
         try:
             r = requests.get(url, headers=header, timeout=5)
         except requests.exceptions.RequestException as e:
-            raise self.PriceError("Error connecting to CREST servers: " + str(e))
+            raise self.PriceError("Error connecting to CREST servers: {!s}".format(e))
         if (r.status_code != 200):
-            raise self.PriceError('The CREST-API returned error <b>{}</b>'.format(r.status_code))
+            raise self.PriceError('The CREST-API returned error <b>{!s}</b>'.format(r.status_code))
         res = r.json()
 
         volume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system)])
-        direction = min if orderType == 'sell' else max
+        direction = (min if orderType == 'sell' else max)
         try:
             price = direction([order['price'] for order in res['items'] if order['location']['name'].startswith(system)])
         except ValueError:
@@ -73,11 +75,10 @@ class Price(object):
 
         return (volume, price)
 
-
     def disambiguate(self, given, like, category):
-        if like:
+        if (like):
             reply = '<br />Other {} like "{}": {}'.format(category, given, ', '.join(like[:3]))
-            if len(like) > 3:
+            if (len(like) > 3):
                 reply += ', and {} others'.format(len(like)-3)
             return reply
         else:
@@ -87,7 +88,7 @@ class Price(object):
     def price(self, mess, args):
         '''<item>@[system] - Displays price of item in system, defaulting to Jita'''
         args = [item.strip() for item in args.strip().split('@')]
-        if len(args) < 1 or len(args) > 2 or args[0] == '':
+        if (len(args) < 1 or len(args) > 2 or args[0] == ''):
             return 'Please specify one item name and optional one system name: <item>@[system]'
 
         item = args[0]
@@ -96,36 +97,34 @@ class Price(object):
         except IndexError:
             system = 'Jita'
 
-        if item.lower() in ('plex', 'pilot license', 'pilot license extension',"pilot's license extension"):
+        if (item.lower() in ('plex', 'pilot license', 'pilot license extension', "pilot's license extension")):
             item = "30 Day Pilot's License Extension (PLEX)"
 
         conn = sqlite3.connect('staticdata.sqlite')
         cur = conn.cursor()
-        cur.execute('''
-            SELECT regionID, solarSystemName
-                FROM mapSolarSystems
-                WHERE solarSystemName LIKE :name;''',
-            {'name' : '%'+system+'%'}
-        )
+        cur.execute(
+            '''SELECT regionID, solarSystemName
+               FROM mapSolarSystems
+               WHERE solarSystemName LIKE :name;''',
+            {'name': '%'+system+'%'})
         systems = cur.fetchall()
-        if not systems:
+        if (not systems):
             return "Can't find a matching system!"
 
-        cur.execute('''
-            SELECT typeID, typeName
-              FROM invTypes
-              WHERE typeName LIKE :name
+        cur.execute(
+            '''SELECT typeID, typeName
+               FROM invTypes
+               WHERE typeName LIKE :name
                 AND marketGroupID IS NOT NULL
                 AND marketGroupID < 100000;''',
-            {'name' : '%'+item+'%'}
-        )
+            {'name': '%'+item+'%'})
         items = cur.fetchall()
-        if not items:
+        if (not items):
             return "Can't find a matching item!"
         cur.close()
         conn.close()
 
-        #sort by length of name so that the most similar item is first
+        # Sort by length of name so that the most similar item is first
         items.sort(lambda x, y: cmp(len(x[1]), len(y[1])))
         systems.sort(lambda x, y: cmp(len(x[1]), len(y[1])))
 
@@ -138,20 +137,22 @@ class Price(object):
         except (self.CRESTError, self.PriceError) as e:
             return str(e)
 
-        reply  = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)
+        reply = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)
         reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
         reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
         try:
             reply += '<br />Spread: {:,.2%}'.format((sellprice-buyprice)/sellprice)
         except ZeroDivisionError:
-            reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!' #by request from Jack
+            # By request from Jack
+            reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!'
 
-        if args and items:
+        if (args and items):
             reply += self.disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) > 1 and systems:
+        if (len(args) > 1 and systems):
             reply += self.disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply
+
 
 class EveUtils(object):
     cache_version = 1
@@ -167,13 +168,20 @@ class EveUtils(object):
             if (len(args) > 10):
                 return 'Please limit your search to 10 characters at once'
             reply = ''
-            cached = self.getCache('https://api.eveonline.com/eve/CharacterID.xml.aspx', params={'names' : ','.join(map(str, args))})
+            cached = self.getCache('https://api.eveonline.com/eve/CharacterID.xml.aspx',
+                                   params={'names': ','.join(map(str, args))})
             if (not cached):
-                r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx', data={'names' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx',
+                                  data={'names': ','.join(map(str, args))},
+                                  headers={'User-Agent': 'VM JabberBot'},
+                                  timeout=3)
                 if (r.status_code != 200 or r.encoding != 'utf-8'):
-                    return 'The CharacterID-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.'
+                    return 'The CharacterID-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/CharacterID.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'names' : ','.join(map(str, args))})
+                self.setCache('https://api.eveonline.com/eve/CharacterID.xml.aspx',
+                              doc=str(r.text),
+                              expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              params={'names': ','.join(map(str, args))})
             else:
                 xml = ET.fromstring(cached)
             args = []
@@ -181,50 +189,72 @@ class EveUtils(object):
                 if (int(character.attrib['characterID']) != 0):
                     args.append(character.attrib['characterID'])
                 else:
-                    reply += 'Character <b>' + character.attrib['name'] + '</b> does not exist<br />'
+                    reply += 'Character <b>{}</b> does not exist<br />'.format(character.attrib['name'])
             if (len(args) == 0):
                 return 'None of these character(s) exist'
-            cached = self.getCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', params={'ids' : ','.join(map(str, args))})
+            cached = self.getCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
+                                   params={'ids': ','.join(map(str, args))})
             if (not cached):
-                r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', data={'ids' : ','.join(map(str, args))}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=4)
+                r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
+                                  data={'ids': ','.join(map(str, args))},
+                                  headers={'User-Agent': 'VM JabberBot'},
+                                  timeout=4)
                 if (r.status_code != 200 or r.encoding != 'utf-8'):
-                    return 'The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.'
+                    return 'The CharacterAffiliation-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : ','.join(map(str, args))})
+                self.setCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
+                              doc=str(r.text),
+                              expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              params={'ids': ','.join(map(str, args))})
             else:
                 xml = ET.fromstring(cached)
             for row in xml[1][0]:
                 character = row.attrib
-                reply += str(character['characterName']) + ' is in corporation <b>' + str(character['corporationName']) + '</b>' + ((' in alliance <b>' + str(character['allianceName']) + '</b>') if str(character['allianceName']) != '' else '') + ((' in faction <b>' + str(character['factionName']) + '</b>') if str(character['factionName']) != '' else '') + '<br />'
+                reply += str(character['characterName'])
+                reply += ' is in corporation <b>' + str(character['corporationName']) + '</b>'
+                reply += ((' in alliance <b>{!s}</b>'.format(character['allianceName'])) if str(character['allianceName']) != '' else '')
+                reply += ((' in faction <b>{!s}</b>'.format(character['factionName'])) if str(character['factionName']) != '' else '')
+                reply += '<br />'
             if (len(args) == 1):
-                r = requests.get('http://evewho.com/api.php', params={'type' : 'character', 'id' : args[0]}, headers={ 'User-Agent' : 'VM JabberBot'}, timeout=5)
+                r = requests.get('http://evewho.com/api.php',
+                                 params={'type': 'character', 'id': args[0]},
+                                 headers={'User-Agent': 'VM JabberBot'},
+                                 timeout=5)
                 if (r.status_code != 200):
-                    return 'The EVEWho-API returned error code <b>' + str(r.status_code) + '</b>.'
+                    return 'The EVEWho-API returned error code <b>{!s}</b>.'.format(r.status_code)
                 evewhoapi = r.json()
                 if (evewhoapi['info'] == None):
                     reply += 'Eve Who got no data for this character<br />'
                 else:
-                    reply += 'Security status: <b>' + str(evewhoapi['info']['sec_status']) + '</b><br />'
+                    reply += 'Security status: <b>{!s}</b><br />'.format(evewhoapi['info']['sec_status'])
                     corporations = []
                     for corp in evewhoapi['history'][-10:]:
                         corporations.append(corp['corporation_id'])
                     corporations = list(set(corporations))
-                    cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx', params={'ids' : ','.join(map(str, corporations))})
+                    cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                                           params={'ids': ','.join(map(str, corporations))})
                     if (not cached):
-                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx', data={'ids' : ','.join(map(str, corporations))}, timeout=3)
+                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx',
+                                          data={'ids': ','.join(map(str, corporations))},
+                                          timeout=3)
                         if (r.status_code != 200 or r.encoding != 'utf-8'):
-                            return 'The CharacterAffiliation-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.'
+                            return 'The CharacterAffiliation-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
                         xml = ET.fromstring(r.text)
-                        self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))), params={'ids' : ','.join(map(str, corporations))})
+                        self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                                      doc=str(r.text),
+                                      expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                                      params={'ids': ','.join(map(str, corporations))})
                     else:
                         xml = ET.fromstring(cached)
                     corporations = {}
                     for corp in xml[1][0]:
                         corporations[corp.attrib['characterID']] = corp.attrib['name']
                     for corp in evewhoapi['history'][-10:]:
-                        reply += 'From ' + str(corp['start_date']) + ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now') + ' in <b>' + str(corporations[corp['corporation_id']]) + '</b><br />'
+                        reply += 'From ' + str(corp['start_date'])
+                        reply += ' til ' + (str(corp['end_date']) if str(corp['end_date']) != 'None' else 'now')
+                        reply += ' in <b>' + str(corporations[corp['corporation_id']]) + '</b><br />'
                     if (len(evewhoapi['history']) > 10):
-                        reply += 'The full history is available under http://evewho.com/pilot/' + str(evewhoapi['info']['name'].replace(' ', '+')) + '/<br />'
+                        reply += 'The full history is available under http://evewho.com/pilot/{}/<br />'.format(str(evewhoapi['info']['name']).replace(' ', '+'))
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
             return 'There is a problem with the API server. Can\'t connect to the server.'
@@ -244,15 +274,19 @@ class EveUtils(object):
         try:
             cached = self.getCache('https://api.eveonline.com/server/serverstatus.xml.aspx')
             if (not cached):
-                r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx', headers={ 'User-Agent' : 'VM JabberBot'}, timeout=3)
+                r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx',
+                                 headers={'User-Agent': 'VM JabberBot'},
+                                 timeout=3)
                 if (r.status_code != 200 or r.encoding != 'utf-8'):
-                    return 'The ServerStatus-API returned error code <b>' + str(r.status_code) + '</b> or the XML encoding is broken.'
+                    return 'The ServerStatus-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/server/serverstatus.xml.aspx', doc=str(r.text), expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+                self.setCache('https://api.eveonline.com/server/serverstatus.xml.aspx',
+                              doc=str(r.text),
+                              expiry=int(calendar.timegm(time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
             else:
                 xml = ET.fromstring(cached)
             if (xml[1][0].text == 'True'):
-                reply += '\nThe server is online and ' + str(xml[1][1].text) + ' players are playing'
+                reply += '\nThe server is online and {!s} players are playing'.format(xml[1][1].text)
             else:
                 reply += '\nThe server is offline'
         except requests.exceptions.RequestException as e:
@@ -502,7 +536,7 @@ class EveUtils(object):
             response = requests.get(''.join([vmc.blurl, vmc.blkey, '/', pilot]), verify=False)
             result.append('{} is {}'.format(pilot, response.json()[0]['output']))
 
-        if len(result) > 1:
+        if (len(result) > 1):
             result.insert(0, '')
         return '<br />'.join(result)
 
@@ -512,13 +546,13 @@ class EveUtils(object):
             cur = conn.cursor()
 
             if (len(params) == 0):
-                cur.execute('''
-                    SELECT response
-                      FROM cache
-                      WHERE path = :path
+                cur.execute(
+                    '''SELECT response
+                       FROM cache
+                       WHERE path = :path
                         AND expiry > :expiry;''',
-                    {"path" : path,
-                     "expiry" : time.time()})
+                    {"path": path,
+                     "expiry": time.time()})
                 res = cur.fetchall()
                 cur.close()
                 conn.close()
@@ -530,15 +564,15 @@ class EveUtils(object):
             for val in params.values():
                 paramlist += val + "+"
             params = paramlist[:-1]
-            cur.execute('''
-                SELECT response
-                  FROM cache
-                  WHERE path = :path
+            cur.execute(
+                '''SELECT response
+                   FROM cache
+                   WHERE path = :path
                     AND params = :params
                     AND expiry > :expiry;''',
-                {"path" : path,
-                 "params" : params,
-                 "expiry" : int(time.time())})
+                {"path": path,
+                 "params": params,
+                 "expiry": int(time.time())})
             res = cur.fetchall()
             cur.close()
             conn.close()
@@ -563,35 +597,36 @@ class EveUtils(object):
                   WHERE type='version';''')
             res = cur.fetchall()
             if (len(res) == 1 and res[0][0] != self.cache_version):
-                print("CACHE ERROR: Update cache database")
-                return false
+                cur.execute("DROP TABLE cache;")
             conn.commit()
 
-            cur.execute('''
-                INSERT OR REPLACE INTO metadata
-                    VALUES (:type, :version);''',
-                {"type" : "version",
-                 "version" : self.cache_version})
-            cur.execute('''
-                CREATE TABLE IF NOT EXISTS cache
-                  (path VARCHAR(255) NOT NULL,
-                  params VARCHAR(255),
-                  response TEXT NOT NULL,
-                  expiry INT);''')
-            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS Query ON cache (path, params);")
-            cur.execute('''
-                DELETE FROM cache
-                  WHERE expiry <= :expiry;''',
-                {"expiry" : int(time.time())})
+            cur.execute(
+                '''INSERT OR REPLACE INTO metadata
+                   VALUES (:type, :version);''',
+                {"type": "version",
+                 "version": self.cache_version})
+            cur.execute(
+                '''CREATE TABLE IF NOT EXISTS cache(
+                    path VARCHAR(255) NOT NULL,
+                    params VARCHAR(255),
+                    response TEXT NOT NULL,
+                    expiry INT
+                   );''')
+            cur.execute('''CREATE UNIQUE INDEX IF NOT EXISTS
+                           Query ON cache (path, params);''')
+            cur.execute(
+                '''DELETE FROM cache
+                   WHERE expiry <= :expiry;''',
+                {"expiry": int(time.time())})
 
             if (len(params) == 0):
-                cur.execute('''
-                    INSERT INTO cache
-                      VALUES (:path, :params, :response, :expiry);''',
-                    {"path" : path,
-                     "params" : "",
-                     "response" : doc,
-                     "expiry" : expiry})
+                cur.execute(
+                    '''INSERT INTO cache
+                       VALUES (:path, :params, :response, :expiry);''',
+                    {"path": path,
+                     "params": "",
+                     "response": doc,
+                     "expiry": expiry})
                 conn.commit()
                 cur.close()
                 conn.close()
@@ -602,13 +637,13 @@ class EveUtils(object):
             for val in params.values():
                 paramlist += val + "+"
             params = paramlist[:-1]
-            cur.execute('''
-                INSERT INTO cache
-                  VALUES (:path, :params, :response, :expiry);''',
-                {"path" : path,
-                 "params" : params,
-                 "response" : doc,
-                 "expiry" : expiry})
+            cur.execute(
+                '''INSERT INTO cache
+                   VALUES (:path, :params, :response, :expiry);''',
+                {"path": path,
+                 "params": params,
+                 "response": doc,
+                 "expiry": expiry})
             conn.commit()
             cur.close()
             conn.close()

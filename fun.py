@@ -1,5 +1,7 @@
-import random
 from jabberbot import botcmd
+
+import random
+
 
 class Say(object):
     # 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
@@ -76,7 +78,7 @@ class Say(object):
     @botcmd
     def pimpsay(self, mess, args):
         'Like fishsay but blacker'
-        if args:
+        if (args):
             return "{} {}".format(args, random.choice(self.pimpisms))
         else:
             return random.choice(self.pimpisms)
@@ -96,21 +98,21 @@ class Say(object):
     def chasesay(self, mess, args):
         'Please'
         cmdname = self.chasesay._jabberbot_command_name
-        if args.startswith(cmdname):
+        if (args.startswith(cmdname)):
             return "nope"
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = (args.strip() if args else self.get_sender_username(mess))
         return "{}, {}".format(sender, self.chaseisms[0])
 
     @botcmd
     def kairksay(self, mess, args):
         'Like fishsay but more Kafkaesque'
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = (args.strip() if args else self.get_sender_username(mess))
         return "{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '<question> - Provides insight into the future'
-        if not args:
+        if (not args):
             return 'You will need to provide a question for me to answer.'
         else:
             return random.choice(self.eball_answers)
@@ -118,7 +120,7 @@ class Say(object):
     @botcmd
     def sayhi(self, mess, args):
         '[name] - Says hi to you or name if provided!'
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = (args.strip() if args else self.get_sender_username(mess))
         return "Hi {}!".format(sender)
 
 
@@ -126,61 +128,59 @@ class Chains(object):
     @botcmd(hidden=True)
     def every(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return "lion"
 
     @botcmd(hidden=True)
     def lion(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return "except"
 
     @botcmd(hidden=True, name="except")
     def bot_except(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return "for"
 
     @botcmd(hidden=True, name="for")
     def bot_for(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return "at"
 
     @botcmd(hidden=True)
     def at(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return "most"
 
     @botcmd(hidden=True, name="most")
     def bot_most(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return "one"
 
     @botcmd(hidden=True, name="one")
     def bot_one(self, mess, args):
         '''Every lion except for at most one'''
-        if not args and random.randint(1, 5) == 1:
+        if (not args and random.randint(1, 5) == 1):
             return ":bravo:"
 
     @botcmd(hidden=True, name="z")
     def bot_z(self, mess, args):
         '''z0r'''
-        if not args and random.randint(1, 3) == 1:
+        if (not args and random.randint(1, 3) == 1):
             return "0"
 
     @botcmd(hidden=True, name="0")
     def bot_0(self, mess, args):
         '''z0r'''
-        if not args and random.randint(1, 3) == 1:
+        if (not args and random.randint(1, 3) == 1):
             return "r"
 
     @botcmd(hidden=True, name="r")
     def bot_r(self, mess, args):
         '''z0r'''
-        if not args and random.randint(1, 3) == 1:
+        if (not args and random.randint(1, 3) == 1):
             return "z"
-
-
