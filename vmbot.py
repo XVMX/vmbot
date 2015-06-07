@@ -274,7 +274,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
         headers = {"X-SourceID": vmc.id, "X-SharedKey": vmc.key}
         r = requests.post(url=vmc.url, data=result, headers=headers)
-        return (r.status_code == 200)
+        return r.status_code
 
     @botcmd
     def bcast(self, mess, args):
@@ -302,10 +302,13 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
                     "Please try again with less of a tale. "
                     "You could try, y'know, a forum post.".format(len(broadcast)))
 
-        if (self.sendBcast(broadcast, "{} via VMBot".format(srjid))):
-            reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
+        status = self.sendBcast(broadcast, "{} via VMBot".format(srjid))
+        if (status == 200):
+            reply = "{}, I have sent your broadcast to {}".format(
+                self.get_sender_username(mess), vmc.target)
         else:
-            reply = self.get_sender_username(mess) + ", I failed to send your broadcast to " + vmc.target
+            reply = "{}, I failed to send your broadcast to {} (Server returned error code {!s})".format(
+                self.get_sender_username(mess), vmc.target, status)
 
         return reply
 
