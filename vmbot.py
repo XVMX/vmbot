@@ -300,7 +300,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             return ("This broadcast has {} characters and is too long; "
                     "max length is 10240 characters. "
                     "Please try again with less of a tale. "
-                    "You could try, y'know, a forum post.".format(len(broadcast)))
+                    "You could try, y'know, a forum post.").format(len(broadcast))
 
         status = self.sendBcast(broadcast, "{} via VMBot".format(srjid))
         if (status == 200):
