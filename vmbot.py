@@ -305,7 +305,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         if (self.sendBcast(broadcast, "{} via VMBot".format(srjid))):
             reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
         else:
-            reply = self.get_sender_username(mess) + ", I failed to sent your broadcast to " + vmc.target
+            reply = self.get_sender_username(mess) + ", I failed to send your broadcast to " + vmc.target
 
         return reply
 
