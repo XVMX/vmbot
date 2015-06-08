@@ -307,7 +307,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             reply = "{}, I have sent your broadcast to {}".format(
                 self.get_sender_username(mess), vmc.target)
         else:
-            reply = "{}, I failed to send your broadcast to {} (Server returned error code {!s})".format(
+            reply = "{}, I failed to send your broadcast to {} (Server returned error code <i>{!s}</i>)".format(
                 self.get_sender_username(mess), vmc.target, status)
 
         return reply
