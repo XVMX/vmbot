@@ -46,7 +46,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         elif (cmd == "REVERT" and argc == 2):
             return self.faq_revert(mess, args[1])
         else:
-            return "faq " + " ".join(map(str, args)) + " is not an accepted command"
+            return "faq " + " ".join(args) + " is not an accepted command"
 
     def faq_show(self, mess, needle, receiver=None):
         def searchKeywords(needles, stack):
@@ -181,7 +181,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                WHERE `type` = 'version';''')
         res = cur.fetchall()
         if (res[0][0] != self.faq_version):
-            return "Tell {} to update the FAQ database!".format(", ".join(map(str, self.admins)))
+            return "Tell {} to update the FAQ database!".format(", ".join(self.admins))
 
         cur.execute(
             '''INSERT OR REPLACE INTO `metadata` (`type`, `value`)
