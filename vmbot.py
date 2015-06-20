@@ -173,7 +173,6 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
-        # Initialize JabberBot base class
         super(VMBot, self).__init__(*args, **kwargs)
 
     @botcmd
