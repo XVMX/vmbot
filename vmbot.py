@@ -284,7 +284,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         be upon you.'''
         # API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
         if (args[:2] != 'vm' or len(args) <= 3):
-            return ''
+            return None
 
         srjid = self.get_uname_from_mess(mess)
 
