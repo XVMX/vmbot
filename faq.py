@@ -212,7 +212,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         conn.commit()
         return "ID of inserted article: {!s}".format(cur.lastrowid)
 
-    def faq_edit(self, mess, id, keywords, newText):
+    def faq_edit(self, mess, pID, keywords, newText):
         if (not keywords and not newText):
             return "Please provide new text and/or new keywords"
 
@@ -225,7 +225,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                    FROM `articles`
                    WHERE `ID` = :id
                     AND NOT `hidden`;''',
-                {"id": int(id)})
+                {"id": int(pID)})
         except ValueError:
             return "Can't parse the ID"
         except sqlite3.OperationalError:
@@ -247,18 +247,18 @@ revert <ID> - Reverts deletion of article with <ID>'''
                     + (", " if (newText and keyList) else "")
                     + ("`keywords` = :keys" if (keyList) else "")
                     + " WHERE `ID` = :id;",
-                    {"id": int(id),
+                    {"id": int(pID),
                      "content": str(newText).replace("&", "&amp;"),
                      "keys": ",".join(map(str, keyList)),
                      "hist": history})
                 conn.commit()
             except:
                 return "Edit failed"
-            return "Article with ID {!s} edited".format(id)
+            return "Article with ID {!s} edited".format(pID)
         else:
             return "Only {}, directors and admins can edit this entry".format(owner)
 
-    def faq_chown(self, mess, id, newOwner):
+    def faq_chown(self, mess, pID, newOwner):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
@@ -268,7 +268,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                    FROM `articles`
                    WHERE `ID` = :id
                     AND NOT `hidden`;''',
-                {"id": int(id)});
+                {"id": int(pID)})
         except ValueError:
             return "Can't parse the ID"
         except sqlite3.OperationalError:
@@ -285,16 +285,16 @@ revert <ID> - Reverts deletion of article with <ID>'''
                     '''UPDATE `articles`
                        SET `createdBy` = :newAuthor
                        WHERE `ID` = :id;''',
-                    {"id": int(id),
+                    {"id": int(pID),
                      "newAuthor": str(newOwner)})
             except:
                 return "Chown failed"
             conn.commit()
-            return "Article with ID {!s} changed ownership to {}".format(id, newOwner)
+            return "Article with ID {!s} changed ownership to {}".format(pID, newOwner)
         else:
             return "Only {}, directors and admins can change ownership of this entry".format(owner)
 
-    def faq_log(self, mess, id):
+    def faq_log(self, mess, pID):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
@@ -304,7 +304,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                    FROM `articles`
                    WHERE `ID` = :id
                     AND NOT `hidden`;''',
-                {"id": int(id)})
+                {"id": int(pID)})
         except ValueError:
             return "Can't parse the ID"
         except sqlite3.OperationalError:
@@ -323,7 +323,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         else:
             return reply
 
-    def faq_delete(self, mess, id):
+    def faq_delete(self, mess, pID):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
@@ -333,7 +333,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                    FROM `articles`
                    WHERE `ID` = :id
                     AND NOT `hidden`;''',
-                {"id": int(id)})
+                {"id": int(pID)})
         except ValueError:
             return "Can't parse the ID"
         except sqlite3.OperationalError:
@@ -350,15 +350,15 @@ revert <ID> - Reverts deletion of article with <ID>'''
                     '''UPDATE `articles`
                        SET `hidden` = 1
                        WHERE `ID` = :id;''',
-                    {"id": int(id)})
+                    {"id": int(pID)})
             except:
                 return "Deletion failed"
             conn.commit()
-            return "Article with ID {!s} deleted".format(id)
+            return "Article with ID {!s} deleted".format(pID)
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
 
-    def faq_revert(self, mess, id):
+    def faq_revert(self, mess, pID):
         conn = sqlite3.connect("faq.sqlite")
         cur = conn.cursor()
 
@@ -368,7 +368,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                    FROM `articles`
                    WHERE `ID` = :id
                     AND `hidden`;''',
-                {"id": int(id)})
+                {"id": int(pID)})
         except ValueError:
             return "Can't parse the ID"
         except sqlite3.OperationalError:
@@ -385,10 +385,10 @@ revert <ID> - Reverts deletion of article with <ID>'''
                     '''UPDATE `articles`
                        SET `hidden` = 0
                        WHERE `ID` = :id;''',
-                    {"id": int(id)})
+                    {"id": int(pID)})
             except:
                 return "Reversion failed"
             conn.commit()
-            return "Article with ID {!s} reverted".format(id)
+            return "Article with ID {!s} reverted".format(pID)
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
