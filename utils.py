@@ -471,7 +471,7 @@ class EveUtils(object):
             result.insert(0, '')
         return '<br />'.join(result)
 
-    def getCache(self, path: str, params: dict = dict()):
+    def getCache(self, path, params=dict()):
         try:
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
@@ -513,7 +513,7 @@ class EveUtils(object):
         except:
             return None
 
-    def setCache(self, path: str, doc: str, expiry: int, params: dict = dict()):
+    def setCache(self, path, doc, expiry, params=dict()):
         try:
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
