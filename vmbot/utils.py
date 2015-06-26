@@ -100,7 +100,7 @@ class Price(object):
         if item.lower() in ('plex', 'pilot license', 'pilot license extension', "pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
-        conn = sqlite3.connect('staticdata.sqlite')
+        conn = sqlite3.connect('data/staticdata.sqlite')
         cur = conn.cursor()
         cur.execute(
             '''SELECT regionID, solarSystemName
@@ -473,7 +473,7 @@ class EveUtils(object):
 
     def getCache(self, path, params=dict()):
         try:
-            conn = sqlite3.connect("api.cache")
+            conn = sqlite3.connect("data/api.cache")
             cur = conn.cursor()
 
             if len(params) == 0:
@@ -515,7 +515,7 @@ class EveUtils(object):
 
     def setCache(self, path, doc, expiry, params=dict()):
         try:
-            conn = sqlite3.connect("api.cache")
+            conn = sqlite3.connect("data/api.cache")
             cur = conn.cursor()
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS metadata

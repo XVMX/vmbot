@@ -61,7 +61,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                 matches += len([s for s in stackList if needle in s])
             return matches
 
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         conn.create_function("searchKeywords", 2, searchKeywords)
         cur = conn.cursor()
 
@@ -146,7 +146,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             return "No matches"
 
     def faq_index(self, mess, showHidden=False):
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         try:
@@ -170,7 +170,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         if self.get_uname_from_mess(mess) not in (self.directors + self.admins):
             return "Only directors and admins can insert new entries"
 
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         cur.execute(
@@ -220,7 +220,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         if not keywords and not newText:
             return "Please provide new text and/or new keywords"
 
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         try:
@@ -263,7 +263,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             return "Only {}, directors and admins can edit this entry".format(owner)
 
     def faq_chown(self, mess, pID, newOwner):
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         try:
@@ -299,7 +299,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             return "Only {}, directors and admins can change ownership of this entry".format(owner)
 
     def faq_log(self, mess, pID):
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         try:
@@ -328,7 +328,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             return reply
 
     def faq_delete(self, mess, pID):
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         try:
@@ -363,7 +363,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             return "Only {}, directors and admins can delete this entry".format(owner)
 
     def faq_revert(self, mess, pID):
-        conn = sqlite3.connect("faq.sqlite")
+        conn = sqlite3.connect("data/faq.sqlite")
         cur = conn.cursor()
 
         try:
