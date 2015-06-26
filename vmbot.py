@@ -14,6 +14,7 @@
 
 
 from jabberbot import JabberBot, botcmd
+
 import xml.etree.ElementTree as ET
 import time
 import re
@@ -31,37 +32,38 @@ from sympy.parsing.sympy_parser import parse_expr
 import vmbot_config as vmc
 
 from fun import Say, Chains
-from faq import Faq
+from faq import FAQ
 from utils import CREST, Price, EveUtils
+
 
 logger = logging.getLogger('jabberbot')
 logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 logger.addHandler(ch)
 
-class MUCJabberBot(JabberBot):
 
+class MUCJabberBot(JabberBot):
     ''' Add features in JabberBot to allow it to handle specific
     characteristics of multiple users chatroom (MUC). '''
 
+    # Overriding JabberBot base class
     max_chat_chars = 2000
-    PING_FREQUENCY = 60  # overriding JabberBot base class
+    PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
     def __init__(self, *args, **kwargs):
         ''' Initialize variables. '''
         self.nick_dict = {}
 
-        # answer only direct messages or not?
+        # Answer only direct messages or not?
         self.only_direct = kwargs.pop('only_direct', False)
 
-        # initialize jabberbot
+        # Initialize JabberBot
         super(MUCJabberBot, self).__init__(*args, **kwargs)
 
-        # create a regex to check if a message is a direct message
+        # Create a regex to check if a message is a direct message
         user, domain = str(self.jid).split('@')
-        self.direct_message_re = re.compile('^%s(@%s)?[^\w]? ' \
-                % (user, domain))
+        self.direct_message_re = re.compile('^{!s}(@{!s})?[^\w]? '.format(user, domain))
 
     def unknown_command(self, mess, cmd, args):
         # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
@@ -87,16 +89,17 @@ class MUCJabberBot(JabberBot):
         it to answer direct messages. This is used often when it is
         connected in MUCs (multiple users chatroom). '''
 
-        # change this to be limited to certain people if you want by
+        # solodrakban protection
+        # Change this to be limited to certain people if you want by
         # if self.get_sender_username(mess) == 'solodrakban":
-        if mess.getType() != "groupchat":  # solodrakban protection
+        if mess.getType() != "groupchat":
+            return
+
+        if vmc.nickname == self.get_sender_username(mess):
             return
 
         message = mess.getBody()
         if not message:
-            return
-
-        if vmc.nickname == self.get_sender_username(mess):
             return
 
         if self.direct_message_re.match(message):
@@ -105,15 +108,15 @@ class MUCJabberBot(JabberBot):
         elif not self.only_direct:
             return super(MUCJabberBot, self).callback_message(conn, mess)
 
-    def longreply(self, mess, text, forcePM = False, receiver = None):
-        # FIXME: this should be integrated into the default send, forcepm should
-        # be part of botcmd
+    def longreply(self, mess, text, forcePM=False, receiver=None):
+        # FIXME: this should be integrated into the default send,
+        # forcepm should be part of botcmd
         server = vmc.username.split('@')[1]
         if receiver is None:
             receiver = self.get_uname_from_mess(mess)
 
         if len(text) > self.max_chat_chars or forcePM:
-            self.send('{}@{}'.format(receiver, server) , text)
+            self.send('{}@{}'.format(receiver, server), text)
             return True
         else:
             return False
@@ -121,11 +124,19 @@ class MUCJabberBot(JabberBot):
     @botcmd
     def help(self, mess, args):
         reply = super(MUCJabberBot, self).help(mess, args)
-        self.longreply(mess, reply, forcePM=True)
-        return "Private message sent"
+        if not args:
+            self.longreply(mess, reply, forcePM=True)
+            return "Private message sent"
+        else:
+            if self.longreply(mess, reply):
+                return "Private message sent"
+            else:
+                return reply
+
 
 class TimeoutError(Exception):
     pass
+
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     def decorator(func):
@@ -145,7 +156,8 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
     return decorator
 
-class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
+
+class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     # Lists for use in the various methods
     directors = [
         "jack_haydn",
@@ -161,7 +173,6 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
-        # initialize jabberbot
         super(VMBot, self).__init__(*args, **kwargs)
 
     @botcmd
@@ -177,20 +188,20 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
             if '\n' in reply:
                 reply = '\n' + reply
 
-            reply = '<font face="monospace">' + re.sub('[\n]','</font><br/><font face="monospace">',reply) + '</font>'
-        except Exception, e:
+            reply = '<font face="monospace">' + re.sub('[\n]', '</font><br/><font face="monospace">', reply) + '</font>'
+        except Exception as e:
             reply = str(e)
 
-        if len(reply) > 2 ** 15:  # TODO: what is the actual bound?
+        # TODO: what is the actual bound?
+        if len(reply) > 2 ** 15:
             reply = "I've evaluated your expression but it's too long to send with jabber"
         return reply
 
     @botcmd
     def rtd(self, mess, args):
         '''Like a box of chocolates, you never know what you're gonna get'''
-        emotes = open("emotes.txt", 'r')
-        remotes = emotes.read().split('\n')
-        emotes.close()
+        with open("emotes.txt", 'r') as emotes:
+            remotes = emotes.read().split('\n')
 
         while not remotes.pop(0).startswith('[default]'):
             pass
@@ -220,7 +231,8 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
             return "That's an absurd number of sides, try again"
 
         result = [random.randint(1, sides) for i in xrange(dice)]
-        return 'I rolled {} dice with {} sides each. The result is [{}]'.format(dice, sides, ']['.join(map(str, result)))
+        return 'I rolled {} dice with {} sides each. The result is [{}]'.format(
+            dice, sides, ']['.join(map(str, result)))
 
     @botcmd
     def flipcoin(self, mess, args):
@@ -240,7 +252,7 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
     def ping(self, mess, args):
         '''[-a] - Is this thing on? The -a flag makes the bot answer to you specifically.'''
         if args == "-a":
-            return self.get_sender_username(mess) + ': Pong.'
+            return '{}: Pong.'.format(self.get_sender_username(mess))
         else:
             return 'Pong.'
 
@@ -259,9 +271,9 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
         text.text = broadcast
         result = '<?xml version="1.0"?>' + ET.tostring(messaging)
 
-        headers = {"X-SourceID" : vmc.id, "X-SharedKey" : vmc.key}
+        headers = {"X-SourceID": vmc.id, "X-SharedKey": vmc.key}
         r = requests.post(url=vmc.url, data=result, headers=headers)
-        return True
+        return r.status_code
 
     @botcmd
     def bcast(self, mess, args):
@@ -271,7 +283,7 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
         be upon you.'''
         # API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
         if args[:2] != 'vm' or len(args) <= 3:
-            return
+            return None
 
         srjid = self.get_uname_from_mess(mess)
 
@@ -284,23 +296,30 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
         broadcast = args[3:]
 
         if len(broadcast) > 10240:
-            return "This broadcast has {} characters and is too long; max length is 10240 characters. Please try again with less of a tale. You could try, y'know, a forum post.".format(len(broadcast))
+            return ("This broadcast has {} characters and is too long; "
+                    "max length is 10240 characters. "
+                    "Please try again with less of a tale. "
+                    "You could try, y'know, a forum post.").format(len(broadcast))
 
-        self.sendBcast(broadcast, srjid + " via VMBot")
-        reply = self.get_sender_username(mess) + ", I have sent your broadcast to " + vmc.target
+        status = self.sendBcast(broadcast, "{} via VMBot".format(srjid))
+        if status == 200:
+            reply = "{}, I have sent your broadcast to {}".format(
+                self.get_sender_username(mess), vmc.target)
+        else:
+            reply = "{}, I failed to send your broadcast to {} (Server returned error code <i>{!s}</i>)".format(
+                self.get_sender_username(mess), vmc.target, status)
 
         return reply
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
         '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
-        if len(args) == 0:
-            if self.get_uname_from_mess(mess) in self.admins and self.get_sender_username(mess) != vmc.nickname:
+        if not args:
+            if self.get_uname_from_mess(mess) in self.admins:
                 reply = 'afk shower'
                 self.quit()
             else:
                 reply = 'You are not authorized to reload the bot, please go and DIAF!'
-
             return reply
 
     @botcmd(hidden=True)
@@ -313,13 +332,16 @@ class VMBot(MUCJabberBot, Say, Chains, Faq, CREST, Price, EveUtils):
         if srjid not in self.admins:
             return "You don't have the rights to git pull."
 
-        p = subprocess.Popen(['git', 'pull', ], cwd=r'/home/sjuengling/vmbot/', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['git', 'pull', ],
+                             cwd=r'/home/sjuengling/vmbot/',
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         reply = ('\n').join([out, err]).strip()
 
         return reply
-if __name__ == '__main__':
 
+
+if __name__ == '__main__':
     # Grabbing values from imported config file
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)

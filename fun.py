@@ -1,5 +1,7 @@
-import random
 from jabberbot import botcmd
+
+import random
+
 
 class Say(object):
     # 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
@@ -98,13 +100,13 @@ class Say(object):
         cmdname = self.chasesay._jabberbot_command_name
         if args.startswith(cmdname):
             return "nope"
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = (args.strip() if args else self.get_sender_username(mess))
         return "{}, {}".format(sender, self.chaseisms[0])
 
     @botcmd
     def kairksay(self, mess, args):
         'Like fishsay but more Kafkaesque'
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = (args.strip() if args else self.get_sender_username(mess))
         return "{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
 
     @botcmd(name="8ball")
@@ -118,7 +120,7 @@ class Say(object):
     @botcmd
     def sayhi(self, mess, args):
         '[name] - Says hi to you or name if provided!'
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = (args.strip() if args else self.get_sender_username(mess))
         return "Hi {}!".format(sender)
 
 
@@ -182,5 +184,3 @@ class Chains(object):
         '''z0r'''
         if not args and random.randint(1, 3) == 1:
             return "z"
-
-
