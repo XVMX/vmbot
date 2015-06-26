@@ -10,40 +10,44 @@ class FAQ(object):
 
     @botcmd
     def faq(self, mess, args):
-        '''show "<needle>" [receiver] - Shows a matching article and its ID or sends it to [receiver] (<needle> is either the ID, a list of keywords, a part of the title or a part of the content)
+        '''show "<needle>" - Shows the matching article
+
+show "<needle>" [receiver] - Shows a matching article and its ID or sends it to [receiver]
+                             (<needle> is either the ID, a list of keywords, a part of the title or a part of the content)
 insert "<title>" "<keyword>[,keyword...]" "<text>" - Creates a new article and replies the ID
 index - PMs a list of all visible entries
 index all - PMs a list of all entries (including hidden ones)
-edit <ID> "[keyword][,keyword][...]" "[text]" - Replaces article with <ID> with new text and/or new keywords (requires at least one keyword or text, leave other empty using "")
+edit <ID> "[keyword][,keyword][...]" "[text]" - Replaces article with <ID> with new text and/or new keywords
+                                                (requires at least one keyword or text, leave other empty using "")
 chown <ID> "<new Author>" - Changes ownership to <new Author> to make the article editable by him
 log <ID> - Shows author and history of article with <ID>
 delete <ID> - Deletes the article with <ID>
 revert <ID> - Reverts deletion of article with <ID>'''
         args = shlex.split(args.strip())
-        if (args):
+        if args:
             cmd = args[0].upper()
         else:
             return "Requires one of show, index, edit, chown, log, delete or revert as an argument"
         argc = len(args)
-        if (cmd == "SHOW" and argc == 2):
+        if cmd == "SHOW" and argc == 2:
             return self.faq_show(mess, args[1])
-        elif (cmd == "SHOW" and argc == 3):
+        elif cmd == "SHOW" and argc == 3:
             return self.faq_show(mess, args[1], args[2])
-        elif (cmd == "INDEX" and argc == 1):
+        elif cmd == "INDEX" and argc == 1:
             return self.faq_index(mess)
-        elif (cmd == "INDEX" and argc == 2):
+        elif cmd == "INDEX" and argc == 2:
             return self.faq_index(mess, True)
-        elif (cmd == "INSERT" and argc == 4):
+        elif cmd == "INSERT" and argc == 4:
             return self.faq_insert(mess, args[1], args[2], args[3])
-        elif (cmd == "EDIT" and argc == 4):
+        elif cmd == "EDIT" and argc == 4:
             return self.faq_edit(mess, args[1], args[2], args[3])
-        elif (cmd == "CHOWN" and argc == 3):
+        elif cmd == "CHOWN" and argc == 3:
             return self.faq_chown(mess, args[1], args[2])
-        elif (cmd == "LOG" and argc == 2):
+        elif cmd == "LOG" and argc == 2:
             return self.faq_log(mess, args[1])
-        elif (cmd == "DELETE" and argc == 2):
+        elif cmd == "DELETE" and argc == 2:
             return self.faq_delete(mess, args[1])
-        elif (cmd == "REVERT" and argc == 2):
+        elif cmd == "REVERT" and argc == 2:
             return self.faq_revert(mess, args[1])
         else:
             return "faq " + " ".join(args) + " is not an accepted command"
@@ -76,7 +80,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         res = cur.fetchall()
 
         # Keyword based search
-        if (not res):
+        if not res:
             try:
                 keyList = [item.strip() for item in needle.strip().split(',')]
                 cur.execute(
@@ -92,7 +96,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             res = cur.fetchall()
 
         # Title based search
-        if (not res):
+        if not res:
             try:
                 cur.execute(
                     '''SELECT `ID`, `keywords`, `title`, `content`
@@ -107,7 +111,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             res = cur.fetchall()
 
         # Content based search
-        if (not res):
+        if not res:
             try:
                 cur.execute(
                     '''SELECT `ID`, `keywords`, `title`, `content`
@@ -121,20 +125,20 @@ revert <ID> - Reverts deletion of article with <ID>'''
                 return "Error: Data is missing"
             res = cur.fetchall()
 
-        if (res):
+        if res:
             reply = "<b>{}</b> (<i>ID: {}</i>)<br />".format(res[0][2], res[0][0])
             reply += str(res[0][3]).replace("\n", "<br />") + "<br />"
             reply += "<b>Keywords</b>: {}".format(res[0][1])
-            if (len(res) > 1):
+            if len(res) > 1:
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
                     reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
-            if (receiver):
-                if (self.longreply(mess, reply, receiver=receiver)):
+            if receiver:
+                if self.longreply(mess, reply, receiver=receiver):
                     return "Sent a PM to {}".format(receiver)
                 else:
                     return "{}: {}".format(receiver, reply)
-            if (self.longreply(mess, reply)):
+            if self.longreply(mess, reply):
                 return "Sent a PM to you"
             else:
                 return reply
@@ -149,21 +153,21 @@ revert <ID> - Reverts deletion of article with <ID>'''
             cur.execute(
                 '''SELECT `ID`, `title`, `hidden`
                    FROM `articles`'''
-                + (" WHERE NOT `hidden`;" if (not showHidden) else ";"))
+                + (" WHERE NOT `hidden`;" if not showHidden else ";"))
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
 
         reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
-        reply += (" <i>hidden</i>" if (res[0][2]) else "")
+        reply += (" <i>hidden</i>" if res[0][2] else "")
         for (idx, article) in enumerate(res[1:]):
             reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+2, article[1], article[0])
-            reply += (" <i>hidden</i>" if (article[2]) else "")
+            reply += (" <i>hidden</i>" if article[2] else "")
         self.longreply(mess, reply, True)
         return "Sent a PM to you"
 
     def faq_insert(self, mess, title, keywords, text):
-        if (self.get_uname_from_mess(mess) not in (self.directors + self.admins)):
+        if self.get_uname_from_mess(mess) not in (self.directors + self.admins):
             return "Only directors and admins can insert new entries"
 
         conn = sqlite3.connect("faq.sqlite")
@@ -180,7 +184,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                FROM `metadata`
                WHERE `type` = 'version';''')
         res = cur.fetchall()
-        if (res[0][0] != self.faq_version):
+        if res[0][0] != self.faq_version:
             return "Tell {} to update the FAQ database!".format(", ".join(self.admins))
 
         cur.execute(
@@ -213,7 +217,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         return "ID of inserted article: {!s}".format(cur.lastrowid)
 
     def faq_edit(self, mess, pID, keywords, newText):
-        if (not keywords and not newText):
+        if not keywords and not newText:
             return "Please provide new text and/or new keywords"
 
         conn = sqlite3.connect("faq.sqlite")
@@ -231,21 +235,21 @@ revert <ID> - Reverts deletion of article with <ID>'''
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
-        if (not res):
+        if not res:
             return "Error: No match"
 
         owner = res[0][0]
         sentBy = self.get_uname_from_mess(mess)
         history = "{},{} {}".format(res[0][1], datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sentBy)
         keyList = [item.strip() for item in keywords.strip().split(',') if item]
-        if (sentBy in ([owner] + self.directors + self.admins)):
+        if sentBy in ([owner] + self.directors + self.admins):
             try:
                 cur.execute(
                     '''UPDATE `articles`
                        SET `modifiedBy` = :hist,'''
-                    + ("`content` = :content" if (newText) else "")
-                    + (", " if (newText and keyList) else "")
-                    + ("`keywords` = :keys" if (keyList) else "")
+                    + ("`content` = :content" if newText else "")
+                    + (", " if newText and keyList else "")
+                    + ("`keywords` = :keys" if keyList else "")
                     + " WHERE `ID` = :id;",
                     {"id": int(pID),
                      "content": str(newText).replace("&", "&amp;"),
@@ -274,12 +278,12 @@ revert <ID> - Reverts deletion of article with <ID>'''
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
-        if (len(res) == 0):
+        if not res:
             return "Error: No match"
 
         owner = res[0][0]
         sentBy = self.get_uname_from_mess(mess)
-        if (sentBy in ([owner] + self.directors + self.admins)):
+        if sentBy in ([owner] + self.directors + self.admins):
             try:
                 cur.execute(
                     '''UPDATE `articles`
@@ -310,7 +314,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
-        if (not res):
+        if not res:
             return "Error: No articles"
 
         history = [item.strip() for item in res[0][2].strip().split(",")]
@@ -318,7 +322,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         reply += "History: 1) {}".format(history[0])
         for (idx, edit) in enumerate(history[1:]):
             reply += "<br/>{}) {}".format(idx+2, edit)
-        if (self.longreply(mess, reply)):
+        if self.longreply(mess, reply):
             return "Sent a PM to you."
         else:
             return reply
@@ -339,12 +343,12 @@ revert <ID> - Reverts deletion of article with <ID>'''
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
-        if (not res):
+        if not res:
             return "Error: No match"
 
         owner = res[0][0]
         sentBy = self.get_uname_from_mess(mess)
-        if (sentBy in ([owner] + self.directors + self.admins)):
+        if sentBy in ([owner] + self.directors + self.admins):
             try:
                 cur.execute(
                     '''UPDATE `articles`
@@ -374,12 +378,12 @@ revert <ID> - Reverts deletion of article with <ID>'''
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
-        if (not res):
+        if not res:
             return "Error: No match"
 
         owner = res[0][0]
         sentBy = self.get_uname_from_mess(mess)
-        if (sentBy in ([owner] + self.directors + self.admins)):
+        if sentBy in ([owner] + self.directors + self.admins):
             try:
                 cur.execute(
                     '''UPDATE `articles`

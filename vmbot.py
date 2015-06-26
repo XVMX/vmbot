@@ -78,8 +78,8 @@ class MUCJabberBot(JabberBot):
         nick = presence.getFrom().getResource()
         node = presence.getFrom().getNode()
         jid = presence.getJid()
-        if (jid is not None):
-            if (node not in self.nick_dict):
+        if jid is not None:
+            if node not in self.nick_dict:
                 self.nick_dict[node] = {}
             self.nick_dict[node][nick] = jid
         return super(MUCJabberBot, self).callback_presence(conn, presence)
@@ -91,31 +91,31 @@ class MUCJabberBot(JabberBot):
 
         # solodrakban protection
         # Change this to be limited to certain people if you want by
-        # if (self.get_sender_username(mess) == 'solodrakban"):
-        if (mess.getType() != "groupchat"):
+        # if self.get_sender_username(mess) == 'solodrakban":
+        if mess.getType() != "groupchat":
             return
 
-        if (vmc.nickname == self.get_sender_username(mess)):
+        if vmc.nickname == self.get_sender_username(mess):
             return
 
         message = mess.getBody()
-        if (not message):
+        if not message:
             return
 
-        if (self.direct_message_re.match(message)):
+        if self.direct_message_re.match(message):
             mess.setBody(' '.join(message.split(' ', 1)[1:]))
             return super(MUCJabberBot, self).callback_message(conn, mess)
-        elif (not self.only_direct):
+        elif not self.only_direct:
             return super(MUCJabberBot, self).callback_message(conn, mess)
 
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
         # forcepm should be part of botcmd
         server = vmc.username.split('@')[1]
-        if (receiver is None):
+        if receiver is None:
             receiver = self.get_uname_from_mess(mess)
 
-        if (len(text) > self.max_chat_chars or forcePM):
+        if len(text) > self.max_chat_chars or forcePM:
             self.send('{}@{}'.format(receiver, server), text)
             return True
         else:
@@ -124,11 +124,11 @@ class MUCJabberBot(JabberBot):
     @botcmd
     def help(self, mess, args):
         reply = super(MUCJabberBot, self).help(mess, args)
-        if (not args):
+        if not args:
             self.longreply(mess, reply, forcePM=True)
             return "Private message sent"
         else:
-            if (self.longreply(mess, reply)):
+            if self.longreply(mess, reply):
                 return "Private message sent"
             else:
                 return reply
@@ -185,15 +185,15 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
         try:
             reply = do_math(args)
-            if ('\n' in reply):
+            if '\n' in reply:
                 reply = '\n' + reply
 
-            reply = '<font face="monospace">' + re.sub('[\n]','</font><br/><font face="monospace">',reply) + '</font>'
+            reply = '<font face="monospace">' + re.sub('[\n]', '</font><br/><font face="monospace">', reply) + '</font>'
         except Exception as e:
             reply = str(e)
 
         # TODO: what is the actual bound?
-        if (len(reply) > 2 ** 15):
+        if len(reply) > 2 ** 15:
             reply = "I've evaluated your expression but it's too long to send with jabber"
         return reply
 
@@ -203,7 +203,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         with open("emotes.txt", 'r') as emotes:
             remotes = emotes.read().split('\n')
 
-        while (not remotes.pop(0).startswith('[default]')):
+        while not remotes.pop(0).startswith('[default]'):
             pass
 
         return random.choice(remotes).split()[-1]
@@ -214,7 +214,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         dice = 1
         sides = 6
         args = args.strip().split()
-        if (len(args) > 2):
+        if len(args) > 2:
                 return 'You need to provide none, one or two parameters.'
 
         try:
@@ -225,9 +225,9 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         except IndexError:
             pass
 
-        if (not 0 <= dice <= 50):
+        if not 0 <= dice <= 50:
             return "That's an absurd number of dice, try again"
-        if (not 1 <= sides <= 2**8):
+        if not 1 <= sides <= 2**8:
             return "That's an absurd number of sides, try again"
 
         result = [random.randint(1, sides) for i in xrange(dice)]
@@ -243,7 +243,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     def pickone(self, mess, args):
         '''<option1> or <option2> [or <option3> ...] - Chooses an option for you'''
         args = args.strip().split(' or ')
-        if (len(args) > 1):
+        if len(args) > 1:
             return random.choice(args)
         else:
             return 'You need to provide at least 2 options to choose from.'
@@ -251,7 +251,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     @botcmd
     def ping(self, mess, args):
         '''[-a] - Is this thing on? The -a flag makes the bot answer to you specifically.'''
-        if (args == "-a"):
+        if args == "-a":
             return '{}: Pong.'.format(self.get_sender_username(mess))
         else:
             return 'Pong.'
@@ -282,27 +282,27 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         bcasts, only works in dir chat. Do not abuse this or Solo's wrath shall
         be upon you.'''
         # API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
-        if (args[:2] != 'vm' or len(args) <= 3):
+        if args[:2] != 'vm' or len(args) <= 3:
             return None
 
         srjid = self.get_uname_from_mess(mess)
 
-        if (str(mess.getFrom()).split("@")[0] != 'vm_dir'):
+        if str(mess.getFrom()).split("@")[0] != 'vm_dir':
             return "Broadcasting is only enabled in director chat."
 
-        if (srjid not in self.directors):
+        if srjid not in self.directors:
             return "You don't have the rights to send broadcasts."
 
         broadcast = args[3:]
 
-        if (len(broadcast) > 10240):
+        if len(broadcast) > 10240:
             return ("This broadcast has {} characters and is too long; "
                     "max length is 10240 characters. "
                     "Please try again with less of a tale. "
                     "You could try, y'know, a forum post.").format(len(broadcast))
 
         status = self.sendBcast(broadcast, "{} via VMBot".format(srjid))
-        if (status == 200):
+        if status == 200:
             reply = "{}, I have sent your broadcast to {}".format(
                 self.get_sender_username(mess), vmc.target)
         else:
@@ -314,23 +314,22 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     @botcmd(hidden=True)
     def reload(self, mess, args):
         '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
-        if (len(args) == 0):
-            if (self.get_uname_from_mess(mess) in self.admins):
+        if not args:
+            if self.get_uname_from_mess(mess) in self.admins:
                 reply = 'afk shower'
                 self.quit()
             else:
                 reply = 'You are not authorized to reload the bot, please go and DIAF!'
-
             return reply
 
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
         srjid = self.get_uname_from_mess(mess)
-        if (str(mess.getFrom()).split("@")[0] != 'vm_dir'):
+        if str(mess.getFrom()).split("@")[0] != 'vm_dir':
             return "git pull is only enabled in director chat."
 
-        if (srjid not in self.admins):
+        if srjid not in self.admins:
             return "You don't have the rights to git pull."
 
         p = subprocess.Popen(['git', 'pull', ],
@@ -342,7 +341,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         return reply
 
 
-if (__name__ == '__main__'):
+if __name__ == '__main__':
     # Grabbing values from imported config file
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
