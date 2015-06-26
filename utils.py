@@ -223,7 +223,7 @@ class EveUtils(object):
                 if r.status_code != 200:
                     return 'The EVEWho-API returned error code <b>{!s}</b>.'.format(r.status_code)
                 evewhoapi = r.json()
-                if evewhoapi['info'] == None:
+                if evewhoapi['info'] is None:
                     reply += 'Eve Who got no data for this character<br />'
                 else:
                     reply += 'Security status: <b>{!s}</b><br />'.format(evewhoapi['info']['sec_status'])
