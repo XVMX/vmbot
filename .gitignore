@@ -1,4 +1,4 @@
-vmbot_config.py
+vmbot.cfg
 faq.sqlite
 api.cache
 *.py[cod]
