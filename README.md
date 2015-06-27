@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/vmbot.svg?branch=master)](https://travis-ci.org/vmbot)
+[![Build Status](https://travis-ci.org/vmbot.svg?branch=errbot)](https://travis-ci.org/vmbot)
 
 # VMBOT
 
-## Instillation 
+## Installation 
 Make sure virtualenvwrapper is installed
 `sudo apt-get install virtualenvwrapper`
 
