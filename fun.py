@@ -69,7 +69,9 @@ class Say(object):
         "you've got to improve, or I'll be sending out more kick notices, and I hate doing that.",
         "you get a cavity search, your friends get a cavity search, EVERYBODY gets a cavity search!"
     ]
-
+    dariusisms = [
+        "Baby",
+    ]
     @botcmd
     def fishsay(self, mess, args):
         'Fishy wisdom.'
@@ -108,7 +110,13 @@ class Say(object):
         'Like fishsay but more Kafkaesque'
         sender = (args.strip() if args else self.get_sender_username(mess))
         return "{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
-
+    
+    @botcmd
+    def dariussay(self, mess, args):
+        'Like fishsay but bordering on weird'
+        sender = (args.strip() if args else self.get_sender_username(mess))
+        return "{}, {}".format(sender, random.choice(self.dariusisms))
+        
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '<question> - Provides insight into the future'
