@@ -13,12 +13,12 @@ class FAQ(object):
         '''show "<needle>" - Shows the matching article
 
 show "<needle>" [receiver] - Shows a matching article and its ID or sends it to [receiver]
-                             (<needle> is either ID, keyword(s), part of title or part of content)
+    (<needle> is either the ID, a list of keywords, a part of the title or a part of the content)
 insert "<title>" "<keyword>[,keyword...]" "<text>" - Creates a new article and replies the ID
 index - PMs a list of all visible entries
 index all - PMs a list of all entries (including hidden ones)
 edit <ID> "[keyword][,keyword][...]" "[text]" - Replaces article with <ID> with given values
-                                                (requires at least one of keyword or text)
+    (requires at least one keyword or text, leave other empty using "")
 chown <ID> "<new Author>" - Changes ownership to <new Author> to make the article editable by him
 log <ID> - Shows author and history of article with <ID>
 delete <ID> - Deletes the article with <ID>
