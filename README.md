@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/vmbot.svg?branch=errbot)](https://travis-ci.org/vmbot)
+[![Build Status](https://travis-ci.org/Hijacker/vmbot.svg?branch=errbot)](https://travis-ci.org/vmbot)
 
 # VMBOT
 
