@@ -61,9 +61,9 @@ class Price(object):
         try:
             r = requests.get(url, headers=header, timeout=5)
         except requests.exceptions.RequestException as e:
-            raise self.PriceError("Error connecting to CREST servers: {!s}".format(e))
+            raise self.PriceError("Error connecting to CREST servers: {}".format(e))
         if r.status_code != 200:
-            raise self.PriceError('The CREST-API returned error <b>{!s}</b>'.format(r.status_code))
+            raise self.PriceError('The CREST-API returned error <b>{}</b>'.format(r.status_code))
         res = r.json()
 
         volume = sum([order['volume'] for order in res['items'] if order['location']['name'].startswith(system)])
@@ -176,7 +176,7 @@ class EveUtils(object):
                                   headers={'User-Agent': 'VM JabberBot'},
                                   timeout=3)
                 if r.status_code != 200 or r.encoding != 'utf-8':
-                    return 'The CharacterID-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
+                    return 'The CharacterID-API returned error code <b>{}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
                 self.setCache('https://api.eveonline.com/eve/CharacterID.xml.aspx',
                               doc=str(r.text),
@@ -200,7 +200,7 @@ class EveUtils(object):
                                   headers={'User-Agent': 'VM JabberBot'},
                                   timeout=4)
                 if r.status_code != 200 or r.encoding != 'utf-8':
-                    return 'The CharacterAffiliation-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
+                    return 'The CharacterAffiliation-API returned error code <b>{}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
                 self.setCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
                               doc=str(r.text),
@@ -212,8 +212,8 @@ class EveUtils(object):
                 character = row.attrib
                 reply += str(character['characterName'])
                 reply += ' is in corporation <b>' + str(character['corporationName']) + '</b>'
-                reply += ((' in alliance <b>{!s}</b>'.format(character['allianceName'])) if str(character['allianceName']) != '' else '')
-                reply += ((' in faction <b>{!s}</b>'.format(character['factionName'])) if str(character['factionName']) != '' else '')
+                reply += ((' in alliance <b>{}</b>'.format(character['allianceName'])) if str(character['allianceName']) != '' else '')
+                reply += ((' in faction <b>{}</b>'.format(character['factionName'])) if str(character['factionName']) != '' else '')
                 reply += '<br />'
             if len(args) == 1:
                 r = requests.get('http://evewho.com/api.php',
@@ -221,12 +221,12 @@ class EveUtils(object):
                                  headers={'User-Agent': 'VM JabberBot'},
                                  timeout=5)
                 if r.status_code != 200:
-                    return 'The EVEWho-API returned error code <b>{!s}</b>.'.format(r.status_code)
+                    return 'The EVEWho-API returned error code <b>{}</b>.'.format(r.status_code)
                 evewhoapi = r.json()
                 if evewhoapi['info'] is None:
                     reply += 'Eve Who got no data for this character<br />'
                 else:
-                    reply += 'Security status: <b>{!s}</b><br />'.format(evewhoapi['info']['sec_status'])
+                    reply += 'Security status: <b>{}</b><br />'.format(evewhoapi['info']['sec_status'])
                     corporations = []
                     for corp in evewhoapi['history'][-10:]:
                         corporations.append(corp['corporation_id'])
@@ -238,7 +238,7 @@ class EveUtils(object):
                                           data={'ids': ','.join(map(str, corporations))},
                                           timeout=3)
                         if r.status_code != 200 or r.encoding != 'utf-8':
-                            return 'The CharacterAffiliation-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
+                            return 'The CharacterAffiliation-API returned error code <b>{}</b> or the XML encoding is broken.'.format(r.status_code)
                         xml = ET.fromstring(r.text)
                         self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
                                       doc=str(r.text),
@@ -278,7 +278,7 @@ class EveUtils(object):
                                  headers={'User-Agent': 'VM JabberBot'},
                                  timeout=3)
                 if r.status_code != 200 or r.encoding != 'utf-8':
-                    return 'The ServerStatus-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
+                    return 'The ServerStatus-API returned error code <b>{}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
                 self.setCache('https://api.eveonline.com/server/serverstatus.xml.aspx',
                               doc=str(r.text),
@@ -286,7 +286,7 @@ class EveUtils(object):
             else:
                 xml = ET.fromstring(cached)
             if xml[1][0].text == 'True':
-                reply += '\nThe server is online and {!s} players are playing'.format(xml[1][1].text)
+                reply += '\nThe server is online and {} players are playing'.format(xml[1][1].text)
             else:
                 reply += '\nThe server is offline'
         except requests.exceptions.RequestException as e:
@@ -349,16 +349,16 @@ class EveUtils(object):
                 return 'Please provide a link to a zKB Killmail'
             args = regex.group(1)
 
-            cached = self.getCache('https://zkillboard.com/api/killID/{!s}/').format(args)
+            cached = self.getCache('https://zkillboard.com/api/killID/{}/'.format(args))
             if not cached:
-                r = requests.get('https://zkillboard.com/api/killID/{!s}/'.format(args),
+                r = requests.get('https://zkillboard.com/api/killID/{}/'.format(args),
                                  headers={'Accept-Encoding': 'gzip',
                                           'User-Agent': 'VM JabberBot'},
                                  timeout=6)
                 if r.status_code != 200 or r.encoding != 'utf-8':
-                    return 'The zKB-API returned error code <b>{!s}</b> or the encoding is broken.'.format(r.status_code)
+                    return 'The zKB-API returned error code <b>{}</b> or the encoding is broken.'.format(r.status_code)
                 killdata = r.json()
-                self.setCache('https://zkillboard.com/api/killID/{!s}/'.format(args),
+                self.setCache('https://zkillboard.com/api/killID/{}/'.format(args),
                               doc=str(r.text),
                               expiry=int(time.time()+24*60*60))
             else:
@@ -372,7 +372,7 @@ class EveUtils(object):
             points = int(killdata[0]['zkb']['points'])
 
             reply = '<b>{}</b>'.format(str(victim['characterName']) if str(victim['characterName']) != '' else str(victim['corporationName']) + '\'s POS')
-            reply += ' got killed while flying a/an <b>{!s}</b>'.format(getTypeName(victim['shipTypeID']))
+            reply += ' got killed while flying a/an <b>{}</b>'.format(getTypeName(victim['shipTypeID']))
             reply += ' in <b>' + str(getName(solarSystemID)) + '</b>'
             reply += ' at ' + killTime
             reply += '<br />'
@@ -407,7 +407,7 @@ class EveUtils(object):
                                   headers={'User-Agent': 'VM JabberBot'},
                                   timeout=3)
                 if r.status_code != 200 or r.encoding != 'utf-8':
-                    return 'The TypeName-API returned error code <b>{!s}</b> or the XML encoding is broken.'.format(r.status_code)
+                    return 'The TypeName-API returned error code <b>{}</b> or the XML encoding is broken.'.format(r.status_code)
                 xml = ET.fromstring(r.text)
                 self.setCache('https://api.eveonline.com/eve/TypeName.xml.aspx',
                               doc=str(r.text),

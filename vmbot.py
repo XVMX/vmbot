@@ -63,7 +63,7 @@ class MUCJabberBot(JabberBot):
 
         # Create a regex to check if a message is a direct message
         user, domain = str(self.jid).split('@')
-        self.direct_message_re = re.compile('^{!s}(@{!s})?[^\w]? '.format(user, domain))
+        self.direct_message_re = re.compile('^{}(@{})?[^\w]? '.format(user, domain))
 
     def unknown_command(self, mess, cmd, args):
         # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
@@ -306,7 +306,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             reply = "{}, I have sent your broadcast to {}".format(
                 self.get_sender_username(mess), vmc.target)
         else:
-            reply = "{}, I failed to send your broadcast to {} (Server returned error code <i>{!s}</i>)".format(
+            reply = "{}, I failed to send your broadcast to {} (Server returned error code <i>{}</i>)".format(
                 self.get_sender_username(mess), vmc.target, status)
 
         return reply

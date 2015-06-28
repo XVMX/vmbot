@@ -214,7 +214,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
              "author": str(self.get_uname_from_mess(mess)),
              "history": "{} {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.get_uname_from_mess(mess))})
         conn.commit()
-        return "ID of inserted article: {!s}".format(cur.lastrowid)
+        return "ID of inserted article: {}".format(cur.lastrowid)
 
     def faq_edit(self, mess, pID, keywords, newText):
         if not keywords and not newText:
@@ -258,7 +258,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                 conn.commit()
             except:
                 return "Edit failed"
-            return "Article with ID {!s} edited".format(pID)
+            return "Article with ID {} edited".format(pID)
         else:
             return "Only {}, directors and admins can edit this entry".format(owner)
 
@@ -294,7 +294,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             except:
                 return "Chown failed"
             conn.commit()
-            return "Article with ID {!s} changed ownership to {}".format(pID, newOwner)
+            return "Article with ID {} changed ownership to {}".format(pID, newOwner)
         else:
             return "Only {}, directors and admins can change ownership of this entry".format(owner)
 
@@ -358,7 +358,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             except:
                 return "Deletion failed"
             conn.commit()
-            return "Article with ID {!s} deleted".format(pID)
+            return "Article with ID {} deleted".format(pID)
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
 
@@ -393,6 +393,6 @@ revert <ID> - Reverts deletion of article with <ID>'''
             except:
                 return "Reversion failed"
             conn.commit()
-            return "Article with ID {!s} reverted".format(pID)
+            return "Article with ID {} reverted".format(pID)
         else:
             return "Only {}, directors and admins can delete this entry".format(owner)
