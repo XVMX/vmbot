@@ -13,12 +13,12 @@ class FAQ(object):
         '''show "<needle>" - Shows the matching article
 
 show "<needle>" [receiver] - Shows a matching article and its ID or sends it to [receiver]
-                             (<needle> is either the ID, a list of keywords, a part of the title or a part of the content)
+    (<needle> is either the ID, a list of keywords, a part of the title or a part of the content)
 insert "<title>" "<keyword>[,keyword...]" "<text>" - Creates a new article and replies the ID
 index - PMs a list of all visible entries
 index all - PMs a list of all entries (including hidden ones)
-edit <ID> "[keyword][,keyword][...]" "[text]" - Replaces article with <ID> with new text and/or new keywords
-                                                (requires at least one keyword or text, leave other empty using "")
+edit <ID> "[keyword][,keyword][...]" "[text]" - Replaces article with <ID> with given values
+    (requires at least one keyword or text, leave other empty using "")
 chown <ID> "<new Author>" - Changes ownership to <new Author> to make the article editable by him
 log <ID> - Shows author and history of article with <ID>
 delete <ID> - Deletes the article with <ID>
@@ -152,8 +152,8 @@ revert <ID> - Reverts deletion of article with <ID>'''
         try:
             cur.execute(
                 '''SELECT `ID`, `title`, `hidden`
-                   FROM `articles`'''
-                + (" WHERE NOT `hidden`;" if not showHidden else ";"))
+                   FROM `articles`''' +
+                (" WHERE NOT `hidden`;" if not showHidden else ";"))
         except sqlite3.OperationalError:
             return "Error: Data is missing"
         res = cur.fetchall()
@@ -212,7 +212,8 @@ revert <ID> - Reverts deletion of article with <ID>'''
              "title": str(title),
              "content": str(text).replace("&", "&amp;"),
              "author": str(self.get_uname_from_mess(mess)),
-             "history": "{} {}".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.get_uname_from_mess(mess))})
+             "history": "{} {}".format(
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.get_uname_from_mess(mess))})
         conn.commit()
         return "ID of inserted article: {}".format(cur.lastrowid)
 
@@ -246,11 +247,11 @@ revert <ID> - Reverts deletion of article with <ID>'''
             try:
                 cur.execute(
                     '''UPDATE `articles`
-                       SET `modifiedBy` = :hist,'''
-                    + ("`content` = :content" if newText else "")
-                    + (", " if newText and keyList else "")
-                    + ("`keywords` = :keys" if keyList else "")
-                    + " WHERE `ID` = :id;",
+                       SET `modifiedBy` = :hist,''' +
+                    ("`content` = :content" if newText else "") +
+                    (", " if newText and keyList else "") +
+                    ("`keywords` = :keys" if keyList else "") +
+                    " WHERE `ID` = :id;",
                     {"id": int(pID),
                      "content": str(newText).replace("&", "&amp;"),
                      "keys": ",".join(map(str, keyList)),

@@ -177,7 +177,9 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
     @botcmd
     def math(self, mess, args):
-        '''<expr> - Evaluates expr mathematically. Force floating point numbers by doing 4.0/3 instead of 4/3'''
+        '''<expr> - Evaluates expr mathematically.
+
+        Force floating point numbers by doing 4.0/3 instead of 4/3'''
 
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
@@ -188,7 +190,9 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             if '\n' in reply:
                 reply = '\n' + reply
 
-            reply = '<font face="monospace">' + re.sub('[\n]', '</font><br/><font face="monospace">', reply) + '</font>'
+            reply = '<font face="monospace">{}</font>'.format(
+                re.sub('[\n]', '</font><br/><font face="monospace">', reply)
+            )
         except Exception as e:
             reply = str(e)
 
@@ -277,11 +281,12 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
     @botcmd
     def bcast(self, mess, args):
-        ''' vm <message> - Sends a message to XVMX members.
-        Must be <=1kb including the tag line. "vm" required to avoid accidental
-        bcasts, only works in dir chat. Do not abuse this or Solo's wrath shall
-        be upon you.'''
-        # API docs: https://goonfleet.com/index.php?/topic/178259-announcing-the-gsf-web-broadcast-system-and-broadcast-rest-like-api/
+        ''' vm <message> - Sends a message to XVMX members
+
+        Must be <=1kb including the tag line.
+        "vm" required to avoid accidental bcasts, only works in dir chat.
+        Do not abuse this or Solo's wrath shall be upon you.'''
+        # API docs: https://goo.gl/cTYPzg
         if args[:2] != 'vm' or len(args) <= 3:
             return None
 
@@ -306,14 +311,17 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             reply = "{}, I have sent your broadcast to {}".format(
                 self.get_sender_username(mess), vmc.target)
         else:
-            reply = "{}, I failed to send your broadcast to {} (Server returned error code <i>{}</i>)".format(
-                self.get_sender_username(mess), vmc.target, status)
+            reply = ("{}, I failed to send your broadcast to {}"
+                     " (Server returned error code <i>{}</i>)").format(
+                        self.get_sender_username(mess), vmc.target, status)
 
         return reply
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
-        '''reload - Kills the bot's process. If ran in a while true loop on the shell, it'll immediately reconnect.'''
+        '''reload - Kills the bot's process
+
+        If ran in a while true loop on the shell, it'll immediately reconnect.'''
         if not args:
             if self.get_uname_from_mess(mess) in self.admins:
                 reply = 'afk shower'
