@@ -392,6 +392,14 @@ class EveUtils(object):
             finally:
                 return apireply
 
+        def humanNumber(num):
+            num = float(num)
+            for unit in ['', 'k', 'm', 'b']:
+                if num < 1000:
+                    return "{:.2f}{}".format(num, unit)
+                num /= 1000
+            return "{:.2f}t".format(num)
+
         args = args.strip().split(" ", 1)
         regex = re.match('https?:\/\/zkillboard\.com\/kill\/(\d+)\/?', args[0])
         if regex is None:
@@ -422,10 +430,10 @@ class EveUtils(object):
         totalValue = float(killdata[0]['zkb']['totalValue'])
         points = int(killdata[0]['zkb']['points'])
 
-        reply = "<b>{}'s {}</b> worth <b>{:,.2f} ISK</b> was killed in {} ({}) on {}".format(
+        reply = "<b>{}'s {}</b> worth <b>{} ISK</b> was killed in {} ({}) on {}".format(
             victim['characterName'] if victim['characterName'] else victim['corporationName'],
             getTypeName(victim['shipTypeID']),
-            totalValue,
+            humanNumber(totalValue),
             solarSystemData['solarSystemName'],
             solarSystemData['regionName'],
             killTime
