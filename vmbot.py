@@ -111,7 +111,7 @@ class MUCJabberBot(JabberBot):
         if message.split(" ")[0] not in self.commands:
             match = self.zBotRegex.search(message)
             if match:
-                message = "zbot {}".format(match.group(0))
+                message = "zbot {} compact".format(match.group(0))
 
         mess.setBody(message)
         return super(MUCJabberBot, self).callback_message(conn, mess)
