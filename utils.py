@@ -400,6 +400,43 @@ class EveUtils(object):
                 num /= 1000
             return "{:.2f}t".format(num)
 
+        def getTickers(corporationID, allianceID=None):
+            # Corp ticker
+            cached = self.getCache('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
+                                   params={'corporationID': corporationID})
+            if not cached:
+                r = requests.post('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
+                                  data={'corporationID': corporationID},
+                                  headers={'User-Agent': 'VM JabberBot'},
+                                  timeout=3)
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                              doc=str(r.text),
+                              expiry=int(calendar.timegm(
+                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              params={'corporationID': corporationID})
+            else:
+                xml = ET.fromstring(cached)
+            corpTicker = str(xml[1].find('ticker').text)
+
+            # Alliance ticker
+            allianceTicker = None
+            if allianceID:
+                cached = self.getCache('https://api.eveonline.com/eve/AllianceList.xml.aspx')
+                if not cached:
+                    r = requests.post('https://api.eveonline.com/eve/AllianceList.xml.aspx',
+                                      timeout=3)
+                    xml = ET.fromstring(r.text)
+                    self.setCache('https://api.eveonline.com/eve/AllianceList.xml.aspx',
+                                  doc=str(r.text),
+                                  expiry=int(calendar.timegm(
+                                    time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+                else:
+                    xml = ET.fromstring(cached)
+                node = xml[1][0].find("*[@allianceID='{}']".format(allianceID))
+                allianceTicker = node.attrib['shortName']
+            return (corpTicker, allianceTicker)
+
         args = args.strip().split(" ", 1)
         regex = re.match('https?:\/\/zkillboard\.com\/kill\/(\d+)\/?', args[0])
         if regex is None:
