@@ -323,8 +323,8 @@ class EveUtils(object):
 
 <zKB link> compact - Displays statistics of a killmail in one line'''
         # Resolves typeIDs to their names
-        def getTypeName(pID):
-            if pID == 0:
+        def getTypeName(typeID):
+            if typeID == 0:
                 return "[Unknown]"
             conn = sqlite3.connect('staticdata.sqlite')
             cur = conn.cursor()
@@ -332,7 +332,7 @@ class EveUtils(object):
                 '''SELECT typeID, typeName
                    FROM invTypes
                    WHERE typeID = :id;''',
-                {'id': pID})
+                {'id': typeID})
             items = cur.fetchall()
             cur.close()
             conn.close()
@@ -341,7 +341,7 @@ class EveUtils(object):
             return items[0][1]
 
         # Resolves solarSystemIDs to their data
-        def getSolarSystemData(pID):
+        def getSolarSystemData(solarSystemID):
             conn = sqlite3.connect('staticdata.sqlite')
             cur = conn.cursor()
             cur.execute(
@@ -352,7 +352,7 @@ class EveUtils(object):
                    INNER JOIN mapRegions
                      ON mapRegions.regionID = mapSolarSystems.regionID
                    WHERE solarSystemID = :id;''',
-                {'id': pID})
+                {'id': solarSystemID})
             systems = cur.fetchall()
             cur.close()
             conn.close()
@@ -367,15 +367,15 @@ class EveUtils(object):
                     'regionName': systems[0][3]}
 
         # Resolves IDs to their names
-        def getName(pID):
+        def getName(nameID):
             try:
                 cached = self.getCache(('https://api.eveonline.com/'
                                         'eve/charactername.xml.aspx'),
-                                       params={'ids': pID})
+                                       params={'ids': nameID})
                 if not cached:
                     r = requests.post(('https://api.eveonline.com/'
                                        'eve/charactername.xml.aspx'),
-                                      data={'ids': pID},
+                                      data={'ids': nameID},
                                       headers={'User-Agent': 'VM JabberBot'},
                                       timeout=3)
                     xml = ET.fromstring(r.text)
@@ -383,7 +383,7 @@ class EveUtils(object):
                                   doc=str(r.text),
                                   expiry=int(calendar.timegm(
                                     time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                                  params={'ids': pID})
+                                  params={'ids': nameID})
                 else:
                     xml = ET.fromstring(cached)
                 apireply = str(xml[1][0][0].attrib['name'])
