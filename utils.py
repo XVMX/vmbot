@@ -467,12 +467,18 @@ class EveUtils(object):
         totalValue = float(killdata[0]['zkb']['totalValue'])
         points = int(killdata[0]['zkb']['points'])
 
-        reply = "<b>{}'s {}</b> worth <b>{} ISK</b> was killed in {} ({}) on {}".format(
+        corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
+        tickers = corpTicker
+        tickers += " - {}".format(allianceTicker) if allianceTicker else ""
+
+        reply = "{} [{}] | {} | {} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] if victim['characterName'] else victim['corporationName'],
+            tickers,
             getTypeName(victim['shipTypeID']),
             humanNumber(totalValue),
             solarSystemData['solarSystemName'],
             solarSystemData['regionName'],
+            len(attackers),
             killTime
         )
 
