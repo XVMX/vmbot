@@ -65,6 +65,9 @@ class MUCJabberBot(JabberBot):
         user, domain = str(self.jid).split('@')
         self.direct_message_re = re.compile('^{}(@{})?[^\w]? '.format(user, domain))
 
+        # Regex to check for zKillboard link
+        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?")
+
     def unknown_command(self, mess, cmd, args):
         # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
         return ''
@@ -85,28 +88,33 @@ class MUCJabberBot(JabberBot):
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
-        ''' Changes the behaviour of the JabberBot in order to allow
-        it to answer direct messages. This is used often when it is
-        connected in MUCs (multiple users chatroom). '''
+        '''Changes the behaviour of the JabberBot in order to allow it to answer direct messages.
+
+        This is used often when it is connected in MUCs (multiple users chatroom).'''
 
         # solodrakban protection
         # Change this to be limited to certain people if you want by
         # if self.get_sender_username(mess) == 'solodrakban":
         if mess.getType() != "groupchat":
-            return
+            return None
 
         if vmc.nickname == self.get_sender_username(mess):
-            return
+            return None
 
         message = mess.getBody()
         if not message:
-            return
+            return None
 
         if self.direct_message_re.match(message):
-            mess.setBody(' '.join(message.split(' ', 1)[1:]))
-            return super(MUCJabberBot, self).callback_message(conn, mess)
-        elif not self.only_direct:
-            return super(MUCJabberBot, self).callback_message(conn, mess)
+            message = ' '.join(message.split(' ', 1)[1:])
+
+        if message.split(" ")[0] not in self.commands:
+            match = self.zBotRegex.search(message)
+            if match:
+                message = "zbot {}".format(match.group(0))
+
+        mess.setBody(message)
+        return super(MUCJabberBot, self).callback_message(conn, mess)
 
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
