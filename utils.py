@@ -471,7 +471,7 @@ class EveUtils(object):
         if victim['characterName']:
             corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
             ticker += str(corpTicker)
-            ticker += " - {}".format(allianceTicker) if allianceTicker else ""
+            ticker += " | {}".format(allianceTicker) if allianceTicker else ""
         else:
             corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
             ticker += str(allianceTicker)
