@@ -468,12 +468,14 @@ class EveUtils(object):
         corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
         ticker = ""
         if victim['characterName']:
+            ticker += "["
             ticker += str(corpTicker)
             ticker += " | {}".format(allianceTicker) if allianceTicker else ""
-        else:
-            ticker += str(allianceTicker)
+            ticker += "] "
+        elif allianceTicker:
+            ticker += "[{}] ".format(allianceTicker)
 
-        reply = "{} [{}] | {} | {} ISK | {} ({}) | {} participants | {}".format(
+        reply = "{} {}| {} | {} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] if victim['characterName'] else victim['corporationName'],
             ticker,
             self.getTypeName(victim['shipTypeID']),
