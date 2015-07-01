@@ -162,6 +162,74 @@ class Price(object):
 class EveUtils(object):
     cache_version = 1
 
+    def getTypeName(self, typeID):
+        '''Resolves a typeID to its name'''
+        if typeID == 0:
+            return "[Unknown]"
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute(
+            '''SELECT typeID, typeName
+               FROM invTypes
+               WHERE typeID = :id;''',
+            {'id': typeID})
+        items = cur.fetchall()
+        cur.close()
+        conn.close()
+        if not items:
+            return "[Unknown]"
+        return items[0][1]
+
+    def getSolarSystemData(self, solarSystemID):
+        '''Resolves a solarSystemID to its data'''
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute(
+            '''SELECT solarSystemID, solarSystemName,
+                      mapSolarSystems.constellationID, constellationName,
+                      mapSolarSystems.regionID, regionName
+               FROM mapSolarSystems
+               INNER JOIN mapConstellations
+                 ON mapConstellations.constellationID = mapSolarSystems.constellationID
+               INNER JOIN mapRegions
+                 ON mapRegions.regionID = mapSolarSystems.regionID
+               WHERE solarSystemID = :id;''',
+            {'id': solarSystemID})
+        systems = cur.fetchall()
+        cur.close()
+        conn.close()
+        if not systems:
+            return {'solarSystemID': 0, 'solarSystemName': "[Unknown]",
+                    'constellationID': 0, 'constellationName': "[Unknown]",
+                    'regionID': 0, 'regionName': "[Unknown]"}
+        return {'solarSystemID': systems[0][0], 'solarSystemName': systems[0][1],
+                'constellationID': systems[0][2], 'constellationName': systems[0][3],
+                'regionID': systems[0][4], 'regionName': systems[0][5]}
+
+    def getName(self, nameID):
+        '''Resolves charID, corpID, allianceID, factionID, etc to its name'''
+        try:
+            cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                                   params={'ids': nameID})
+            if not cached:
+                r = requests.post(('https://api.eveonline.com/eve/charactername.xml.aspx'),
+                                  data={'ids': nameID},
+                                  headers={'User-Agent': 'VM JabberBot'},
+                                  timeout=3)
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                              doc=str(r.text),
+                              expiry=int(calendar.timegm(
+                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              params={'ids': nameID})
+            else:
+                xml = ET.fromstring(cached)
+            apireply = str(xml[1][0][0].attrib['name'])
+        except:
+            apireply = "[Unknown]"
+        finally:
+            return apireply
+
     @botcmd
     def character(self, mess, args):
         '''<character name> - Displays Employment information of a single character
@@ -322,76 +390,6 @@ class EveUtils(object):
         '''<zKB link> - Displays statistics of a killmail
 
 <zKB link> compact - Displays statistics of a killmail in one line'''
-        # Resolves a typeID to its name
-        def getTypeName(typeID):
-            if typeID == 0:
-                return "[Unknown]"
-            conn = sqlite3.connect('staticdata.sqlite')
-            cur = conn.cursor()
-            cur.execute(
-                '''SELECT typeID, typeName
-                   FROM invTypes
-                   WHERE typeID = :id;''',
-                {'id': typeID})
-            items = cur.fetchall()
-            cur.close()
-            conn.close()
-            if not items:
-                return "[Unknown]"
-            return items[0][1]
-
-        # Resolves a solarSystemID to its data
-        def getSolarSystemData(solarSystemID):
-            conn = sqlite3.connect('staticdata.sqlite')
-            cur = conn.cursor()
-            cur.execute(
-                '''SELECT solarSystemID, solarSystemName, constellationName, regionName
-                   FROM mapSolarSystems
-                   INNER JOIN mapConstellations
-                     ON mapConstellations.constellationID = mapSolarSystems.constellationID
-                   INNER JOIN mapRegions
-                     ON mapRegions.regionID = mapSolarSystems.regionID
-                   WHERE solarSystemID = :id;''',
-                {'id': solarSystemID})
-            systems = cur.fetchall()
-            cur.close()
-            conn.close()
-            if not systems:
-                return {'solarSystemID': 0,
-                        'solarSystemName': "[Unknown]",
-                        'constellationName': "[Unknown]",
-                        'regionName': "[Unknown]"}
-            return {'solarSystemID': systems[0][0],
-                    'solarSystemName': systems[0][1],
-                    'constellationName': systems[0][2],
-                    'regionName': systems[0][3]}
-
-        # Resolves other ID to its name
-        def getName(nameID):
-            try:
-                cached = self.getCache(('https://api.eveonline.com/'
-                                        'eve/charactername.xml.aspx'),
-                                       params={'ids': nameID})
-                if not cached:
-                    r = requests.post(('https://api.eveonline.com/'
-                                       'eve/charactername.xml.aspx'),
-                                      data={'ids': nameID},
-                                      headers={'User-Agent': 'VM JabberBot'},
-                                      timeout=3)
-                    xml = ET.fromstring(r.text)
-                    self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                                  doc=str(r.text),
-                                  expiry=int(calendar.timegm(
-                                    time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                                  params={'ids': nameID})
-                else:
-                    xml = ET.fromstring(cached)
-                apireply = str(xml[1][0][0].attrib['name'])
-            except:
-                apireply = "[Unknown]"
-            finally:
-                return apireply
-
         def humanNumber(num):
             num = float(num)
             for unit in ['', 'k', 'm', 'b']:
@@ -449,7 +447,7 @@ class EveUtils(object):
             r = requests.get('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
                              headers={'Accept-Encoding': 'gzip',
                                       'User-Agent': 'VM JabberBot'},
-                             timeout=6)
+                             timeout=5)
             if r.status_code != 200 or r.encoding != 'utf-8':
                 return ('The zKB-API returned error code <b>{}</b>'
                         ' or the encoding is broken.').format(r.status_code)
@@ -461,25 +459,24 @@ class EveUtils(object):
             killdata = json.loads(cached)
 
         victim = killdata[0]['victim']
-        solarSystemData = getSolarSystemData(int(killdata[0]['solarSystemID']))
+        solarSystemData = self.getSolarSystemData(int(killdata[0]['solarSystemID']))
         killTime = str(killdata[0]['killTime'])
         attackers = killdata[0]['attackers']
         totalValue = float(killdata[0]['zkb']['totalValue'])
         points = int(killdata[0]['zkb']['points'])
 
+        corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
         ticker = ""
         if victim['characterName']:
-            corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
             ticker += str(corpTicker)
             ticker += " | {}".format(allianceTicker) if allianceTicker else ""
         else:
-            corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
             ticker += str(allianceTicker)
 
         reply = "{} [{}] | {} | {} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] if victim['characterName'] else victim['corporationName'],
             ticker,
-            getTypeName(victim['shipTypeID']),
+            self.getTypeName(victim['shipTypeID']),
             humanNumber(totalValue),
             solarSystemData['solarSystemName'],
             solarSystemData['regionName'],
@@ -520,7 +517,7 @@ class EveUtils(object):
 
         # Add ship type names to attackerDetails
         for char in attackerDetails:
-            char['shipTypeName'] = str(getTypeName(char['shipTypeID']))
+            char['shipTypeName'] = str(self.getTypeName(char['shipTypeID']))
 
         # Print attackerDetails
         for char in attackerDetails[:5]:
