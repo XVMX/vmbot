@@ -322,7 +322,7 @@ class EveUtils(object):
         '''<zKB link> - Displays statistics of a killmail
 
 <zKB link> compact - Displays statistics of a killmail in one line'''
-        # Resolves typeIDs to their names
+        # Resolves a typeID to its name
         def getTypeName(typeID):
             if typeID == 0:
                 return "[Unknown]"
@@ -340,7 +340,7 @@ class EveUtils(object):
                 return "[Unknown]"
             return items[0][1]
 
-        # Resolves solarSystemIDs to their data
+        # Resolves a solarSystemID to its data
         def getSolarSystemData(solarSystemID):
             conn = sqlite3.connect('staticdata.sqlite')
             cur = conn.cursor()
@@ -366,7 +366,7 @@ class EveUtils(object):
                     'constellationName': systems[0][2],
                     'regionName': systems[0][3]}
 
-        # Resolves IDs to their names
+        # Resolves other ID to its name
         def getName(nameID):
             try:
                 cached = self.getCache(('https://api.eveonline.com/'
@@ -467,13 +467,18 @@ class EveUtils(object):
         totalValue = float(killdata[0]['zkb']['totalValue'])
         points = int(killdata[0]['zkb']['points'])
 
-        corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
-        tickers = corpTicker
-        tickers += " - {}".format(allianceTicker) if allianceTicker else ""
+        ticker = ""
+        if victim['characterName']:
+            corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
+            ticker += str(corpTicker)
+            ticker += " - {}".format(allianceTicker) if allianceTicker else ""
+        else:
+            corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
+            ticker += str(allianceTicker)
 
         reply = "{} [{}] | {} | {} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] if victim['characterName'] else victim['corporationName'],
-            tickers,
+            ticker,
             getTypeName(victim['shipTypeID']),
             humanNumber(totalValue),
             solarSystemData['solarSystemName'],
