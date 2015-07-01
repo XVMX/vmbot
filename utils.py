@@ -160,7 +160,75 @@ class Price(object):
 
 
 class EveUtils(object):
-    cache_version = 1
+    cache_version = 2
+
+    def getTypeName(self, typeID):
+        '''Resolves a typeID to its name'''
+        if typeID == 0:
+            return "[Unknown]"
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute(
+            '''SELECT typeID, typeName
+               FROM invTypes
+               WHERE typeID = :id;''',
+            {'id': typeID})
+        items = cur.fetchall()
+        cur.close()
+        conn.close()
+        if not items:
+            return "[Unknown]"
+        return items[0][1]
+
+    def getSolarSystemData(self, solarSystemID):
+        '''Resolves a solarSystemID to its data'''
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute(
+            '''SELECT solarSystemID, solarSystemName,
+                      mapSolarSystems.constellationID, constellationName,
+                      mapSolarSystems.regionID, regionName
+               FROM mapSolarSystems
+               INNER JOIN mapConstellations
+                 ON mapConstellations.constellationID = mapSolarSystems.constellationID
+               INNER JOIN mapRegions
+                 ON mapRegions.regionID = mapSolarSystems.regionID
+               WHERE solarSystemID = :id;''',
+            {'id': solarSystemID})
+        systems = cur.fetchall()
+        cur.close()
+        conn.close()
+        if not systems:
+            return {'solarSystemID': 0, 'solarSystemName': "[Unknown]",
+                    'constellationID': 0, 'constellationName': "[Unknown]",
+                    'regionID': 0, 'regionName': "[Unknown]"}
+        return {'solarSystemID': systems[0][0], 'solarSystemName': systems[0][1],
+                'constellationID': systems[0][2], 'constellationName': systems[0][3],
+                'regionID': systems[0][4], 'regionName': systems[0][5]}
+
+    def getName(self, nameID):
+        '''Resolves charID, corpID, allianceID, factionID, etc to its name'''
+        try:
+            cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                                   params={'ids': nameID})
+            if not cached:
+                r = requests.post(('https://api.eveonline.com/eve/charactername.xml.aspx'),
+                                  data={'ids': nameID},
+                                  headers={'User-Agent': 'VM JabberBot'},
+                                  timeout=3)
+                xml = ET.fromstring(r.text)
+                self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                              doc=str(r.text),
+                              expiry=int(calendar.timegm(
+                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              params={'ids': nameID})
+            else:
+                xml = ET.fromstring(cached)
+            apireply = str(xml[1][0][0].attrib['name'])
+        except:
+            apireply = "[Unknown]"
+        finally:
+            return apireply
 
     @botcmd
     def character(self, mess, args):
@@ -319,188 +387,212 @@ class EveUtils(object):
 
     @botcmd
     def zbot(self, mess, args):
-        '''<zKB link> - Displays statistics of a killmail'''
-        try:
-            # Resolves typeIDs to their names
-            def getTypeName(pID):
-                try:
-                    cached = self.getCache('https://api.eveonline.com/eve/TypeName.xml.aspx',
-                                           params={'ids': pID})
-                    if not cached:
-                        r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx',
-                                          data={'ids': pID},
-                                          headers={'User-Agent': 'VM JabberBot'},
-                                          timeout=3)
-                        xml = ET.fromstring(r.text)
-                        self.setCache('https://api.eveonline.com/eve/TypeName.xml.aspx',
-                                      doc=str(r.text),
-                                      expiry=int(calendar.timegm(
-                                        time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                                      params={'ids': pID})
-                    else:
-                        xml = ET.fromstring(cached)
-                    apireply = str(xml[1][0][0].attrib['typeName'])
-                except:
-                    apireply = str('[API Error]')
-                finally:
-                    return apireply
+        '''<zKB link> - Displays statistics of a killmail
 
-            # Resolves IDs to their names
-            def getName(pID):
-                    try:
-                        cached = self.getCache(('https://api.eveonline.com/'
-                                                'eve/charactername.xml.aspx'),
-                                               params={'ids': pID})
-                        if not cached:
-                            r = requests.post(('https://api.eveonline.com/'
-                                               'eve/charactername.xml.aspx'),
-                                              data={'ids': pID},
-                                              headers={'User-Agent': 'VM JabberBot'},
-                                              timeout=3)
-                            xml = ET.fromstring(r.text)
-                            self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                                          doc=str(r.text),
-                                          expiry=int(calendar.timegm(
-                                            time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                                          params={'ids': pID})
-                        else:
-                            xml = ET.fromstring(cached)
-                        apireply = str(xml[1][0][0].attrib['name'])
-                    except:
-                        apireply = str('[API Error]')
-                    finally:
-                        return apireply
+<zKB link> compact - Displays statistics of a killmail in one line'''
+        def humanNumber(num):
+            num = float(num)
+            for unit in ['', 'k', 'm', 'b']:
+                if num < 1000:
+                    return "{:.2f}{}".format(num, unit)
+                num /= 1000
+            return "{:.2f}t".format(num)
 
-            args = args.strip()
-            regex = re.match('https?:\/\/zkillboard\.com\/kill\/(\d+)\/?', args)
-            if regex is None:
-                return 'Please provide a link to a zKB Killmail'
-            args = regex.group(1)
-
-            cached = self.getCache('https://zkillboard.com/api/killID/{}/'.format(args))
+        def getTickers(corporationID, allianceID=None):
+            # Corp ticker
+            cached = self.getCache('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
+                                   params={'corporationID': corporationID})
             if not cached:
-                r = requests.get('https://zkillboard.com/api/killID/{}/'.format(args),
-                                 headers={'Accept-Encoding': 'gzip',
-                                          'User-Agent': 'VM JabberBot'},
-                                 timeout=6)
-                if r.status_code != 200 or r.encoding != 'utf-8':
-                    return ('The zKB-API returned error code <b>{}</b>'
-                            ' or the encoding is broken.').format(r.status_code)
-                killdata = r.json()
-                self.setCache('https://zkillboard.com/api/killID/{}/'.format(args),
-                              doc=str(r.text),
-                              expiry=int(time.time()+24*60*60))
-            else:
-                killdata = json.loads(cached)
-
-            victim = killdata[0]['victim']
-            solarSystemID = int(killdata[0]['solarSystemID'])
-            killTime = str(killdata[0]['killTime'])
-            attackers = killdata[0]['attackers']
-            totalValue = float(killdata[0]['zkb']['totalValue'])
-            points = int(killdata[0]['zkb']['points'])
-
-            reply = '<b>{}</b>'.format(str(victim['characterName'])
-                                       if str(victim['characterName']) != ''
-                                       else str(victim['corporationName']) + '\'s POS')
-            reply += ' got killed while flying a/an <b>{}</b>'.format(
-                getTypeName(victim['shipTypeID']))
-            reply += ' in <b>' + str(getName(solarSystemID)) + '</b>'
-            reply += ' at ' + killTime
-            reply += '<br />'
-            if str(victim['characterName']) != '':
-                reply += str(victim['characterName'])
-                reply += ' is in corporation ' + str(victim['corporationName'])
-                reply += (' in alliance ' + str(victim['allianceName'])
-                          if str(victim['allianceName']) != '' else '')
-                reply += (' in faction ' + str(victim['factionName'])
-                          if str(victim['factionName']) != '' else '')
-            else:
-                reply += 'The POS is owned by corporation ' + str(victim['corporationName'])
-                reply += (' in alliance ' + str(victim['allianceName'])
-                          if str(victim['allianceName']) != '' else '')
-                reply += (' in faction ' + str(victim['factionName'])
-                          if str(victim['factionName']) != '' else '')
-            reply += ' and took <b>{:,}</b> damage'.format(int(victim['damageTaken']))
-            reply += '<br />'
-            reply += ('The total value of the ship/POS was <b>{:,.2f} ISK</b>'
-                      ' for <b>{:,} point(s)</b><br />').format(totalValue, points)
-
-            attackerDetails = list()
-            for char in attackers:
-                attackerDetails.append({'characterName': str(char['characterName']),
-                                        'corporationName': str(char['corporationName']),
-                                        'damageDone': int(char['damageDone']),
-                                        'shipTypeID': int(char['shipTypeID']),
-                                        'finalBlow': (char['finalBlow'] == 1)})
-            # Sort after inflicted damage
-            attackerDetails.sort(key=lambda x: x['damageDone'], reverse=True)
-
-            # Add ship type names to attackerDetails
-            attackerShips = set([attacker['shipTypeID'] for attacker in attackerDetails])
-            cached = self.getCache('https://api.eveonline.com/eve/TypeName.xml.aspx',
-                                   params={'ids': ','.join(map(str, attackerShips))})
-            if not cached:
-                r = requests.post('https://api.eveonline.com/eve/TypeName.xml.aspx',
-                                  data={'ids': ','.join(map(str, attackerShips))},
+                r = requests.post('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
+                                  data={'corporationID': corporationID},
                                   headers={'User-Agent': 'VM JabberBot'},
                                   timeout=3)
-                if r.status_code != 200 or r.encoding != 'utf-8':
-                    return ('The TypeName-API returned error code <b>{}</b>'
-                            ' or the XML encoding is broken.').format(r.status_code)
                 xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/TypeName.xml.aspx',
+                self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
                               doc=str(r.text),
                               expiry=int(calendar.timegm(
                                 time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                              params={'ids': ','.join(map(str, attackerShips))})
+                              params={'corporationID': corporationID})
             else:
                 xml = ET.fromstring(cached)
-            for char in attackerDetails:
-                row = xml.find(".//*[@typeID='"+str(char['shipTypeID'])+"']")
-                char['shipTypeName'] = str(row.attrib['typeName'])
+            corpTicker = str(xml[1].find('ticker').text)
 
-            # Print attackerDetails
-            for (idx, char) in enumerate(attackerDetails[:5]):
-                if char['characterName'] != '':
-                    reply += '<b>{}</b> did <b>{:,} damage</b>'.format(
-                        char['characterName'], char['damageDone'])
-                    reply += ' flying a {} (<i>{:,.2%} of total damage</i>)'.format(
-                        char['shipTypeName'], char['damageDone']/float(victim['damageTaken']))
-                    reply += (' and scored the <b>final blow</b>' if char['finalBlow'] else '')
-                    reply += '<br />'
+            # Alliance ticker
+            allianceTicker = None
+            if allianceID:
+                cached = self.getCache('https://api.eveonline.com/eve/AllianceList.xml.aspx')
+                if not cached:
+                    r = requests.post('https://api.eveonline.com/eve/AllianceList.xml.aspx',
+                                      timeout=3)
+                    xml = ET.fromstring(r.text)
+                    self.setCache('https://api.eveonline.com/eve/AllianceList.xml.aspx',
+                                  doc=str(r.text),
+                                  expiry=int(calendar.timegm(
+                                    time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
                 else:
-                    reply += '<b>{}\'s POS</b> did <b>{:,} damage</b>'.format(
-                        char['corporationName'], char['damageDone'])
-                    reply += ' (<i>{:,.2%} of total damage</i>)'.format(
-                        char['damageDone']/float(victim['damageTaken']))
-                    reply += (' and scored the <b>final blow</b>' if char['finalBlow'] else '')
-                    reply += '<br />'
+                    xml = ET.fromstring(cached)
+                node = xml[1][0].find("*[@allianceID='{}']".format(allianceID))
+                allianceTicker = node.attrib['shortName']
+            return (corpTicker, allianceTicker)
 
-            # Print final blow if not already included
-            if "final blow" not in reply:
-                char = [char for char in attackerDetails if char['finalBlow']][0]
-                if char['characterName'] != '':
-                    reply += '<b>{}</b> did <b>{:,} damage</b>'.format(
-                        char['characterName'], char['damageDone'])
-                    reply += ' flying a {} (<i>{:,.2%} of total damage</i>)'.format(
-                        char['shipTypeName'], char['damageDone']/float(victim['damageTaken']))
-                    reply += (' and scored the <b>final blow</b>' if char['finalBlow'] else '')
-                    reply += '<br />'
-                else:
-                    reply += '<b>{}\'s POS</b> did <b>{:,} damage</b>'.format(
-                        char['corporationName'], char['damageDone'])
-                    reply += ' (<i>{:,.2%} of total damage</i>)'.format(
-                        char['damageDone']/float(victim['damageTaken']))
-                    reply += (' and scored the <b>final blow</b>' if char['finalBlow'] else '')
-                    reply += '<br />'
+        args = args.strip().split(" ", 1)
+        regex = re.match('https?:\/\/zkillboard\.com\/kill\/(\d+)\/?', args[0])
+        if regex is None:
+            return 'Please provide a link to a zKB Killmail'
+        killID = regex.group(1)
+        compact = len(args) == 2
 
-            reply = reply[:-6]
-        except requests.exceptions.RequestException as e:
-            return 'There is a problem with the API server. Can\'t connect to the server.'
-        except ValueError as e:
-            return 'WTF, 0 damage killmail?'
+        cached = self.getCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID))
+        if not cached:
+            r = requests.get('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
+                             headers={'Accept-Encoding': 'gzip',
+                                      'User-Agent': 'VM JabberBot'},
+                             timeout=5)
+            if r.status_code != 200 or r.encoding != 'utf-8':
+                return ('The zKB-API returned error code <b>{}</b>'
+                        ' or the encoding is broken.').format(r.status_code)
+            killdata = r.json()
+            self.setCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
+                          doc=str(r.text),
+                          expiry=int(time.time()+24*60*60))
+        else:
+            killdata = json.loads(cached)
+
+        victim = killdata[0]['victim']
+        solarSystemData = self.getSolarSystemData(int(killdata[0]['solarSystemID']))
+        killTime = str(killdata[0]['killTime'])
+        attackers = killdata[0]['attackers']
+        totalValue = float(killdata[0]['zkb']['totalValue'])
+        points = int(killdata[0]['zkb']['points'])
+
+        corpTicker, allianceTicker = getTickers(victim['corporationID'], victim['allianceID'])
+        ticker = ""
+        if victim['characterName']:
+            ticker += "["
+            ticker += str(corpTicker)
+            ticker += " | {}".format(allianceTicker) if allianceTicker else ""
+            ticker += "] "
+        elif allianceTicker:
+            ticker += "[{}] ".format(allianceTicker)
+
+        reply = "{} {}| {} | {} ISK | {} ({}) | {} participants | {}".format(
+            victim['characterName'] if victim['characterName'] else victim['corporationName'],
+            ticker,
+            self.getTypeName(victim['shipTypeID']),
+            humanNumber(totalValue),
+            solarSystemData['solarSystemName'],
+            solarSystemData['regionName'],
+            len(attackers),
+            killTime
+        )
+
+        if compact:
+            return reply
+
+        reply += '<br />'
+        if victim['characterName']:
+            reply += '{} is in corporation {}'.format(
+                victim['characterName'], victim['corporationName'])
+            reply += (' in alliance {}'.format(victim['allianceName'])
+                      if victim['allianceName'] else '')
+            reply += (' in faction {}'.format(victim['factionName'])
+                      if victim['factionName'] else '')
+        else:
+            reply += 'The POS is owned by corporation {}'.format(victim['corporationName'])
+            reply += (' in alliance {}'.format(victim['allianceName'])
+                      if victim['allianceName'] else '')
+            reply += (' in faction {}'.format(victim['factionName'])
+                      if victim['factionName'] else '')
+        reply += ' and took <b>{:,}</b> damage'.format(victim['damageTaken'])
+        reply += ' for <b>{:,} point(s)</b>'.format(points)
+        reply += '<br />'
+
+        attackerDetails = list()
+        for char in attackers:
+            attackerDetails.append({'characterName': str(char['characterName']),
+                                    'corporationName': str(char['corporationName']),
+                                    'damageDone': int(char['damageDone']),
+                                    'shipTypeID': int(char['shipTypeID']),
+                                    'finalBlow': char['finalBlow'] == 1})
+        # Sort after inflicted damage
+        attackerDetails.sort(key=lambda x: x['damageDone'], reverse=True)
+
+        # Add ship type names to attackerDetails
+        for char in attackerDetails:
+            char['shipTypeName'] = str(self.getTypeName(char['shipTypeID']))
+
+        # Print attackerDetails
+        for char in attackerDetails[:5]:
+            reply += ('<b>{}\'s {}</b> did <b>{:,} damage</b>'
+                      ' (<i>{:,.2%} of total damage</i>)').format(
+                        char['characterName'] if char['characterName'] else char['corporationName'],
+                        char['shipTypeName'],
+                        char['damageDone'],
+                        char['damageDone']/float(victim['damageTaken']))
+            reply += ' and scored the <b>final blow</b>' if char['finalBlow'] else ''
+            reply += '<br />'
+
+        # Print final blow if not already included
+        if "final blow" not in reply:
+            char = [char for char in attackerDetails if char['finalBlow']][0]
+            reply += ('<b>{}\'s {}</b> did <b>{:,} damage</b>'
+                      ' (<i>{:,.2%} of total damage</i>)').format(
+                        char['characterName'] if char['characterName'] else char['corporationName'],
+                        char['shipTypeName'],
+                        char['damageDone'],
+                        char['damageDone']/float(victim['damageTaken']))
+            reply += ' and scored the <b>final blow</b>'
+            reply += '<br />'
+
+        reply = reply[:-6]
         return reply
+
+    def kmFeed(self):
+        '''Sends a message to the first chatroom with the latest losses'''
+        def humanNumber(num):
+            num = float(num)
+            for unit in ['', 'k', 'm', 'b']:
+                if num < 1000:
+                    return "{:.2f}{}".format(num, unit)
+                num /= 1000
+            return "{:.2f}t".format(num)
+
+        r = requests.get(('https://zkillboard.com/api/corporationID/2052404106/losses/'
+                          'startTime/{}/no-items/no-attackers/').format(
+                            time.strftime("%Y%m%d%H%M", time.gmtime(time.time() - 10*60))),
+                         headers={'Accept-Encoding': 'gzip',
+                                  'User-Agent': 'VM JabberBot'},
+                         timeout=5)
+        if r.status_code != 200 or r.encoding != 'utf-8':
+            return
+
+        losses = r.json()
+        if losses:
+            reply = "{} new loss(es) within the last 10 minutes:<br />".format(len(losses))
+            for loss in losses:
+                killID = int(loss['killID'])
+                victim = loss['victim']
+                solarSystemData = self.getSolarSystemData(int(loss['solarSystemID']))
+                killTime = str(loss['killTime'])
+                totalValue = float(loss['zkb']['totalValue'])
+                ticker = "XVMX | CONDI" if victim['characterName'] else "CONDI"
+
+                reply += "{} [{}] | {} | {} ISK | {} ({}) | {} | {}".format(
+                    victim['characterName'] if victim['characterName']
+                    else victim['corporationName'],
+                    ticker,
+                    self.getTypeName(victim['shipTypeID']),
+                    humanNumber(totalValue),
+                    solarSystemData['solarSystemName'],
+                    solarSystemData['regionName'],
+                    killTime,
+                    "https://zkillboard.com/kill/{}/".format(killID)
+                )
+                reply += "<br />"
+            reply = reply[:-6]
+            self.send(vmc.chatroom1, reply, in_reply_to=None, message_type='groupchat')
+
+        return
 
     @botcmd
     def rcbl(self, mess, args):
@@ -536,14 +628,11 @@ class EveUtils(object):
                 res = cur.fetchall()
                 cur.close()
                 conn.close()
-                if len(res) == 0 or len(res) > 1:
+                if len(res) != 1:
                     return None
                 return res[0][0]
 
-            paramlist = ""
-            for val in params.values():
-                paramlist += val + "+"
-            params = paramlist[:-1]
+            params = json.dumps(params)
             cur.execute(
                 '''SELECT response
                    FROM cache
@@ -566,15 +655,16 @@ class EveUtils(object):
         try:
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
-            cur.execute('''
-                CREATE TABLE IF NOT EXISTS metadata
-                  (type VARCHAR(255) NOT NULL UNIQUE,
-                  value INT NOT NULL);''')
+            cur.execute(
+                '''CREATE TABLE IF NOT EXISTS metadata (
+                     type VARCHAR(255) NOT NULL UNIQUE,
+                     value INT NOT NULL
+                   );''')
 
-            cur.execute('''
-                SELECT value
-                  FROM metadata
-                  WHERE type='version';''')
+            cur.execute(
+                '''SELECT value
+                   FROM metadata
+                   WHERE type='version';''')
             res = cur.fetchall()
             if len(res) == 1 and res[0][0] != self.cache_version:
                 cur.execute("DROP TABLE cache;")
@@ -586,14 +676,15 @@ class EveUtils(object):
                 {"type": "version",
                  "version": self.cache_version})
             cur.execute(
-                '''CREATE TABLE IF NOT EXISTS cache(
-                    path VARCHAR(255) NOT NULL,
-                    params VARCHAR(255),
-                    response TEXT NOT NULL,
-                    expiry INT
+                '''CREATE TABLE IF NOT EXISTS cache (
+                     path VARCHAR(255) NOT NULL,
+                     params VARCHAR(255),
+                     response TEXT NOT NULL,
+                     expiry INT
                    );''')
-            cur.execute('''CREATE UNIQUE INDEX IF NOT EXISTS
-                           Query ON cache (path, params);''')
+            cur.execute(
+                '''CREATE UNIQUE INDEX IF NOT EXISTS
+                   Query ON cache (path, params);''')
             cur.execute(
                 '''DELETE FROM cache
                    WHERE expiry <= :expiry;''',
@@ -612,11 +703,7 @@ class EveUtils(object):
                 conn.close()
                 return True
 
-            # Fix for params (dict) in table
-            paramlist = ""
-            for val in params.values():
-                paramlist += val + "+"
-            params = paramlist[:-1]
+            params = json.dumps(params)
             cur.execute(
                 '''INSERT INTO cache
                    VALUES (:path, :params, :response, :expiry);''',

@@ -26,6 +26,7 @@ import errno
 import os
 import signal
 import subprocess
+import sqlite3
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -43,8 +44,8 @@ logger.addHandler(ch)
 
 
 class MUCJabberBot(JabberBot):
-    ''' Add features in JabberBot to allow it to handle specific
-    characteristics of multiple users chatroom (MUC). '''
+    '''Add features in JabberBot to allow it to handle specific
+    characteristics of multiple users chatroom (MUC).'''
 
     # Overriding JabberBot base class
     max_chat_chars = 2000
@@ -64,6 +65,9 @@ class MUCJabberBot(JabberBot):
         # Create a regex to check if a message is a direct message
         user, domain = str(self.jid).split('@')
         self.direct_message_re = re.compile('^{}(@{})?[^\w]? '.format(user, domain))
+
+        # Regex to check for zKillboard link
+        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?")
 
     def unknown_command(self, mess, cmd, args):
         # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
@@ -85,28 +89,33 @@ class MUCJabberBot(JabberBot):
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
-        ''' Changes the behaviour of the JabberBot in order to allow
-        it to answer direct messages. This is used often when it is
-        connected in MUCs (multiple users chatroom). '''
+        '''Changes the behaviour of the JabberBot in order to allow it to answer direct messages.
+
+        This is used often when it is connected in MUCs (multiple users chatroom).'''
 
         # solodrakban protection
         # Change this to be limited to certain people if you want by
         # if self.get_sender_username(mess) == 'solodrakban":
         if mess.getType() != "groupchat":
-            return
+            return None
 
         if vmc.nickname == self.get_sender_username(mess):
-            return
+            return None
 
         message = mess.getBody()
         if not message:
-            return
+            return None
 
         if self.direct_message_re.match(message):
-            mess.setBody(' '.join(message.split(' ', 1)[1:]))
-            return super(MUCJabberBot, self).callback_message(conn, mess)
-        elif not self.only_direct:
-            return super(MUCJabberBot, self).callback_message(conn, mess)
+            message = ' '.join(message.split(' ', 1)[1:])
+
+        if message.split(" ")[0] not in self.commands:
+            match = self.zBotRegex.search(message)
+            if match:
+                message = "zbot {} compact".format(match.group(0))
+
+        mess.setBody(message)
+        return super(MUCJabberBot, self).callback_message(conn, mess)
 
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
@@ -173,13 +182,94 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
+        self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
+        self.nextReminder = None
+
         super(VMBot, self).__init__(*args, **kwargs)
+
+        self.initReminder()
+
+    def idle_proc(self):
+        '''This function will be called in the main loop'''
+        if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
+            self.kmFeed()
+            self.kmFeedTrigger += 10*60
+        if self.nextReminder and self.nextReminder['time'] <= time.time():
+            self.processReminder()
+
+        return super(VMBot, self).idle_proc()
+
+    def initReminder(self):
+        conn = sqlite3.connect("remindme.sqlite")
+        cur = conn.cursor()
+        try:
+            cur.execute('''SELECT time, text, username, chat, type, thread
+                           FROM remindme
+                           ORDER BY time ASC
+                           LIMIT 1;''')
+            res = cur.fetchone()
+            if not res:
+                raise ValueError("No reminders")
+            self.nextReminder = {"time": res[0],
+                                 "text": res[1],
+                                 "username": res[2],
+                                 "chat": res[3],
+                                 "type": res[4],
+                                 "thread": res[5]}
+        except (sqlite3.OperationalError, ValueError):
+            pass
+        cur.close()
+        conn.close()
+        return
+
+    def processReminder(self):
+        # Send reminder
+        reply = "{}: You told me to message you regarding: {}".format(
+            self.nextReminder['username'], self.nextReminder['text'])
+        response = self.build_message(reply)
+        response.setTo(self.nextReminder['chat'])
+        response.setType(self.nextReminder['type'])
+        response.setThread(self.nextReminder['thread'])
+        self.send_message(response)
+
+        # Delete old reminder and set new one
+        conn = sqlite3.connect("remindme.sqlite")
+        cur = conn.cursor()
+        try:
+            cur.execute('''DELETE FROM remindme
+                           WHERE `time` = :time''',
+                        {"time": self.nextReminder['time']})
+            cur.execute('''SELECT `time`, `text`, username, chat, type, thread
+                           FROM remindme
+                           ORDER BY time ASC
+                           LIMIT 1;''')
+            res = cur.fetchone()
+            if not res:
+                raise ValueError("No more reminders left")
+            self.nextReminder = {"time": res[0],
+                                 "text": res[1],
+                                 "username": res[2],
+                                 "chat": res[3],
+                                 "type": res[4],
+                                 "thread": res[5]}
+        except sqlite3.OperationalError as ex:
+            self.nextReminder = None
+            self.send(vmc.chatroom1,
+                      "RemindMe Error: {}".format(ex),
+                      in_reply_to=None,
+                      message_type='groupchat')
+        except ValueError:
+            self.nextReminder = None
+        conn.commit()
+        cur.close()
+        conn.close()
+        return
 
     @botcmd
     def math(self, mess, args):
         '''<expr> - Evaluates expr mathematically.
 
-        Force floating point numbers by doing 4.0/3 instead of 4/3'''
+Force floating point numbers by doing 4.0/3 instead of 4/3'''
 
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
@@ -191,8 +281,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
                 reply = '\n' + reply
 
             reply = '<font face="monospace">{}</font>'.format(
-                re.sub('[\n]', '</font><br/><font face="monospace">', reply)
-            )
+                re.sub('[\n]', '</font><br/><font face="monospace">', reply))
         except Exception as e:
             reply = str(e)
 
@@ -260,6 +349,67 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         else:
             return 'Pong.'
 
+    @botcmd
+    def remindme(self, mess, args):
+        '''<delay>@<text> - Messages you with message containing <text> after <delay>
+
+Delay format: [0-24h] [0-59m] [0-59s]'''
+        args = [item.strip() for item in args.strip().split("@")]
+        try:
+            delayText = args[0].split()
+            text = args[1]
+        except IndexError:
+            return "Please provide 2 parameters: <delay>@<text>"
+
+        delay = 0
+        try:
+            for part in delayText:
+                part = part.lower()
+                if "s" in part:
+                    delay += int(part.replace("s", ""))
+                elif "m" in part:
+                    delay += 60*int(part.replace("m", ""))
+                elif "h" in part:
+                    delay += 60*60*int(part.replace("h", ""))
+        except ValueError:
+            return "Failed to parse the delay"
+
+        if delay <= 0:
+            return "Please specify a (positive) delay"
+        elif delay > 24*60*60:
+            return "Please specify a delay lower than 1 day"
+
+        # Add new reminder
+        newReminder = {"time": time.time() + delay,
+                       "text": text,
+                       "username": self.get_sender_username(mess),
+                       "chat": mess.getFrom().getStripped(),
+                       "type": mess.getType(),
+                       "thread": mess.getThread()}
+        conn = sqlite3.connect("remindme.sqlite")
+        cur = conn.cursor()
+        try:
+            cur.execute('''CREATE TABLE IF NOT EXISTS remindme (
+                             `time` REAL NOT NULL UNIQUE ON CONFLICT ABORT,
+                             `text` TEXT NOT NULL,
+                             username TEXT NOT NULL,
+                             chat TEXT NOT NULL,
+                             type TEXT NOT NULL,
+                             thread TEXT
+                           );''')
+            cur.execute('''INSERT INTO remindme
+                           VALUES (:time, :text, :username, :chat, :type, :thread);''',
+                        newReminder)
+        except sqlite3.OperationalError as ex:
+            return "RemindMe Error: {}".format(ex)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if not self.nextReminder or newReminder['time'] < self.nextReminder['time']:
+            self.nextReminder = newReminder
+        return "I will remind you in {}".format(args[0])
+
     def sendBcast(self, broadcast, author):
         result = ''
         messaging = ET.Element("messaging")
@@ -283,9 +433,9 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     def bcast(self, mess, args):
         ''' vm <message> - Sends a message to XVMX members
 
-        Must be <=1kb including the tag line.
-        "vm" required to avoid accidental bcasts, only works in dir chat.
-        Do not abuse this or Solo's wrath shall be upon you.'''
+Must be <=1kb including the tag line.
+"vm" required to avoid accidental bcasts, only works in dir chat.
+Do not abuse this or Solo's wrath shall be upon you.'''
         # API docs: https://goo.gl/cTYPzg
         if args[:2] != 'vm' or len(args) <= 3:
             return None
@@ -321,7 +471,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     def reload(self, mess, args):
         '''reload - Kills the bot's process
 
-        If ran in a while true loop on the shell, it'll immediately reconnect.'''
+If ran in a while true loop on the shell, it'll immediately reconnect.'''
         if not args:
             if self.get_uname_from_mess(mess) in self.admins:
                 reply = 'afk shower'
@@ -351,7 +501,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
 if __name__ == '__main__':
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, kmFeed=True)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.join_room(vmc.chatroom3, vmc.nickname)
