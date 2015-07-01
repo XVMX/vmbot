@@ -547,6 +547,53 @@ class EveUtils(object):
         reply = reply[:-6]
         return reply
 
+    def kmFeed(self):
+        '''Sends a message to the first chatroom with the latest losses'''
+        def humanNumber(num):
+            num = float(num)
+            for unit in ['', 'k', 'm', 'b']:
+                if num < 1000:
+                    return "{:.2f}{}".format(num, unit)
+                num /= 1000
+            return "{:.2f}t".format(num)
+
+        r = requests.get(('https://zkillboard.com/api/corporationID/2052404106/losses/'
+                          'startTime/{}/no-items/no-attackers/').format(
+                            time.strftime("%Y%m%d%H%M", time.gmtime(time.time() - 10*60))),
+                         headers={'Accept-Encoding': 'gzip',
+                                  'User-Agent': 'VM JabberBot'},
+                         timeout=5)
+        if r.status_code != 200 or r.encoding != 'utf-8':
+            return
+
+        losses = r.json()
+        if losses:
+            reply = "{} new loss(es) within the last 10 minutes:<br />".format(len(losses))
+            for loss in losses:
+                killID = int(loss['killID'])
+                victim = loss['victim']
+                solarSystemData = self.getSolarSystemData(int(loss['solarSystemID']))
+                killTime = str(loss['killTime'])
+                totalValue = float(loss['zkb']['totalValue'])
+                ticker = "XVMX | CONDI" if victim['characterName'] else "CONDI"
+
+                reply += "{} [{}] | {} | {} ISK | {} ({}) | {} | {}".format(
+                    victim['characterName'] if victim['characterName']
+                    else victim['corporationName'],
+                    ticker,
+                    self.getTypeName(victim['shipTypeID']),
+                    humanNumber(totalValue),
+                    solarSystemData['solarSystemName'],
+                    solarSystemData['regionName'],
+                    killTime,
+                    "https://zkillboard.com/kill/{}/".format(killID)
+                )
+                reply += "<br />"
+            reply = reply[:-6]
+            self.send(vmc.chatroom1, reply, in_reply_to=None, message_type='groupchat')
+
+        return
+
     @botcmd
     def rcbl(self, mess, args):
         '''<name>[, ...] - Asks the RC API if <pilot name> has an entry in the blacklist.'''
