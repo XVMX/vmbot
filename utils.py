@@ -160,7 +160,7 @@ class Price(object):
 
 
 class EveUtils(object):
-    cache_version = 1
+    cache_version = 2
 
     def getTypeName(self, typeID):
         '''Resolves a typeID to its name'''
@@ -581,14 +581,11 @@ class EveUtils(object):
                 res = cur.fetchall()
                 cur.close()
                 conn.close()
-                if len(res) == 0 or len(res) > 1:
+                if len(res) != 1:
                     return None
                 return res[0][0]
 
-            paramlist = ""
-            for val in params.values():
-                paramlist += val + "+"
-            params = paramlist[:-1]
+            params = json.dumps(params)
             cur.execute(
                 '''SELECT response
                    FROM cache
@@ -611,15 +608,16 @@ class EveUtils(object):
         try:
             conn = sqlite3.connect("api.cache")
             cur = conn.cursor()
-            cur.execute('''
-                CREATE TABLE IF NOT EXISTS metadata
-                  (type VARCHAR(255) NOT NULL UNIQUE,
-                  value INT NOT NULL);''')
+            cur.execute(
+                '''CREATE TABLE IF NOT EXISTS metadata (
+                     type VARCHAR(255) NOT NULL UNIQUE,
+                     value INT NOT NULL
+                   );''')
 
-            cur.execute('''
-                SELECT value
-                  FROM metadata
-                  WHERE type='version';''')
+            cur.execute(
+                '''SELECT value
+                   FROM metadata
+                   WHERE type='version';''')
             res = cur.fetchall()
             if len(res) == 1 and res[0][0] != self.cache_version:
                 cur.execute("DROP TABLE cache;")
@@ -631,14 +629,15 @@ class EveUtils(object):
                 {"type": "version",
                  "version": self.cache_version})
             cur.execute(
-                '''CREATE TABLE IF NOT EXISTS cache(
-                    path VARCHAR(255) NOT NULL,
-                    params VARCHAR(255),
-                    response TEXT NOT NULL,
-                    expiry INT
+                '''CREATE TABLE IF NOT EXISTS cache (
+                     path VARCHAR(255) NOT NULL,
+                     params VARCHAR(255),
+                     response TEXT NOT NULL,
+                     expiry INT
                    );''')
-            cur.execute('''CREATE UNIQUE INDEX IF NOT EXISTS
-                           Query ON cache (path, params);''')
+            cur.execute(
+                '''CREATE UNIQUE INDEX IF NOT EXISTS
+                   Query ON cache (path, params);''')
             cur.execute(
                 '''DELETE FROM cache
                    WHERE expiry <= :expiry;''',
@@ -657,11 +656,7 @@ class EveUtils(object):
                 conn.close()
                 return True
 
-            # Fix for params (dict) in table
-            paramlist = ""
-            for val in params.values():
-                paramlist += val + "+"
-            params = paramlist[:-1]
+            params = json.dumps(params)
             cur.execute(
                 '''INSERT INTO cache
                    VALUES (:path, :params, :response, :expiry);''',
