@@ -444,9 +444,9 @@ class EveUtils(object):
         killID = regex.group(1)
         compact = len(args) == 2
 
-        cached = self.getCache('https://zkillboard.com/api/killID/{}/'.format(killID))
+        cached = self.getCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID))
         if not cached:
-            r = requests.get('https://zkillboard.com/api/killID/{}/'.format(killID),
+            r = requests.get('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
                              headers={'Accept-Encoding': 'gzip',
                                       'User-Agent': 'VM JabberBot'},
                              timeout=6)
@@ -454,7 +454,7 @@ class EveUtils(object):
                 return ('The zKB-API returned error code <b>{}</b>'
                         ' or the encoding is broken.').format(r.status_code)
             killdata = r.json()
-            self.setCache('https://zkillboard.com/api/killID/{}/'.format(killID),
+            self.setCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
                           doc=str(r.text),
                           expiry=int(time.time()+24*60*60))
         else:
