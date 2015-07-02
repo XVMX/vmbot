@@ -171,8 +171,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
                 reply = '\n' + reply
 
             reply = '<font face="monospace">{}</font>'.format(
-                re.sub('[\n]', '</font><br/><font face="monospace">', reply)
-            )
+                re.sub('[\n]', '</font><br/><font face="monospace">', reply))
         except Exception as e:
             reply = str(e)
 
