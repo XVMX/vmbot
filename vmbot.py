@@ -53,15 +53,7 @@ class MUCJabberBot(JabberBot):
 
     def __init__(self, *args, **kwargs):
         self.nick_dict = {}
-
-        # Answer only direct messages or not?
-        self.only_direct = kwargs.pop('only_direct', False)
-
         super(MUCJabberBot, self).__init__(*args, **kwargs)
-
-        # Create a regex to check if a message is a direct message
-        user, domain = str(self.jid).split('@')
-        self.direct_message_re = re.compile('^{}(@{})?[^\w]? '.format(user, domain))
 
     def unknown_command(self, mess, cmd, args):
         # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
@@ -83,9 +75,7 @@ class MUCJabberBot(JabberBot):
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
-        ''' Changes the behaviour of the JabberBot in order to allow
-        it to answer direct messages. This is used often when it is
-        connected in MUCs (multiple users chatroom). '''
+        '''Restricts the bot from responding to itself or to PMs'''
 
         # solodrakban protection
         # Change this to be limited to certain people if you want by
@@ -96,15 +86,7 @@ class MUCJabberBot(JabberBot):
         if vmc.nickname == self.get_sender_username(mess):
             return
 
-        message = mess.getBody()
-        if not message:
-            return
-
-        if self.direct_message_re.match(message):
-            mess.setBody(' '.join(message.split(' ', 1)[1:]))
-            return super(MUCJabberBot, self).callback_message(conn, mess)
-        elif not self.only_direct:
-            return super(MUCJabberBot, self).callback_message(conn, mess)
+        super(MUCJabberBot, self).callback_message(conn, mess)
 
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
@@ -349,7 +331,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
 if __name__ == '__main__':
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.join_room(vmc.chatroom3, vmc.nickname)
