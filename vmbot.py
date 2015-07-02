@@ -52,13 +52,11 @@ class MUCJabberBot(JabberBot):
     PING_TIMEOUT = 5
 
     def __init__(self, *args, **kwargs):
-        ''' Initialize variables. '''
         self.nick_dict = {}
 
         # Answer only direct messages or not?
         self.only_direct = kwargs.pop('only_direct', False)
 
-        # Initialize JabberBot
         super(MUCJabberBot, self).__init__(*args, **kwargs)
 
         # Create a regex to check if a message is a direct message
