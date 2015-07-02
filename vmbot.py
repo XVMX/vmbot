@@ -43,8 +43,8 @@ logger.addHandler(ch)
 
 
 class MUCJabberBot(JabberBot):
-    ''' Add features in JabberBot to allow it to handle specific
-    characteristics of multiple users chatroom (MUC). '''
+    '''Add features in JabberBot to allow it to handle specific
+    characteristics of multiple users chatroom (MUC).'''
 
     # Overriding JabberBot base class
     max_chat_chars = 2000
@@ -85,22 +85,22 @@ class MUCJabberBot(JabberBot):
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
-        ''' Changes the behaviour of the JabberBot in order to allow
-        it to answer direct messages. This is used often when it is
-        connected in MUCs (multiple users chatroom). '''
+        '''Changes the behaviour of the JabberBot in order to allow it to answer direct messages.
+
+        This is used often when it is connected in MUCs (multiple users chatroom).'''
 
         # solodrakban protection
         # Change this to be limited to certain people if you want by
         # if self.get_sender_username(mess) == 'solodrakban":
         if mess.getType() != "groupchat":
-            return
+            return None
 
         if vmc.nickname == self.get_sender_username(mess):
-            return
+            return None
 
         message = mess.getBody()
         if not message:
-            return
+            return None
 
         if self.direct_message_re.match(message):
             mess.setBody(' '.join(message.split(' ', 1)[1:]))
@@ -173,13 +173,14 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
+
         super(VMBot, self).__init__(*args, **kwargs)
 
     @botcmd
     def math(self, mess, args):
         '''<expr> - Evaluates expr mathematically.
 
-        Force floating point numbers by doing 4.0/3 instead of 4/3'''
+Force floating point numbers by doing 4.0/3 instead of 4/3'''
 
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
@@ -191,8 +192,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
                 reply = '\n' + reply
 
             reply = '<font face="monospace">{}</font>'.format(
-                re.sub('[\n]', '</font><br/><font face="monospace">', reply)
-            )
+                re.sub('[\n]', '</font><br/><font face="monospace">', reply))
         except Exception as e:
             reply = str(e)
 
@@ -283,9 +283,9 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     def bcast(self, mess, args):
         ''' vm <message> - Sends a message to XVMX members
 
-        Must be <=1kb including the tag line.
-        "vm" required to avoid accidental bcasts, only works in dir chat.
-        Do not abuse this or Solo's wrath shall be upon you.'''
+Must be <=1kb including the tag line.
+"vm" required to avoid accidental bcasts, only works in dir chat.
+Do not abuse this or Solo's wrath shall be upon you.'''
         # API docs: https://goo.gl/cTYPzg
         if args[:2] != 'vm' or len(args) <= 3:
             return None
@@ -321,7 +321,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     def reload(self, mess, args):
         '''reload - Kills the bot's process
 
-        If ran in a while true loop on the shell, it'll immediately reconnect.'''
+If ran in a while true loop on the shell, it'll immediately reconnect.'''
         if not args:
             if self.get_uname_from_mess(mess) in self.admins:
                 reply = 'afk shower'
