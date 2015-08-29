@@ -103,10 +103,10 @@ class MUCJabberBot(JabberBot):
             return
 
         if self.direct_message_re.match(message):
-            mess.setBody(' '.join(message.split(' ', 1)[1:]))
-            return super(MUCJabberBot, self).callback_message(conn, mess)
-        elif not self.only_direct:
-            return super(MUCJabberBot, self).callback_message(conn, mess)
+            message = ' '.join(message.split(' ', 1)[1:])
+
+        mess.setBody(message)
+        return super(MUCJabberBot, self).callback_message(conn, mess)
 
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
