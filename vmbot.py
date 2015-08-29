@@ -15,6 +15,7 @@
 
 from jabberbot import JabberBot, botcmd
 
+import calendar
 import xml.etree.ElementTree as ET
 import time
 import re
@@ -174,6 +175,28 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
     def __init__(self, *args, **kwargs):
         super(VMBot, self).__init__(*args, **kwargs)
+
+        # Regex to check for zKillboard link
+        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?")
+
+    def callback_message(self, conn, mess):
+        reply = super(VMBot, self).callback_message(conn, mess)
+
+        fromHist = False
+        if mess.getTimestamp():
+            messageTime = calendar.timegm(time.strptime(mess.getTimestamp(), "%Y%m%dT%H:%M:%S"))
+            fromHist = messageTime < time.time() - 10
+        message = mess.getBody()
+        if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
+            matches = self.zBotRegex.finditer(message)
+            if matches:
+                zBotReply = ""
+                for match in matches:
+                    zBotReply += self.zbot(mess, "{} compact".format(match.group(0)))
+                    zBotReply += "<br />"
+                self.send_simple_reply(mess, zBotReply[:-6])
+
+        return reply
 
     @botcmd
     def math(self, mess, args):
