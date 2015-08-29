@@ -174,10 +174,28 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     admins = ["jack_haydn", "thirteen_fish"]
 
     def __init__(self, *args, **kwargs):
+        self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
+
         super(VMBot, self).__init__(*args, **kwargs)
 
         # Regex to check for zKillboard link
         self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?")
+
+        # Initialize asynchronous commands
+        if self.kmFeedTrigger:
+            self.kmFeedID = int(
+                requests.get(
+                    "https://zkillboard.com/api/losses/corporationID/2052404106/limit/1/no-items/",
+                    headers={'Accept-Encoding': 'gzip',
+                             'User-Agent': 'VM JabberBot'}).json()[0]['killID'])
+
+    def idle_proc(self):
+        '''This function will be called in the main loop'''
+        if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
+            self.kmFeed()
+            self.kmFeedTrigger += 5*60
+
+        return super(VMBot, self).idle_proc()
 
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
@@ -374,7 +392,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
 if __name__ == '__main__':
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, only_direct=False, kmFeed=True)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.join_room(vmc.chatroom3, vmc.nickname)

@@ -557,6 +557,46 @@ class EveUtils(object):
 
         return reply[:-6]
 
+    def kmFeed(self):
+        '''Sends a message to the first chatroom with the latest losses'''
+
+        r = requests.get(('https://zkillboard.com/api/corporationID/2052404106/losses/'
+                          'afterKillID/{}/no-items/no-attackers/').format(self.kmFeedID),
+                         headers={'Accept-Encoding': 'gzip',
+                                  'User-Agent': 'VM JabberBot'},
+                         timeout=5)
+        if r.status_code != 200 or r.encoding != 'utf-8':
+            return
+
+        losses = r.json()
+        if losses:
+            self.kmFeedID = int(losses[0]['killID'])
+            reply = "{} new loss(es) within the last 5 minutes:<br />".format(len(losses))
+            for loss in losses:
+                killID = int(loss['killID'])
+                victim = loss['victim']
+                solarSystemData = self.getSolarSystemData(int(loss['solarSystemID']))
+                killTime = str(loss['killTime'])
+                totalValue = ISK(loss['zkb']['totalValue'])
+                ticker = "XVMX | CONDI" if victim['characterName'] else "CONDI"
+
+                reply += "{} [{}] | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
+                    victim['characterName'] if victim['characterName']
+                    else victim['corporationName'],
+                    ticker,
+                    self.getTypeName(victim['shipTypeID']),
+                    totalValue,
+                    solarSystemData['solarSystemName'],
+                    solarSystemData['regionName'],
+                    killTime,
+                    "https://zkillboard.com/kill/{}/".format(killID)
+                )
+                reply += "<br />"
+            reply = reply[:-6]
+            self.send(vmc.chatroom1, reply, in_reply_to=None, message_type='groupchat')
+
+        return
+
     @botcmd
     def rcbl(self, mess, args):
         '''<name>[, ...] - Asks the RC API if <pilot name> has an entry in the blacklist.'''
