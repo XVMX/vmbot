@@ -14,6 +14,16 @@ import sqlite3
 from sympy.parsing.sympy_parser import parse_expr
 
 
+class ISK(float):
+    def __format__(self, format_spec):
+        valCopy = self
+        for unit in ['', 'k', 'm', 'b']:
+            if valCopy < 1000:
+                return "{}{}".format(format(valCopy, format_spec), unit)
+            valCopy /= 1000
+        return "{}t".format(format(valCopy, format_spec))
+
+
 class CREST(object):
     class CRESTError(StandardError):
         pass
