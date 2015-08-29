@@ -149,8 +149,9 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         "kairk_efraim",
         "lofac",
         "jons_squire"
+        "joker_gates"
     ]
-    admins = ["jack_haydn", "thirteen_fish"]
+    admins = ["jack_haydn", "thirteen_fish", "joker_gates"]
 
     def __init__(self, *args, **kwargs):
         super(VMBot, self).__init__(*args, **kwargs)
