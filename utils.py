@@ -172,6 +172,116 @@ class Price(object):
 class EveUtils(object):
     cache_version = 1
 
+    def getTypeName(self, typeID):
+        '''Resolves a typeID to its name'''
+        if typeID == 0:
+            return "[Unknown]"
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute(
+            '''SELECT typeID, typeName
+               FROM invTypes
+               WHERE typeID = :id;''',
+            {'id': typeID})
+        items = cur.fetchall()
+        cur.close()
+        conn.close()
+        if not items:
+            return "[Unknown]"
+        return items[0][1]
+
+    def getSolarSystemData(self, solarSystemID):
+        '''Resolves a solarSystemID to its data'''
+        conn = sqlite3.connect('staticdata.sqlite')
+        cur = conn.cursor()
+        cur.execute(
+            '''SELECT solarSystemID, solarSystemName,
+                      mapSolarSystems.constellationID, constellationName,
+                      mapSolarSystems.regionID, regionName
+               FROM mapSolarSystems
+               INNER JOIN mapConstellations
+                 ON mapConstellations.constellationID = mapSolarSystems.constellationID
+               INNER JOIN mapRegions
+                 ON mapRegions.regionID = mapSolarSystems.regionID
+               WHERE solarSystemID = :id;''',
+            {'id': solarSystemID})
+        systems = cur.fetchall()
+        cur.close()
+        conn.close()
+        if not systems:
+            return {'solarSystemID': 0, 'solarSystemName': "[Unknown]",
+                    'constellationID': 0, 'constellationName': "[Unknown]",
+                    'regionID': 0, 'regionName': "[Unknown]"}
+        return {'solarSystemID': systems[0][0], 'solarSystemName': systems[0][1],
+                'constellationID': systems[0][2], 'constellationName': systems[0][3],
+                'regionID': systems[0][4], 'regionName': systems[0][5]}
+
+    def getName(self, nameID):
+        '''Resolves charID, corpID, allianceID, factionID, etc to its name'''
+        try:
+            cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                                   params={'ids': nameID})
+            if not cached:
+                r = requests.post(('https://api.eveonline.com/eve/charactername.xml.aspx'),
+                                  data={'ids': nameID},
+                                  headers={'User-Agent': 'VM JabberBot'},
+                                  timeout=3)
+                xml = ET.fromstring(r.text.encode('ascii', 'replace'))
+                self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                              doc=r.text.encode('ascii', 'replace'),
+                              expiry=int(calendar.timegm(
+                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              params={'ids': nameID})
+            else:
+                xml = ET.fromstring(cached)
+            apireply = str(xml[1][0][0].attrib['name'])
+        except:
+            apireply = "[Unknown]"
+        finally:
+            return apireply
+
+    def getTickers(self, corporationID, allianceID=None):
+        # Corp ticker
+        cached = self.getCache('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
+                               params={'corporationID': corporationID})
+        if not cached:
+            r = requests.post('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
+                              data={'corporationID': corporationID},
+                              headers={'User-Agent': 'VM JabberBot'},
+                              timeout=3)
+            xml = ET.fromstring(r.text.encode('ascii', 'replace'))
+            self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
+                          doc=r.text.encode('ascii', 'replace'),
+                          expiry=int(calendar.timegm(
+                            time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                          params={'corporationID': corporationID})
+        else:
+            xml = ET.fromstring(cached)
+        corpTicker = str(xml[1].find('ticker').text)
+
+        # Alliance ticker
+        allianceTicker = None
+        if allianceID:
+            cached = self.getCache('https://api.eveonline.com/eve/AllianceList.xml.aspx')
+            if not cached:
+                r = requests.post('https://api.eveonline.com/eve/AllianceList.xml.aspx',
+                                  timeout=5)
+                xml = ET.fromstring(r.text.encode('ascii', 'replace'))
+                self.AllianceList = xml
+                self.setCache('https://api.eveonline.com/eve/AllianceList.xml.aspx',
+                              doc=r.text.encode('ascii', 'replace'),
+                              expiry=int(calendar.timegm(
+                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+            else:
+                if hasattr(self, 'AllianceList'):
+                    xml = self.AllianceList
+                else:
+                    xml = ET.fromstring(cached)
+                    self.AllianceList = xml
+            node = xml[1][0].find("*[@allianceID='{}']".format(allianceID))
+            allianceTicker = node.attrib['shortName']
+        return (corpTicker, allianceTicker)
+
     @botcmd
     def character(self, mess, args):
         '''<character name> - Displays Employment information of a single character
