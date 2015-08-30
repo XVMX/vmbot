@@ -163,7 +163,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
         def do_math(args):
-            return pretty(parse_expr(args), full_prec=False, use_unicode=True)
+            return pretty(parse_expr(args), full_prec=False, use_unicode=False)
 
         try:
             reply = do_math(args)
