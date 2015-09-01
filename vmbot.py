@@ -321,7 +321,6 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             return "You don't have the rights to git pull."
 
         p = subprocess.Popen(['git', 'pull', ],
-                             cwd=r'/home/sjuengling/vmbot/',
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         reply = ('\n').join([out, err]).strip()
