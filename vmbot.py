@@ -15,6 +15,7 @@
 
 from jabberbot import JabberBot, botcmd
 
+import calendar
 import xml.etree.ElementTree as ET
 import time
 import re
@@ -26,6 +27,7 @@ import errno
 import os
 import signal
 import subprocess
+import sqlite3
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -86,7 +88,7 @@ class MUCJabberBot(JabberBot):
         if vmc.nickname == self.get_sender_username(mess):
             return
 
-        super(MUCJabberBot, self).callback_message(conn, mess)
+        return super(MUCJabberBot, self).callback_message(conn, mess)
 
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
@@ -154,7 +156,117 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
     admins = ["jack_haydn", "thirteen_fish", "joker_gates"]
 
     def __init__(self, *args, **kwargs):
+        self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
+        self.nextReminder = None
+
         super(VMBot, self).__init__(*args, **kwargs)
+
+        # Regex to check for zKillboard link
+        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?")
+
+        # Initialize asynchronous commands
+        self.initReminder()
+        if self.kmFeedTrigger:
+            self.kmFeedID = int(
+                requests.get(
+                    "https://zkillboard.com/api/losses/corporationID/2052404106/limit/1/no-items/",
+                    headers={'Accept-Encoding': 'gzip',
+                             'User-Agent': 'VM JabberBot'}).json()[0]['killID'])
+
+    def idle_proc(self):
+        '''This function will be called in the main loop'''
+        if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
+            self.kmFeed()
+            self.kmFeedTrigger += 5*60
+        if self.nextReminder and self.nextReminder['time'] <= time.time():
+            self.processReminder()
+
+        return super(VMBot, self).idle_proc()
+
+    def callback_message(self, conn, mess):
+        reply = super(VMBot, self).callback_message(conn, mess)
+
+        fromHist = False
+        if mess.getTimestamp():
+            messageTime = calendar.timegm(time.strptime(mess.getTimestamp(), "%Y%m%dT%H:%M:%S"))
+            fromHist = messageTime < time.time() - 10
+        message = mess.getBody()
+        if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
+            matches = self.zBotRegex.finditer(message)
+            if matches:
+                zBotReply = ""
+                for match in matches:
+                    zBotReply += self.zbot(mess, "{} compact".format(match.group(0)))
+                    zBotReply += "<br />"
+                self.send_simple_reply(mess, zBotReply[:-6])
+
+        return reply
+
+    def initReminder(self):
+        conn = sqlite3.connect("remindme.sqlite")
+        cur = conn.cursor()
+        try:
+            cur.execute('''SELECT time, text, username, chat, type, thread
+                           FROM remindme
+                           ORDER BY time ASC
+                           LIMIT 1;''')
+            res = cur.fetchone()
+            if not res:
+                raise ValueError("No reminders")
+            self.nextReminder = {"time": res[0],
+                                 "text": res[1],
+                                 "username": res[2],
+                                 "chat": res[3],
+                                 "type": res[4],
+                                 "thread": res[5]}
+        except (sqlite3.OperationalError, ValueError):
+            pass
+        cur.close()
+        conn.close()
+        return
+
+    def processReminder(self):
+        # Send reminder
+        reply = "{}: You told me to message you regarding: {}".format(
+            self.nextReminder['username'], self.nextReminder['text'])
+        response = self.build_message(reply)
+        response.setTo(self.nextReminder['chat'])
+        response.setType(self.nextReminder['type'])
+        response.setThread(self.nextReminder['thread'])
+        self.send_message(response)
+
+        # Delete old reminder and set new one
+        conn = sqlite3.connect("remindme.sqlite")
+        cur = conn.cursor()
+        try:
+            cur.execute('''DELETE FROM remindme
+                           WHERE `time` = :time''',
+                        {"time": self.nextReminder['time']})
+            cur.execute('''SELECT `time`, `text`, username, chat, type, thread
+                           FROM remindme
+                           ORDER BY time ASC
+                           LIMIT 1;''')
+            res = cur.fetchone()
+            if not res:
+                raise ValueError("No more reminders left")
+            self.nextReminder = {"time": res[0],
+                                 "text": res[1],
+                                 "username": res[2],
+                                 "chat": res[3],
+                                 "type": res[4],
+                                 "thread": res[5]}
+        except sqlite3.OperationalError as ex:
+            self.nextReminder = None
+            self.send(vmc.chatroom1,
+                      "RemindMe Error: {}".format(ex),
+                      in_reply_to=None,
+                      message_type='groupchat')
+        except ValueError:
+            self.nextReminder = None
+        conn.commit()
+        cur.close()
+        conn.close()
+        return
 
     @botcmd
     def math(self, mess, args):
@@ -239,6 +351,67 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
             return '{}: Pong.'.format(self.get_sender_username(mess))
         else:
             return 'Pong.'
+
+    @botcmd
+    def remindme(self, mess, args):
+        '''<delay>@<text> - Messages you with message containing <text> after <delay>
+
+Delay format: [0-24h] [0-59m] [0-59s]'''
+        args = [item.strip() for item in args.strip().split("@")]
+        try:
+            delayText = args[0].split()
+            text = args[1]
+        except IndexError:
+            return "Please provide 2 parameters: <delay>@<text>"
+
+        delay = 0
+        try:
+            for part in delayText:
+                part = part.lower()
+                if "s" in part:
+                    delay += int(part.replace("s", ""))
+                elif "m" in part:
+                    delay += 60*int(part.replace("m", ""))
+                elif "h" in part:
+                    delay += 60*60*int(part.replace("h", ""))
+        except ValueError:
+            return "Failed to parse the delay"
+
+        if delay <= 0:
+            return "Please specify a (positive) delay"
+        elif delay > 24*60*60:
+            return "Please specify a delay lower than 1 day"
+
+        # Add new reminder
+        newReminder = {"time": time.time() + delay,
+                       "text": text,
+                       "username": self.get_sender_username(mess),
+                       "chat": mess.getFrom().getStripped(),
+                       "type": mess.getType(),
+                       "thread": mess.getThread()}
+        conn = sqlite3.connect("remindme.sqlite")
+        cur = conn.cursor()
+        try:
+            cur.execute('''CREATE TABLE IF NOT EXISTS remindme (
+                             `time` REAL NOT NULL UNIQUE ON CONFLICT ABORT,
+                             `text` TEXT NOT NULL,
+                             username TEXT NOT NULL,
+                             chat TEXT NOT NULL,
+                             type TEXT NOT NULL,
+                             thread TEXT
+                           );''')
+            cur.execute('''INSERT INTO remindme
+                           VALUES (:time, :text, :username, :chat, :type, :thread);''',
+                        newReminder)
+        except sqlite3.OperationalError as ex:
+            return "RemindMe Error: {}".format(ex)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if not self.nextReminder or newReminder['time'] < self.nextReminder['time']:
+            self.nextReminder = newReminder
+        return "I will remind you in {}".format(args[0])
 
     def sendBcast(self, broadcast, author):
         result = ''
@@ -330,7 +503,7 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
 
 if __name__ == '__main__':
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, kmFeed=True)
     morgooglie.join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.join_room(vmc.chatroom3, vmc.nickname)
