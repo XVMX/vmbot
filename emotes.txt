@@ -1,6 +1,6 @@
-Name=SA-GF Spring 2015, Empty Smile Menu Edition
-Description=Net Neutrality Memorial Emote Pack
-Icon=pram.001.gif
+Name=SA-GF Autumn 2015, Nosmile Edition
+Description=Markus Persson Commiseration Update
+Icon=shibe.001.png
 Author=Querns
 
 [default]
@@ -1123,3 +1123,52 @@ Author=Querns
 ! ullerrm.001.png :ullerrm:
 ! weedass.001.png :weedass:
 ! germany.gif :germany:
+! prepop.gif :prepop:
+! robble.gif :robble:
+! sludgepal.gif :sludgepal:
+! atlus.001.gif :atlus:
+! bloodborne.001.gif :bloodborne:
+! buttfame.001.gif :buttfame:
+! capitalism.001.gif :capitalism:
+! coolspot.001.gif :coolspot:
+! cosmic2day.001.gif :cosmic2day:
+! dogge.001.jpg :dogge:
+! fail.001.gif :fail:
+! five.001.gif :five:
+! frogleave.001.gif :frogleave:
+! frontear.001.gif :frontear:
+! gaz.001.gif :gaz:
+! glompoff.001.gif :glompoff:
+! grin.001.gif :grin:
+! mediocre.001.gif :mediocre:
+! nomates.001.gif :nomates:
+! perfect.001.gif :perfect:
+! poolgirl.001.gif :poolgirl:
+! quig.001.gif :quig:
+! salt.001.gif :salt:
+! secondpost.001.png :secondpost:
+! smallbarf.001.jpg :smallbarf:
+! treemike.001.gif :treemike:
+! un.001.gif :un:
+! yeah.001.gif :yeah:
+! kingsley.gif :kingsley:
+! berned.001.gif :berned:
+! bernget.001.gif :bernget:
+! bernin.001.gif :bernin:
+! cheerdoge.001.png :cheerdoge:
+! co.001.gif :co:
+! crossange.001.gif :crossange:
+! fag.001.gif :fag:
+! flipoff.001.gif :flipoff:
+! help.001.png :help:
+! heritage.001.gif :heritage:
+! jerry.001.png :jerry:
+! knope.001.png :knope:
+! landy.001.png :landy:
+! nono.001.gif :nono:
+! razorback2.001.png :razorback2:
+! razorback.001.png :razorback:
+! shibe.001.png :shibe:
+! shillary.001.png :shillary:
+! shudder.001.gif :shudder:
+! sureboat.001.gif :sureboat:
