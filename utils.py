@@ -11,8 +11,6 @@ import base64
 import vmbot_config as vmc
 import sqlite3
 
-from sympy.parsing.sympy_parser import parse_expr
-
 
 class ISK(float):
     def __format__(self, format_spec):
