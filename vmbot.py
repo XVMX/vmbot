@@ -31,6 +31,9 @@ import sqlite3
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
+
+import pint
+
 import vmbot_config as vmc
 
 from fun import Say, Chains
@@ -292,6 +295,18 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         if len(reply) > 2 ** 15:
             reply = "I've evaluated your expression but it's too long to send with jabber"
         return reply
+
+    @botcmd
+    def convert(self, mess, args):
+        '''<amount> <source> to <destination> - Converts amount from source to destination'''
+        src, dst = args.split(" to ", 1)
+        ureg = pint.UnitRegistry()
+        try:
+            return str(ureg(src).to(dst))
+        except pint.unit.DimensionalityError as e:
+            return str(e)
+        except Exception as e:
+            return "Failed to convert your request: {}".format(e)
 
     @botcmd
     def rtd(self, mess, args):
