@@ -37,7 +37,8 @@ class Say(object):
         "eabod",
         "why do you hate black people?",
         "i want a bucket full of money covered rainbows",
-        "bundle of sticks"
+        "bundle of sticks",
+        "that went over like a jerrys kids rodeo with live bulls"
     ]
     chaseisms = ["would you PLEASE"]
     nickisms = [
