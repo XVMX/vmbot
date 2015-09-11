@@ -154,7 +154,8 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         "kairk_efraim",
         "lofac",
         "jons_squire",
-        "joker_gates"
+        "joker_gates",
+        "lordshazbot"
     ]
     admins = ["jack_haydn", "thirteen_fish", "joker_gates"]
 
