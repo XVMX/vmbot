@@ -118,6 +118,12 @@ class Say(object):
         sender = (args.strip() if args else self.get_sender_username(mess))
         return "{}, {}".format(sender, random.choice(self.dariusisms))
 
+    @botcmd
+    def eksay(self, mess, args):
+        'Like fishsay but more dead'
+        sender = (args.strip() if args else self.get_sender_username(mess))
+        return ":rip: {}".format(sender)
+
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
         '<question> - Provides insight into the future'
