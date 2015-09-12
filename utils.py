@@ -569,7 +569,7 @@ class EveUtils(object):
         losses = r.json()
         if losses:
             self.kmFeedID = int(losses[0]['killID'])
-            reply = "{} new loss(es) within the last 5 minutes:<br />".format(len(losses))
+            reply = "{} new loss(es):<br />".format(len(losses))
             for loss in losses:
                 killID = int(loss['killID'])
                 victim = loss['victim']
