@@ -40,7 +40,9 @@ class Say(object):
         "bundle of sticks",
         "that went over like a jerrys kids rodeo with live bulls"
     ]
-    chaseisms = ["would you PLEASE"]
+    chaseisms = [
+        "would you PLEASE"
+    ]
     nickisms = [
         "D00d!",
         "But d00d!",
@@ -71,7 +73,10 @@ class Say(object):
         "you get a cavity search, your friends get a cavity search, EVERYBODY gets a cavity search!"
     ]
     dariusisms = [
-        "Baby",
+        "Baby"
+    ]
+    scottisms = [
+        "Would you like to buy a rose?"
     ]
 
     @botcmd
@@ -124,6 +129,14 @@ class Say(object):
         'Like fishsay but more dead'
         sender = (args.strip() if args else self.get_sender_username(mess))
         return ":rip: {}".format(sender)
+
+    @botcmd
+    def scottsay(self, mess, args):
+        'Like fishsay but more profitable'
+        if args:
+            return "{}, {}".format(args, random.choice(self.scottisms))
+        else:
+            return random.choice(self.scottisms)
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
