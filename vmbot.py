@@ -198,9 +198,12 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils):
         if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
             matches = self.zBotRegex.finditer(message)
             if matches:
-                zBotReply = ""
+                uniqueMatches = set()
                 for match in matches:
-                    zBotReply += self.zbot(mess, "{} compact".format(match.group(0)))
+                    uniqueMatches.add(match.group(0))
+                zBotReply = ""
+                for match in uniqueMatches:
+                    zBotReply += self.zbot(mess, "{} compact".format(match))
                     zBotReply += "<br />"
                 self.send_simple_reply(mess, zBotReply[:-6])
 
