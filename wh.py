@@ -79,7 +79,7 @@ stats - Shows a list of scanners and how many WHs they have scanned during the l
         conn = self.__db_connection()
         cur = conn.cursor()
 
-        cur.execute('''SELECT `SRC`, `SRC-SIG`, `DEST`, `DEST-SIG`,
+        cur.execute('''SELECT `SRC`, `SRC-SIG`, `DEST`, `DEST-SIG`, `Author`,
                               (JULIANDAY(`Expiry`) - JULIANDAY('now')) * 24 AS `TTL`
                        FROM connections
                        WHERE `Expiry` > DATETIME('now');''')
@@ -97,14 +97,15 @@ stats - Shows a list of scanners and how many WHs they have scanned during the l
         for connection in data:
             src = self.getSolarSystemData(connection['SRC'])
             dest = self.getSolarSystemData(connection['DEST'])
-            res += "{} ({} | {}) -> {} ({} | {}) | About {:.0f}h left".format(
+            res += "{} ({} | {}) -> {} ({} | {}) | About {:.0f}h left | Scanned by {}".format(
                 src['solarSystemName'],
                 connection['SRC-SIG'],
                 src['regionName'],
                 dest['solarSystemName'],
                 connection['DEST-SIG'],
                 dest['regionName'],
-                float(connection['TTL'])
+                float(connection['TTL']),
+                connection['Author']
             )
             res += "<br />"
 
@@ -132,7 +133,8 @@ stats - Shows a list of scanners and how many WHs they have scanned during the l
                 'DEST-System': dest['solarSystemName'],
                 'DEST-Region': dest['regionName'],
                 'DEST-SIG': connection['DEST-SIG'],
-                'TTL': float(connection['TTL'])
+                'TTL': float(connection['TTL']),
+                'Author': connection['Author']
             })
 
         filteredConnections = list()
