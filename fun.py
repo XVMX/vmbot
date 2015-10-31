@@ -2,6 +2,9 @@ from jabberbot import botcmd
 
 import random
 
+import requests
+from bs4 import BeautifulSoup
+
 
 class Say(object):
     # 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
@@ -164,6 +167,25 @@ class Fun(object):
             pass
 
         return random.choice(remotes).split()[-1]
+
+    @botcmd
+    def rtq(self, mess, args):
+        '''Like a box of chocolates, but without emotes this time'''
+        r = requests.get("http://bash.org/?random")
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        quoteLinks = soup.find_all("a", title="Permanent link to this quote.")
+        validIDs = list()
+        for link in quoteLinks:
+            validIDs.append(int(link.get("href")[1:]))
+        quoteID = random.choice(validIDs)
+
+        quoteLink = "http://bash.org/?{}".format(quoteID)
+        r = requests.get(quoteLink)
+        soup = BeautifulSoup(r.text, "html.parser")
+        quote = soup.find(class_="qt").text.encode("ascii", "replace")
+
+        return "{}\n{}".format(quote, quoteLink)
 
 
 class Chains(object):

@@ -1,3 +1,4 @@
-requests
+requests>=1.0.0
 sympy
 pint
+beautifulsoup4>=4.0.0
