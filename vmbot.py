@@ -158,7 +158,11 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils, Wormhole):
         "joker_gates",
         "lordshazbot"
     ]
-    admins = ["jack_haydn", "thirteen_fish", "joker_gates"]
+    admins = [
+        "jack_haydn",
+        "thirteen_fish",
+        "joker_gates"
+    ]
 
     def __init__(self, *args, **kwargs):
         self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
