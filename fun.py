@@ -153,6 +153,19 @@ class Say(object):
         return "Hi {}!".format(sender)
 
 
+class Fun(object):
+    @botcmd
+    def rtd(self, mess, args):
+        '''Like a box of chocolates, you never know what you're gonna get'''
+        with open("emotes.txt", 'r') as emotes:
+            remotes = emotes.read().split('\n')
+
+        while not remotes.pop(0).startswith('[default]'):
+            pass
+
+        return random.choice(remotes).split()[-1]
+
+
 class Chains(object):
     @botcmd(hidden=True)
     def every(self, mess, args):

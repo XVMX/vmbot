@@ -36,7 +36,7 @@ import pint
 
 import vmbot_config as vmc
 
-from fun import Say, Chains
+from fun import Say, Fun, Chains
 from faq import FAQ
 from utils import CREST, Price, EveUtils
 from wh import Wormhole
@@ -143,7 +143,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
-class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils, Wormhole):
+class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhole):
     # Lists for use in the various methods
     directors = [
         "jack_haydn",
@@ -316,17 +316,6 @@ class VMBot(MUCJabberBot, Say, Chains, FAQ, CREST, Price, EveUtils, Wormhole):
             return str(e)
         except Exception as e:
             return "Failed to convert your request: {}".format(e)
-
-    @botcmd
-    def rtd(self, mess, args):
-        '''Like a box of chocolates, you never know what you're gonna get'''
-        with open("emotes.txt", 'r') as emotes:
-            remotes = emotes.read().split('\n')
-
-        while not remotes.pop(0).startswith('[default]'):
-            pass
-
-        return random.choice(remotes).split()[-1]
 
     @botcmd
     def dice(self, mess, args):
