@@ -4,7 +4,7 @@ wget https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2
 if [ "$(md5sum sqlite-latest.sqlite.bz2)" != "$(cat sqlite-latest.sqlite.bz2.md5)" ]; then
     echo "MD5SUM mismatch"
     rm sqlite-latest.sqlite.bz2 sqlite-latest.sqlite.bz2.md5
-    exit
+    exit 1
 else
     echo "MD5SUM match"
 fi
@@ -28,4 +28,6 @@ echo "Deleting downloaded files"
 echo "***"
 rm dump.sql sqlite-latest.sqlite sqlite-latest.sqlite.bz2.md5
 
+echo "***"
 echo "Finished"
+echo "***"
