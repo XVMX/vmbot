@@ -187,6 +187,16 @@ class Fun(object):
 
         return "{}\n{}".format(quote, quoteLink)
 
+    @botcmd
+    def rtxkcd(self, mess, args):
+        '''Like a box of chocolates, but with xkcd'''
+        res = requests.get("https://xkcd.com/info.0.json").json()
+        comicID = random.randint(1, res['num'])
+
+        comicData = requests.get("https://xkcd.com/{}/info.0.json".format(comicID)).json()
+
+        return "<b>{}</b>: https://xkcd.com/{}/".format(comicData['title'], comicID)
+
 
 class Chains(object):
     @botcmd(hidden=True)
