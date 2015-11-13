@@ -163,6 +163,20 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         "thirteen_fish",
         "joker_gates"
     ]
+    pubbietalk = [
+        "dank",
+        "frag",
+        "o7",
+        "o\/",
+        "m8",
+        "u wot",
+        "retart",
+        "get rekt",
+        "toon",
+        "iskies",
+        "thann(?:y|ies)",
+        "(?!:)murica(?!:)"
+    ]
 
     def __init__(self, *args, **kwargs):
         self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
@@ -172,6 +186,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
         # Regex to check for zKillboard link
         self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?")
+
+        # Regex to check for pubbie talk
+        self.pubbieRegex = re.compile("(?:^| |,|\.)(?:{})".format("|".join(self.pubbietalk)))
 
         # Initialize asynchronous commands
         self.initReminder()
@@ -199,8 +216,13 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         if mess.getTimestamp():
             messageTime = calendar.timegm(time.strptime(mess.getTimestamp(), "%Y%m%dT%H:%M:%S"))
             fromHist = messageTime < time.time() - 10
+
         message = mess.getBody()
         if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
+            if self.pubbieRegex.search(message) is not None:
+                self.kick(mess.getFrom().getStripped(), self.get_sender_username(mess),
+                          "Emergency pubbie broadcast system")
+
             matches = self.zBotRegex.finditer(message)
             if matches:
                 uniqueMatches = set()
