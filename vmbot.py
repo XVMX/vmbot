@@ -71,13 +71,17 @@ class MUCJabberBot(JabberBot):
         return juid.split('@')[0]
 
     def callback_presence(self, conn, presence):
+        type_ = presence.getType()
         nick = presence.getFrom().getResource()
         node = presence.getFrom().getNode()
         jid = presence.getJid()
         if jid is not None:
             if node not in self.nick_dict:
                 self.nick_dict[node] = {}
-            self.nick_dict[node][nick] = jid
+            if type_ == self.OFFLINE and nick in self.nick_dict[node]:
+                del self.nick_dict[node][nick]
+            else:
+                self.nick_dict[node][nick] = jid
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
@@ -504,6 +508,15 @@ Delay format: [0-24h] [0-59m] [0-59s]'''
                         self.get_sender_username(mess), vmc.target, status)
 
         return reply
+
+    @botcmd
+    def pingall(self, mess, args):
+        if self.get_uname_from_mess(mess) not in (self.directors + self.admins):
+            return ":getout:"
+
+        res = "All hands on {} dick!\n".format(self.get_sender_username(mess))
+        res += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
+        return res
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
