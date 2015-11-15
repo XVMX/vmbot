@@ -34,6 +34,10 @@ from sympy.parsing.sympy_parser import parse_expr
 
 import pint
 
+
+# Change working directory to vmbot.py's directory to load data correctly
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 import vmbot_config as vmc
 
 from fun import Say, Fun, Chains

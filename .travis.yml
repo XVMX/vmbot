@@ -5,4 +5,4 @@ sudo: false
 install:
    - pip install pep8
 script:
-   - find ./vmbot -name '*.py' -a ! -name 'jabberbot.py' | xargs pep8 --max-line-length=100
+   - pep8 --max-line-length=100 --ignore=E402 --exclude=jabberbot.py vmbot/
