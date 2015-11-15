@@ -225,8 +225,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         message = mess.getBody()
         if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
             if self.pubbieRegex.search(message) is not None:
-                self.kick(mess.getFrom().getStripped(), self.get_sender_username(mess),
-                          "Emergency pubbie broadcast system")
+                self.muc_kick(mess.getFrom().getStripped(), self.get_sender_username(mess),
+                              "Emergency pubbie broadcast system")
 
             matches = self.zBotRegex.finditer(message)
             if matches:
@@ -553,7 +553,7 @@ Delay format: [0-24h] [0-59m] [0-59s]'''
 if __name__ == '__main__':
     # Grabbing values from imported config file
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, kmFeed=True)
-    morgooglie.join_room(vmc.chatroom1, vmc.nickname)
-    morgooglie.join_room(vmc.chatroom2, vmc.nickname)
-    morgooglie.join_room(vmc.chatroom3, vmc.nickname)
+    morgooglie.muc_join_room(vmc.chatroom1, vmc.nickname)
+    morgooglie.muc_join_room(vmc.chatroom2, vmc.nickname)
+    morgooglie.muc_join_room(vmc.chatroom3, vmc.nickname)
     morgooglie.serve_forever()

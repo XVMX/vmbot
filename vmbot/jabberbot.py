@@ -3,7 +3,7 @@
 
 # JabberBot: A simple jabber/xmpp bot framework
 # Copyright (c) 2007-2012 Thomas Perl <thp.io/about>
-# $Id$
+# $Id: d1c7090edd754ff0da8ef4eb10d4b46883f34b9f $
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ import traceback
 
 # Will be parsed by setup.py to determine package metadata
 __author__ = 'Thomas Perl <m@thp.io>'
-__version__ = '0.15'
+__version__ = '0.16'
 __website__ = 'http://thp.io/2007/python-jabberbot/'
 __license__ = 'GNU General Public License version 3 or later'
 
@@ -93,7 +93,7 @@ class JabberBot(object):
 
     def __init__(self, username, password, res=None, debug=False,
             privatedomain=False, acceptownmsgs=False, handlers=None,
-            command_prefix=''):
+            command_prefix='', server=None, port=5222):
         """Initializes the jabber bot and sets up commands.
 
         username and password should be clear ;)
@@ -129,6 +129,10 @@ class JabberBot(object):
         # TODO sort this initialisation thematically
         self.__debug = debug
         self.log = logging.getLogger(__name__)
+        if server is not None:
+            self.__server = (server, port)
+        else:
+            self.__server = None
         self.__username = username
         self.__password = password
         self.jid = xmpp.JID(self.__username)
@@ -205,7 +209,10 @@ class JabberBot(object):
                 conn = xmpp.Client(self.jid.getDomain(), debug=[])
 
             #connection attempt
-            conres = conn.connect()
+            if self.__server:
+                conres = conn.connect(self.__server)
+            else:
+                conres = conn.connect()
             if not conres:
                 self.log.error('unable to connect to server %s.' %
                         self.jid.getDomain())
@@ -225,6 +232,11 @@ class JabberBot(object):
             # Connection established - save connection
             self.conn = conn
 
+            # Register given handlers (TODO move to own function)
+            for (handler, callback) in self.handlers:
+                self.conn.RegisterHandler(handler, callback)
+                self.log.debug('Registered handler: %s' % handler)
+
             # Send initial presence stanza (say hello to everyone)
             self.conn.sendInitPresence()
             # Save roster and log Items
@@ -234,15 +246,12 @@ class JabberBot(object):
                 self.log.info('  %s' % contact)
             self.log.info('*** roster ***')
 
-            # Register given handlers (TODO move to own function)
-            for (handler, callback) in self.handlers:
-                self.conn.RegisterHandler(handler, callback)
-                self.log.debug('Registered handler: %s' % handler)
-
         return self.conn
 
-    def join_room(self, room, username=None, password=None):
-        """Join the specified multi-user chat room
+### XEP-0045 Multi User Chat # prefix: muc # START ###
+
+    def muc_join_room(self, room, username=None, password=None, prefix=""):
+        """Join the specified multi-user chat room or changes nickname
 
         If username is NOT provided fallback to node part of JID"""
         # TODO fix namespacestrings and history settings
@@ -256,20 +265,85 @@ class JabberBot(object):
             pres.setTag('x', namespace=NS_MUC).setTagData('password', password)
         self.connect().send(pres)
 
-    def kick(self, room, nick, reason=None):
-        """Kicks user from muc
+    def muc_part_room(self, room, username=None, message=None):
+        """Parts the specified multi-user chat"""
+        if username is None:
+            # TODO use xmpppy function getNode
+            username = self.__username.split('@')[0]
+        my_room_JID = '/'.join((room, username))
+        pres = xmpp.Presence(to=my_room_JID)
+        pres.setAttr('type', 'unavailable')
+        if message is not None:
+            pres.setTagData('status', message)
+        self.connect().send(pres)
+
+    def muc_set_role(self, room, nick, role, reason=None):
+        """Set role to user from muc
+        reason works only if defined in protocol
         Works only with sufficient rights."""
         NS_MUCADMIN = 'http://jabber.org/protocol/muc#admin'
         item = xmpp.simplexml.Node('item')
-        item.setAttr('nick', nick)
-        item.setAttr('role', 'none')
+        item.setAttr('jid', jid)
+        item.setAttr('role', role)
         iq = xmpp.Iq(typ='set', queryNS=NS_MUCADMIN, xmlns=None, to=room,
                 payload=set([item]))
         if reason is not None:
             item.setTagData('reason', reason)
         self.connect().send(iq)
 
-    def invite(self, room, jid, reason=None):
+    def muc_kick(self, room, nick, reason=None):
+        """Kicks user from muc
+        Works only with sufficient rights."""
+        self.muc_set_role(room, nick, 'none', reason)
+
+
+    def muc_set_affiliation(self, room, jid, affiliation, reason=None):
+        """Set affiliation to user from muc
+        reason works only if defined in protocol
+        Works only with sufficient rights."""
+        NS_MUCADMIN = 'http://jabber.org/protocol/muc#admin'
+        item = xmpp.simplexml.Node('item')
+        item.setAttr('jid', jid)
+        item.setAttr('affiliation', affiliation)
+        iq = xmpp.Iq(typ='set', queryNS=NS_MUCADMIN, xmlns=None, to=room,
+                payload=set([item]))
+        if reason is not None:
+            item.setTagData('reason', reason)
+        self.connect().send(iq)
+
+    def muc_ban(self, room, jid, reason=None):
+        """Bans user from muc
+        Works only with sufficient rights."""
+        self.muc_set_affiliation(room, jid, 'outcast', reason)
+
+    def muc_unban(self, room, jid):
+        """Unbans user from muc
+        User will not regain old affiliation.
+        Works only with sufficient rights."""
+        self.muc_set_affiliation(room, jid, 'none')
+
+    def muc_set_subject(self, room, text):
+        """Changes subject of muc
+        Works only with sufficient rights."""
+        mess = xmpp.Message(to=room)
+        mess.setAttr('type', 'groupchat')
+        mess.setTagData('subject', text)
+        self.connect().send(mess)
+
+    def muc_get_subject(self, room):
+        """Get subject of muc"""
+        pass
+
+    def muc_room_participants(self, room):
+        """Get list of participants """
+        pass
+
+    def muc_get_role(self, room, nick=None):
+        """Get role of nick
+        If nick is None our own role will be returned"""
+        pass
+
+    def muc_invite(self, room, jid, reason=None):
         """Invites user to muc.
         Works only if user has permission to invite to muc"""
         NS_MUCUSER = 'http://jabber.org/protocol/muc#user'
@@ -281,6 +355,8 @@ class JabberBot(object):
         mess.setTag('x', namespace=NS_MUCUSER).addChild(node=invite)
         self.log.error(mess)
         self.connect().send(mess)
+
+### XEP-0045 Multi User Chat # END ###
 
     def quit(self):
         """Stop serving messages and exit.
