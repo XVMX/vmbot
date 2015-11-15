@@ -283,7 +283,7 @@ class JabberBot(object):
         Works only with sufficient rights."""
         NS_MUCADMIN = 'http://jabber.org/protocol/muc#admin'
         item = xmpp.simplexml.Node('item')
-        item.setAttr('jid', jid)
+        item.setAttr('nick', nick)
         item.setAttr('role', role)
         iq = xmpp.Iq(typ='set', queryNS=NS_MUCADMIN, xmlns=None, to=room,
                 payload=set([item]))
