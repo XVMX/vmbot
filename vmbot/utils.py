@@ -52,7 +52,7 @@ class CREST(object):
         res = r.json()
         try:
             self._access_token = res['access_token']
-            self._token_expiry = time.time()+res['expires_in']
+            self._token_expiry = time.time() + res['expires_in']
         except KeyError:
             raise self.CRESTError('Error: {}: {}'.format(res['error'], res['error_description']))
         return self._access_token
@@ -90,7 +90,7 @@ class Price(object):
         if like:
             reply = '<br />Other {} like "{}": {}'.format(category, given, ', '.join(like[:3]))
             if len(like) > 3:
-                reply += ', and {} others'.format(len(like)-3)
+                reply += ', and {} others'.format(len(like) - 3)
             return reply
         else:
             return ''
@@ -119,7 +119,7 @@ class Price(object):
             '''SELECT regionID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name;''',
-            {'name': '%'+system+'%'})
+            {'name': '%' + system + '%'})
         systems = cur.fetchall()
         if not systems:
             return "Can't find a matching system!"
@@ -130,7 +130,7 @@ class Price(object):
                WHERE typeName LIKE :name
                 AND marketGroupID IS NOT NULL
                 AND marketGroupID < 100000;''',
-            {'name': '%'+item+'%'})
+            {'name': '%' + item + '%'})
         items = cur.fetchall()
         if not items:
             return "Can't find a matching item!"
@@ -154,7 +154,7 @@ class Price(object):
         reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
         reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
         try:
-            reply += '<br />Spread: {:,.2%}'.format((sellprice-buyprice)/sellprice)
+            reply += '<br />Spread: {:,.2%}'.format((sellprice - buyprice) / sellprice)
         except ZeroDivisionError:
             # By request from Jack
             reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!'
@@ -228,7 +228,7 @@ class EveUtils(object):
                 self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
                               doc=r.text.encode('ascii', 'replace'),
                               expiry=int(calendar.timegm(
-                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
                               params={'ids': nameID})
             else:
                 xml = ET.fromstring(cached)
@@ -251,7 +251,7 @@ class EveUtils(object):
             self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
                           doc=r.text.encode('ascii', 'replace'),
                           expiry=int(calendar.timegm(
-                            time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                              time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
                           params={'corporationID': corporationID})
         else:
             xml = ET.fromstring(cached)
@@ -269,7 +269,7 @@ class EveUtils(object):
                 self.setCache('https://api.eveonline.com/eve/AllianceList.xml.aspx',
                               doc=r.text.encode('ascii', 'replace'),
                               expiry=int(calendar.timegm(
-                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
             else:
                 if hasattr(self, 'AllianceList'):
                     xml = self.AllianceList
@@ -306,7 +306,7 @@ class EveUtils(object):
                 self.setCache('https://api.eveonline.com/eve/CharacterID.xml.aspx',
                               doc=str(r.text),
                               expiry=int(calendar.timegm(
-                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
                               params={'names': ','.join(map(str, args))})
             else:
                 xml = ET.fromstring(cached)
@@ -333,7 +333,7 @@ class EveUtils(object):
                 self.setCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
                               doc=str(r.text),
                               expiry=int(calendar.timegm(
-                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
                               params={'ids': ','.join(map(str, args))})
             else:
                 xml = ET.fromstring(cached)
@@ -376,7 +376,7 @@ class EveUtils(object):
                         self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
                                       doc=str(r.text),
                                       expiry=int(calendar.timegm(
-                                        time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
+                                          time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
                                       params={'ids': ','.join(map(str, corporations))})
                     else:
                         xml = ET.fromstring(cached)
@@ -392,7 +392,7 @@ class EveUtils(object):
                     if len(evewhoapi['history']) > 10:
                         reply += ('The full history is available under '
                                   'http://evewho.com/pilot/{}/<br />').format(
-                                    str(evewhoapi['info']['name']).replace(' ', '+'))
+                                      str(evewhoapi['info']['name']).replace(' ', '+'))
             reply = reply[:-6]
         except requests.exceptions.RequestException as e:
             return 'There is a problem with the API server. Can\'t connect to the server.'
@@ -424,7 +424,7 @@ class EveUtils(object):
                 self.setCache('https://api.eveonline.com/server/serverstatus.xml.aspx',
                               doc=str(r.text),
                               expiry=int(calendar.timegm(
-                                time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
             else:
                 xml = ET.fromstring(cached)
             if xml[1][0].text == 'True':
@@ -460,7 +460,7 @@ class EveUtils(object):
             killdata = r.json()
             self.setCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
                           doc=str(r.text),
-                          expiry=int(time.time()+24*60*60))
+                          expiry=int(time.time() + 24 * 60 * 60))
         else:
             killdata = json.loads(cached)
 
@@ -534,10 +534,10 @@ class EveUtils(object):
         for char in attackerDetails[:5]:
             reply += ('<b>{}\'s {}</b> did <b>{:,} damage</b>'
                       ' (<i>{:,.2%} of total damage</i>)').format(
-                        char['characterName'] if char['characterName'] else char['corporationName'],
-                        char['shipTypeName'],
-                        char['damageDone'],
-                        char['damageDone']/float(victim['damageTaken']))
+                          char['characterName'] or char['corporationName'],
+                          char['shipTypeName'],
+                          char['damageDone'],
+                          char['damageDone'] / float(victim['damageTaken']))
             reply += ' and scored the <b>final blow</b>' if char['finalBlow'] else ''
             reply += '<br />'
 
@@ -546,10 +546,10 @@ class EveUtils(object):
             char = [char for char in attackerDetails if char['finalBlow']][0]
             reply += ('<b>{}\'s {}</b> did <b>{:,} damage</b>'
                       ' (<i>{:,.2%} of total damage</i>)').format(
-                        char['characterName'] if char['characterName'] else char['corporationName'],
-                        char['shipTypeName'],
-                        char['damageDone'],
-                        char['damageDone']/float(victim['damageTaken']))
+                          char['characterName'] or char['corporationName'],
+                          char['shipTypeName'],
+                          char['damageDone'],
+                          char['damageDone'] / float(victim['damageTaken']))
             reply += ' and scored the <b>final blow</b>'
             reply += '<br />'
 

@@ -103,7 +103,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                        FROM `articles`
                        WHERE `title` LIKE :title
                         AND NOT `hidden`;''',
-                    {"title": "%"+str(needle)+"%"})
+                    {"title": "%" + str(needle) + "%"})
             except ValueError:
                 pass
             except sqlite3.OperationalError:
@@ -118,7 +118,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
                        FROM articles
                        WHERE `content` LIKE :content
                         AND NOT `hidden`;''',
-                    {"content": "%"+str(needle)+"%"})
+                    {"content": "%" + str(needle) + "%"})
             except ValueError:
                 pass
             except sqlite3.OperationalError:
@@ -132,7 +132,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
             if len(res) > 1:
                 reply += "<br />Other articles like <b>'{}'</b>:".format(needle)
                 for (idx, article) in enumerate(res[1:5]):
-                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+1, article[2], article[0])
+                    reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx + 1, article[2], article[0])
             if receiver:
                 if self.longreply(mess, reply, receiver=receiver):
                     return "Sent a PM to {}".format(receiver)
@@ -161,7 +161,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         reply = "1) {} (<i>ID: {}</i>)".format(res[0][1], res[0][0])
         reply += (" <i>hidden</i>" if res[0][2] else "")
         for (idx, article) in enumerate(res[1:]):
-            reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx+2, article[1], article[0])
+            reply += "<br />{}) {} (<i>ID: {}</i>)".format(idx + 2, article[1], article[0])
             reply += (" <i>hidden</i>" if article[2] else "")
         self.longreply(mess, reply, True)
         return "Sent a PM to you"
@@ -322,7 +322,7 @@ revert <ID> - Reverts deletion of article with <ID>'''
         reply = "Article '{}' was created by {}<br />".format(res[0][0], res[0][1])
         reply += "History: 1) {}".format(history[0])
         for (idx, edit) in enumerate(history[1:]):
-            reply += "<br/>{}) {}".format(idx+2, edit)
+            reply += "<br/>{}) {}".format(idx + 2, edit)
         if self.longreply(mess, reply):
             return "Sent a PM to you."
         else:

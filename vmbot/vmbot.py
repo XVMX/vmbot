@@ -212,7 +212,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         '''This function will be called in the main loop'''
         if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
             self.kmFeed()
-            self.kmFeedTrigger += 5*60
+            self.kmFeedTrigger += 5 * 60
         if self.nextReminder and self.nextReminder['time'] <= time.time():
             self.processReminder()
 
@@ -415,15 +415,15 @@ Delay format: [0-24h] [0-59m] [0-59s]'''
                 if "s" in part:
                     delay += int(part.replace("s", ""))
                 elif "m" in part:
-                    delay += 60*int(part.replace("m", ""))
+                    delay += 60 * int(part.replace("m", ""))
                 elif "h" in part:
-                    delay += 60*60*int(part.replace("h", ""))
+                    delay += 60 * 60 * int(part.replace("h", ""))
         except ValueError:
             return "Failed to parse the delay"
 
         if delay <= 0:
             return "Please specify a (positive) delay"
-        elif delay > 24*60*60:
+        elif delay > 24 * 60 * 60:
             return "Please specify a delay lower than 1 day"
 
         # Add new reminder
@@ -510,7 +510,7 @@ Delay format: [0-24h] [0-59m] [0-59s]'''
         else:
             reply = ("{}, I failed to send your broadcast to {}"
                      " (Server returned error code <i>{}</i>)").format(
-                        self.get_sender_username(mess), vmc.target, status)
+                         self.get_sender_username(mess), vmc.target, status)
 
         return reply
 

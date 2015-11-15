@@ -104,7 +104,7 @@ class Say(object):
     def nicksay(self, mess, args):
         'Like fishsay but pubbietasticer'
         nickrandom = random.choice(self.nickisms)
-        return nickrandom.replace('00', '0'*int(2+random.expovariate(.25)))
+        return nickrandom.replace('00', '0' * int(2 + random.expovariate(.25)))
 
     @botcmd
     def chasesay(self, mess, args):
