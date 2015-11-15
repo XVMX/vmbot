@@ -1,8 +1,8 @@
-import ConfigParser
+from ConfigParser import SafeConfigParser
 
 
-parser = ConfigParser.SafeConfigParser()
-parser.read('vmbot.cfg')
+parser = SafeConfigParser()
+parser.read('data/vmbot.cfg')
 
 # Jabber configuration
 username = parser.get('Jabber', 'username')

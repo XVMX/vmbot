@@ -1,6 +1,1 @@
-vmbot.cfg
-faq.sqlite
-wh.sqlite
-remindme.sqlite
-api.cache
 *.py[cod]

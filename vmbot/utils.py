@@ -113,7 +113,7 @@ class Price(object):
                             "pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
-        conn = sqlite3.connect('staticdata.sqlite')
+        conn = sqlite3.connect('data/staticdata.sqlite')
         cur = conn.cursor()
         cur.execute(
             '''SELECT regionID, solarSystemName
@@ -174,7 +174,7 @@ class EveUtils(object):
         '''Resolves a typeID to its name'''
         if typeID == 0:
             return "[Unknown]"
-        conn = sqlite3.connect('staticdata.sqlite')
+        conn = sqlite3.connect('data/staticdata.sqlite')
         cur = conn.cursor()
         cur.execute(
             '''SELECT typeID, typeName
@@ -190,7 +190,7 @@ class EveUtils(object):
 
     def getSolarSystemData(self, solarSystemID):
         '''Resolves a solarSystemID to its data'''
-        conn = sqlite3.connect('staticdata.sqlite')
+        conn = sqlite3.connect('data/staticdata.sqlite')
         cur = conn.cursor()
         cur.execute(
             '''SELECT solarSystemID, solarSystemName,
@@ -615,7 +615,7 @@ class EveUtils(object):
 
     def getCache(self, path, params=dict()):
         try:
-            conn = sqlite3.connect("api.cache")
+            conn = sqlite3.connect("data/api.cache")
             cur = conn.cursor()
 
             if len(params) == 0:
@@ -654,7 +654,7 @@ class EveUtils(object):
 
     def setCache(self, path, doc, expiry, params=dict()):
         try:
-            conn = sqlite3.connect("api.cache")
+            conn = sqlite3.connect("data/api.cache")
             cur = conn.cursor()
             cur.execute(
                 '''CREATE TABLE IF NOT EXISTS metadata (

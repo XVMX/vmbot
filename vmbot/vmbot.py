@@ -242,7 +242,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         return reply
 
     def initReminder(self):
-        conn = sqlite3.connect("remindme.sqlite")
+        conn = sqlite3.connect("data/remindme.sqlite")
         cur = conn.cursor()
         try:
             cur.execute('''SELECT time, text, username, chat, type, thread
@@ -275,7 +275,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         self.send_message(response)
 
         # Delete old reminder and set new one
-        conn = sqlite3.connect("remindme.sqlite")
+        conn = sqlite3.connect("data/remindme.sqlite")
         cur = conn.cursor()
         try:
             cur.execute('''DELETE FROM remindme
@@ -429,7 +429,7 @@ Delay format: [0-24h] [0-59m] [0-59s]'''
                        "chat": mess.getFrom().getStripped(),
                        "type": mess.getType(),
                        "thread": mess.getThread()}
-        conn = sqlite3.connect("remindme.sqlite")
+        conn = sqlite3.connect("data/remindme.sqlite")
         cur = conn.cursor()
         try:
             cur.execute('''CREATE TABLE IF NOT EXISTS remindme (
