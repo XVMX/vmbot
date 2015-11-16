@@ -47,7 +47,7 @@ from wh import Wormhole
 
 
 logger = logging.getLogger('jabberbot')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.getLevelName(vmc.loglevel))
 ch = logging.StreamHandler()
 logger.addHandler(ch)
 

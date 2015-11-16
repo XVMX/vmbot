@@ -4,6 +4,9 @@ from ConfigParser import SafeConfigParser
 parser = SafeConfigParser()
 parser.read('data/vmbot.cfg')
 
+# Log level
+loglevel = parser.get('Logging', 'level')
+
 # Jabber configuration
 username = parser.get('Jabber', 'username')
 password = parser.get('Jabber', 'password')
