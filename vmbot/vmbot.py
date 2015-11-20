@@ -162,9 +162,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         "ektony",
         "kairk_efraim",
         "lofac",
-        "jons_squire",
         "joker_gates",
-        "lordshazbot"
+        "lordshazbot",
+        "borodimer"
     ]
     admins = [
         "jack_haydn",
