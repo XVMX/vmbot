@@ -172,6 +172,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         "joker_gates"
     ]
     pubbietalk = [
+        "sup",
         "dank",
         "frag",
         "o7",
