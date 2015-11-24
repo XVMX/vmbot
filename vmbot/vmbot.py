@@ -200,8 +200,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
         # Regex to check for pubbie talk
         self.pubbieRegex = re.compile(
-            "(?:^| |,|\.)(?:{})(?:$| |,|\.)".format("|".join(self.pubbietalk)),
-            re.IGNORECASE)
+            "(?:^|\W)(?:{})(?:$|\W)".format("|".join(self.pubbietalk)), re.IGNORECASE)
 
         # Initialize asynchronous commands
         self.initReminder()
