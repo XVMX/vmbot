@@ -79,7 +79,8 @@ class Say(object):
         "Baby"
     ]
     scottisms = [
-        "Would you like to buy a rose?"
+        "would you like to buy a rose?",
+        "Israel has a right to defend itself."
     ]
 
     @botcmd
@@ -136,10 +137,8 @@ class Say(object):
     @botcmd
     def scottsay(self, mess, args):
         'Like fishsay but more profitable'
-        if args:
-            return "{}, {}".format(args, random.choice(self.scottisms))
-        else:
-            return random.choice(self.scottisms)
+        sender = (args.strip() if args else self.get_sender_username(mess))
+        return "{}, {}".format(sender, random.choice(self.scottisms))
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
