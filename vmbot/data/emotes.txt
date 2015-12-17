@@ -1,24 +1,24 @@
-Name=SA-GF Autumn 2015, Nosmile Edition
-Description=Markus Persson Commiseration Update
-Icon=shibe.001.png
+Name=SA-GF Pack, No-Smile Version
+Description=Last Updated: December 16th, 2015
+Icon=smugjones.001.gif
 Author=Querns
 
 [default]
 ! 44O1K.gif :gettheehence:
-! 44O1K.gif :gth:
+44O1K.gif :gth:
 ! ashomad.png :ashomad:
 ! aaatoot.gif :aaatoot:
 ! bandblimp.gif :bandblimp:
 ! boonie.png :booniebee:
 ! confused_downs.gif :confuseddowns:
-! confused_downs.gif :cd:
+confused_downs.gif :cd:
 ! confuseddownsbert.png :confuseddownsbert:
-! confuseddownsbert.png :cdb:
+confuseddownsbert.png :cdb:
 ! coolp.gif :coolp:
 ! downglomp.gif :downsglomp:
 ! downscide.gif :downscide:
 ! dragon_wizard_snypa.gif :dragonwizardsnypa:
-! dragon_wizard_snypa.gif :dws:
+dragon_wizard_snypa.gif :dws:
 ! derrick.png :smitz:
 ! efters.jpg :efters:
 ! elusif.jpg :elusif:
@@ -69,10 +69,10 @@ Author=Querns
 ! emot-freeman.gif :freeman:
 ! emot-frog3.gif :frog3:
 ! emot-frogc00lpipe.gif :frogc00lpipe:
-! emot-frogc00lpipe.gif :fcp:
+emot-frogc00lpipe.gif :fcp:
 ! emot-frogcawg.gif :frogcawg:
 ! emot-frogsnypa.gif :frogsnypa:
-! emot-frogsnypa.gif :page1:
+emot-frogsnypa.gif :page1:
 ! emot-frogpipe.gif :frogpipe:
 ! emot-frogxd.gif :frogxd:
 ! emot-fromer.gif :fromer:
@@ -112,12 +112,12 @@ Author=Querns
 ! emot-mawg.gif :mawg:
 ! emot-meatwad.gif :meatwad:
 ! emot-megamonocle.gif :megamonocle:
-! emot-megamonocle.gif :megamon:
+emot-megamonocle.gif :megamon:
 ! emot-mensrights.gif :mensrights:
-! emot-mensrights.gif :mra:
+emot-mensrights.gif :mra:
 ! emot-metis.gif :metis:
 ! emot-monocle2.gif :monocle2:
-! emot-monocle2.gif :monocles:
+emot-monocle2.gif :monocles:
 ! emot-moof.gif :moof:
 ! emot-moore.gif :moore:
 ! emot-mrsaturn.gif :mrsaturn:
@@ -170,7 +170,7 @@ Author=Querns
 ! emot-unwanted.gif :unwanted:
 ! emot-vi.gif :vi:
 ! emot-vicman.gif :vicman:
-! emot-vicman.gif :VICman:
+emot-vicman.gif :VICman:
 ! emot-wank.gif :wank:
 ! emot-wark.gif :wark:
 ! emot-wblue.jpg :wblue:
@@ -184,18 +184,18 @@ Author=Querns
 ! frank.gif :frank:
 ! frogbarf.gif :frogbarf:
 ! frog_gonk_fire.gif :froggonkfire:
-! frog_gonk_fire.gif :fgf:
+frog_gonk_fire.gif :fgf:
 ! frog_towers.gif :frog911:
 ! gf-aaronstatic.gif :aaronstatic:
 ! gf-archa2.gif :archa:
-! gf-archa2.gif :archer:
+gf-archa2.gif :archer:
 ! gf-arghy.gif :arghy:
 ! gf-ashobon.gif :ashobon:
-! gf-ashobon.gif :antishobon:
+gf-ashobon.gif :antishobon:
 ! gf-badger.gif :badger:
 ! gf-bird.gif :bird:
 ! gf-blueballs.gif :blueballs:
-! gf-blueballs.gif :bb:
+gf-blueballs.gif :bb:
 ! gf-brobuck.gif :brobuck:
 ! gf-bunchies.png :bunchies:
 ! gf-carrot.gif :carrot:
@@ -204,89 +204,89 @@ Author=Querns
 ! gf-cefte.gif :cefte:
 ! gf-cigare.gif :cigare:
 ! gf-circlejerk.gif :circlejerk:
-! gf-circlejerk.gif :cjerk:
+gf-circlejerk.gif :cjerk:
 ! gf-cloricus.gif :cloricus:
-! gf-cloricus.gif :lollicus:
-! gf-cloricus.gif :clor:
+gf-cloricus.gif :lollicus:
+gf-cloricus.gif :clor:
 ! gf-clowncock.gif :manimani:
 ! gf-cnn.gif :cnn:
 ! gf-colbon.gif :shobert:
-! gf-colbon.gif :shobonert:
-! gf-colbon.gif :colbon:
-! gf-colbon.gif :colboshon:
+gf-colbon.gif :shobonert:
+gf-colbon.gif :colbon:
+gf-colbon.gif :colboshon:
 ! gf-commissilon.gif :commissilon:
 ! gf-companioncube.gif :cube:
-! gf-companioncube.gif :ccube:
+gf-companioncube.gif :ccube:
 ! gf-condi.gif :condi:
 ! gf-conspiracy_effort.gif :conspiracy:
-! gf-conspiracy_effort.gif :gfc:
+gf-conspiracy_effort.gif :gfc:
 ! gf-cripebert.gif :cripebert:
-! gf-cripebert.gif :peekaboo:
-! gf-cripebert.gif :cripesbert:
-! gf-cripebert.gif :colipes:
+gf-cripebert.gif :peekaboo:
+gf-cripebert.gif :cripesbert:
+gf-cripebert.gif :colipes:
 ! cripes.001.gif :cripes:
 ! gf-cripes.gif :cripe:
 ! gf-cripsilon.gif :cripsilon:
 ! gf-cuir.gif :cuir:
 ! gf-dalaxi.gif :dalaxi:
-! gf-dalaxi.gif :armchairwarrior:
-! gf-dalaxi.gif :evilpookie:
+gf-dalaxi.gif :armchairwarrior:
+gf-dalaxi.gif :evilpookie:
 ! gf-deadtear.gif :deadtear:
-! gf-deadtear.gif :tumbleweed:
+gf-deadtear.gif :tumbleweed:
 ! gf-derf.gif :derf:
 ! gf-drgnvale.gif :drgnvale:
-! gf-drgnvale.gif :fuckgoons:
+gf-drgnvale.gif :fuckgoons:
 ! gf-dungar.gif :rdungar:
 ! gf-dungaryo.gif :dungar:
 ! gf-eveo.gif :eve-o:
-! gf-eveo.gif :eveo:
+gf-eveo.gif :eveo:
 ! gf-flagglompage.gif :flagglompage:
-! gf-flagglompage.gif :flagglomp:
+gf-flagglompage.gif :flagglomp:
 ! gf-frank.gif :frankfrank:
 ! gf-glompage.gif :deaken:
-! gf-glompage.gif :deakin:
-! gf-glompage.gif :glompage:
+gf-glompage.gif :deakin:
+gf-glompage.gif :glompage:
 ! gf-goatse.gif :goatse:
-! gf-goatse.gif :jasharinisamasssivefag:
+gf-goatse.gif :jasharinisamasssivefag:
 ! gf-happycat.gif :happycat:
 ! gf-hitlerbert.gif :hitlerbert:
 ! gf-igne.gif :igne:
-! gf-igne.gif :ignepatriot:
-! gf-igne.gif :igneparrot:
+gf-igne.gif :ignepatriot:
+gf-igne.gif :igneparrot:
 ! gf-isitdeadyet.png :isitdeadyet:
 ! gf-karttoon.gif :karttoon:
 ! gf-komolov.gif :komolov:
 ! gf-longdong.gif :longdong:
 ! gf-maddowns.gif :maddowns:
 ! gf-madprops.gif :madprops:
-! gf-madprops.gif :mp:
-! gf-madprops.gif :madprop:
+gf-madprops.gif :mp:
+gf-madprops.gif :madprop:
 ! gf-nazi.gif :nazi:
 ! gf-nuvanito.gif :blackops:
-! gf-nuvanito.gif :nuvanito:
+gf-nuvanito.gif :nuvanito:
 ! gf-p.gif :p:
-! gf-p.gif :P
-! gf-p.gif :p
+gf-p.gif :P
+gf-p.gif :p
 ! gf-page4.gif :page4:
-! gf-page4.gif :p4snypa:
-! gf-page4.gif :page4snypa:
+gf-page4.gif :p4snypa:
+gf-page4.gif :page4snypa:
 ! gf-papassar.gif :papassar:
 ! gf-patdance.gif :patdance:
 ! emot-patriot.gif :patriot:
 ! gf-patriot.gif :gfpatriot:
 ! gf-psycripes.gif :criduck:
-! gf-psycripes.gif :psyduckcripes:
-! gf-psycripes.gif :cripesduck:
+gf-psycripes.gif :psyduckcripes:
+gf-psycripes.gif :cripesduck:
 ! gf-ra.gif :ra:
 ! gf-rapetraingizz.gif :rapetraingizz:
-! gf-rapetraingizz.gif :rapetrainjizz:
+gf-rapetraingizz.gif :rapetrainjizz:
 ! gf-rasilon.gif :rasilon:
 ! gf-redswarm.gif :redswarm:
 ! gf-rem.gif :rem:
 ! gf-rho.gif :rho:
 ! gf-rollbert.gif :rollbert:
-! gf-rollbert.gif :rbert:
-! gf-rollbert.gif :rollb:
+gf-rollbert.gif :rbert:
+gf-rollbert.gif :rollb:
 ! gf-sari.png :sari:
 ! gf-sillyhats.gif :sillyhats:
 ! gf-skink.gif :skink:
@@ -297,7 +297,7 @@ Author=Querns
 ! gf-sunshinebear.gif :carebear:
 ! gf-tfff.gif :tfff:
 ! gf-tindowns.gif :tindowns:
-! gf-tindowns.gif :downsfoil:
+gf-tindowns.gif :downsfoil:
 ! gf-unicue.gif :uni:
 ! gf-welp.gif :welp:
 ! gf-yeep.gif :yeep:
@@ -307,42 +307,42 @@ Author=Querns
 ! goonie.gif :goonie:
 ! fucksneep.gif :fucksneep:
 ! happysun.png :happysun:
-! happysun.png :hsun:
+happysun.png :hsun:
 ! hehguy.gif :hehguy:
 ! hoggirl.gif :hoggirl:
 ! holygirl.gif :holygirl:
 ! horrorkid.gif :horrorkid:
 ! icon_bear.gif :bear:
-! icon_bear.gif :twistedbear:
+icon_bear.gif :twistedbear:
 ! icon_evil.gif :eviltwist:
 ! emot-pirate.gif :pirate:
 ! emot-twisted.gif :twisted:
 ! icon_ugh.gif :ugh:
 ! iss-blood.gif :specops:
-! iss-blood.gif :iss:
+iss-blood.gif :iss:
 ! kd-ratio2.gif :kdratio:
-! kd-ratio2.gif :kd:
+kd-ratio2.gif :kd:
 ! masaoclap.gif :masaoclap:
 ! masaokis.gif :masaokis:
 ! masaokiscamera.gif :masaocamera:
 ! masaokis-drag-pot.gif :masaopot:
 ! masaokis-katana.gif :masao-katana:
-! masaokis-katana.gif :mk:
-! masaokis-katana.gif :katana:
+masaokis-katana.gif :mk:
+masaokis-katana.gif :katana:
 ! masaokisscience.gif :masaoscience:
 ! masaokisscience2.gif :masaokisscience:
 ! masaokis-shovel.gif :masaoshovel:
 ! masaokis-spoon.gif :masaospoon:
 ! masaokis-w-kool-aid.gif :masaok00l:
 ! masao-sympathy.gif :masaohug:
-! masao-sympathy.gif :masaokishug:
+masao-sympathy.gif :masaokishug:
 ! mashbutten.gif :butten:
-! mashbutten.gif :mashbutton:
-! mashbutten.gif :petition:
+mashbutten.gif :mashbutton:
+mashbutten.gif :petition:
 ! mcc00l.gif :mcc00l:
-! mcc00l.gif :mccool:
+mcc00l.gif :mccool:
 ! molle.gif :molle:
-! molle.gif :sirmolle:
+molle.gif :sirmolle:
 ! ninjaturtles.gif :ninjaturtles:
 ! nokpos.gif :nokpos:
 ! playoffs.gif :playoffs:
@@ -350,25 +350,25 @@ Author=Querns
 ! psyfrog.gif :psyfrog:
 ! rapetrain.png :rapetrain:
 ! rembunchies.gif :rembunchies:
-! rembunchies.gif :rbunchies:
-! rembunchies.gif :rbunchie:
+rembunchies.gif :rbunchies:
+rembunchies.gif :rbunchie:
 ! royofca.gif :royofca:
-! royofca.gif :roy:
-! royofca.gif :roypage2snypa:
-! royofca.gif :royofcasnypa:
+royofca.gif :roy:
+royofca.gif :roypage2snypa:
+royofca.gif :royofcasnypa:
 ! scax-spork(funkengine).gif :funkengine:
-! scax-spork(funkengine).gif :scaxspork:
+scax-spork(funkengine).gif :scaxspork:
 ! seaking.gif :seaking:
 ! shy.gif :shy:
 ! spyn-gbrush.gif :spyn:
-! spyn-gbrush.gif :spyno:
+spyn-gbrush.gif :spyno:
 ! superslick.gif :superslick:
-! superslick.gif :supaslick:
+superslick.gif :supaslick:
 ! star3.png :*:
 ! imgtimeline.gif [img-timeline]
 ! timeline2.png [img-timeline2]
 ! tolon.gif :tolon:
-! tolon.gif :saus:
+tolon.gif :saus:
 ! tvp-shocked.gif :O
 ! vampire.png :-[
 ! wang-patriot.gif :wangpatriot:
@@ -378,7 +378,7 @@ Author=Querns
 ! smile.gif :)
 ! emot-3.gif :3:
 ! emot-aaa.gif :aaa:
-! emot-aaa.gif :o
+emot-aaa.gif :o
 ! emot-aaaaa.gif :aaaaa:
 ! emot-airquote.gif :airquote:
 ! emot-allears.gif :allears:
@@ -691,6 +691,7 @@ Author=Querns
 ! emot-tito.gif :tito:
 ! emot-ussr.gif :ussr:
 ! emot-question.gif :?:
+emot-question.gif :question:
 ! asoiaf.001.gif :asoiaf:
 ! emot-axe.gif :axe:
 ! emot-bsg.gif :bsg:
@@ -757,7 +758,7 @@ Author=Querns
 ! emot-am.gif :am:
 ! emot-awesomelon.gif :awesomelon:
 ! emot-bahgawd.gif :bahgawd:
-! emot-bahgawd.gif :dbrb:
+emot-bahgawd.gif :dbrb:
 ! emot-bandwagon.gif :bandwagon:
 ! emot-bick.gif :bick:
 ! emot-bigtran.gif :bigtran:
@@ -979,7 +980,7 @@ Author=Querns
 ! shepspends.001.gif :shepspends:
 ! shibewow.001.gif :shibewow:
 ! shrek.001.gif :shrek:
-! shrek.001.gif :dota:
+shrek.001.gif :dota:
 ! smithcloud.001.gif :smithcloud:
 ! smugjones.001.gif :smugjones:
 ! smugwizard.001.png :smugwizard:
@@ -1077,7 +1078,6 @@ Author=Querns
 ! psynuke.gif :psynuke:
 ! psythulu.gif :psythulhu:
 ! captainpopbyob.gif :captainpop:
-! emot-question.gif :question:
 ! emot-yikes.gif :yikes:
 ! beerpal.gif :beerpal:
 ! chloe.001.png :chloe:
@@ -1172,3 +1172,29 @@ Author=Querns
 ! shillary.001.png :shillary:
 ! shudder.001.gif :shudder:
 ! sureboat.001.gif :sureboat:
+! gary.gif :gary:
+! yarg.gif :yarg:
+! dunkedon.001.gif :dunkedon:
+! flip.001.gif :flip:
+! itoilet.001.gif :itoilet:
+! myballs.001.gif :myballs:
+! newdanger.001.gif :newdanger:
+! nigger.001.png :nigger:
+! niggerr.001.png :niggerr:
+! nutshot.gif :nutshot:
+! petdog.001.gif :petdog:
+! razorfront.001.png :razorfront:
+! rowdytrout.001.gif :rowdytrout:
+! sad-peanut.gif :sadpeanut:
+! sever.001.gif :sever:
+! shittydog.001.gif :shittydog:
+! shittypop.001.gif :shittypop:
+! tem.001.gif :tem:
+! wrong.001.gif :wrong:
+! wtchris.001.png :wtchris:
+! zoomed.001.gif :zoomed:
+! si.001.gif :si:
+! therapy.001.gif :therapy:
+! squawk.001.gif :squawk:
+! ffg.001.gif :ffg:
+! hai.001.gif :hai:
