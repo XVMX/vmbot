@@ -114,6 +114,7 @@ class Price(object):
             item = "30 Day Pilot's License Extension (PLEX)"
 
         conn = sqlite3.connect('data/staticdata.sqlite')
+        conn.text_factory = lambda t: unicode(t, "utf-8", "replace")
         cur = conn.cursor()
         cur.execute(
             '''SELECT regionID, solarSystemName
