@@ -144,6 +144,8 @@ class Price(object):
 
         typeID, typeName = items.pop(0)
         regionID, systemName = systems.pop(0)
+        typeName = typeName.encode("ascii", "replace")
+        systemName = systemName.encode("ascii", "replace")
 
         try:
             sellvolume, sellprice = self.getPriceVolume('sell', regionID, systemName, typeID)
