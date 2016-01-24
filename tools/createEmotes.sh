@@ -8,7 +8,7 @@ unzip -p ./pidgin_nosmile.zip "pidgin_nosmile/theme" > ./emotes.txt
 chmod 644 ./emotes.txt
 
 echo "***"
-echo "Deleting downloaded files"
+echo "Deleting downloaded archive"
 echo "***"
 rm ./pidgin_nosmile.zip
 
