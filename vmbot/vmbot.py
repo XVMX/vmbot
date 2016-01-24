@@ -116,6 +116,9 @@ class MUCJabberBot(JabberBot):
             self.longreply(mess, reply, forcePM=True)
             return "Private message sent"
         else:
+            # Fix multiline docstring indentation (not compliant to PEP 257)
+            reply = '\n'.join([line.lstrip() for line in reply.splitlines()])
+
             if self.longreply(mess, reply):
                 return "Private message sent"
             else:
