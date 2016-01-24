@@ -151,8 +151,8 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
-class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhole):
-    # Lists for use in the various methods
+class VMBot(MUCJabberBot, Say, Fun, Chains, CREST, Price, EveUtils, FAQ, Wormhole):
+    # Access control lists
     directors = [
         "jack_haydn",
         "thirteen_fish",
@@ -169,6 +169,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
     admins = [
         "joker_gates"
     ]
+
+    # Pubbie talk regex parts
     pubbietalk = [
         "sup",
         "dank",
@@ -199,18 +201,18 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
         # Regex to check for pubbie talk
         self.pubbieRegex = re.compile(
-            "(?:^|\W)(?:{})(?:$|\W)".format("|".join(self.pubbietalk)), re.IGNORECASE)
+            "(?:^|\W)(?:{})(?:$|\W)".format('|'.join(self.pubbietalk)), re.IGNORECASE
+        )
 
         # Initialize asynchronous commands
         if self.kmFeedTrigger:
-            self.kmFeedID = int(
-                requests.get(
-                    "https://zkillboard.com/api/losses/corporationID/2052404106/limit/1/no-items/",
-                    headers={'Accept-Encoding': 'gzip',
-                             'User-Agent': 'VM JabberBot'}).json()[0]['killID'])
+            self.kmFeedID = int(requests.get(
+                "https://zkillboard.com/api/losses/corporationID/2052404106/limit/1/no-items/",
+                headers={'User-Agent': "VM JabberBot"}
+            ).json()[0]['killID'])
 
     def idle_proc(self):
-        '''This function will be called in the main loop'''
+        """Execute asynchronous commands."""
         if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
             self.kmFeed()
             self.kmFeedTrigger += 5 * 60
@@ -221,8 +223,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         reply = super(VMBot, self).callback_message(conn, mess)
 
         fromHist = False
-        if mess.getTimestamp():
-            messageTime = calendar.timegm(time.strptime(mess.getTimestamp(), "%Y%m%dT%H:%M:%S"))
+        timestamp = mess.getTimestamp()
+        if timestamp:
+            messageTime = calendar.timegm(time.strptime(timestamp, "%Y%m%dT%H:%M:%S"))
             fromHist = messageTime < time.time() - 10
 
         message = mess.getBody()
@@ -231,26 +234,27 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
                 self.muc_kick(mess.getFrom().getStripped(), self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
 
-            matches = self.zBotRegex.finditer(message)
-            if matches:
-                uniqueMatches = set()
-                for match in matches:
-                    uniqueMatches.add(match.group(0))
-                zBotReply = ""
-                for match in uniqueMatches:
-                    zBotReply += self.zbot(mess, "{} compact".format(match))
-                    zBotReply += "<br />"
+            uniqueMatches = set()
+            for match in self.zBotRegex.finditer(message):
+                uniqueMatches.add(match.group(0))
+
+            zBotReply = ""
+            for match in uniqueMatches:
+                zBotReply += self.zbot(mess, "{} compact".format(match))
+                zBotReply += "<br />"
+            if zBotReply:
                 self.send_simple_reply(mess, zBotReply[:-6])
 
         return reply
 
     @botcmd
     def math(self, mess, args):
-        '''<expr> - Evaluates expr mathematically.
+        """<expr> - Evaluates expr mathematically
 
-        Force floating point numbers by doing 4.0/3 instead of 4/3'''
+        Force floating point numbers by doing 4.0/3 instead of 4/3
+        """
 
-        @timeout(10, "Sorry, this query took too long to execute and I had to kill it off.")
+        @timeout(10, "Sorry, this query took too long to execute and I had to kill it off")
         def do_math(args):
             return pretty(parse_expr(args), full_prec=False, use_unicode=False)
 
@@ -260,20 +264,22 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
                 reply = '\n' + reply
 
             reply = '<font face="monospace">{}</font>'.format(
-                re.sub('[\n]', '</font><br/><font face="monospace">', reply))
+                reply.replace('\n', '</font><br/><font face="monospace">')
+            )
         except Exception as e:
             reply = str(e)
 
-        # TODO: what is the actual bound?
-        if len(reply) > 2 ** 15:
+        if len(reply) > self.max_chat_chars:
             reply = "I've evaluated your expression but it's too long to send with jabber"
+
         return reply
 
     @botcmd
     def convert(self, mess, args):
-        '''<amount> <source> to <destination> - Converts amount from source to destination'''
+        """<amount> <source> to <destination> - Converts amount from source to destination"""
         src, dst = args.split(" to ", 1)
         ureg = pint.UnitRegistry()
+
         try:
             return str(ureg(src).to(dst))
         except pint.unit.DimensionalityError as e:
@@ -283,29 +289,30 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
     @botcmd
     def dice(self, mess, args):
-        '''[dice count] [sides] - Roll the dice. Defaults to one dice and six sides.'''
+        """[dice count] [sides] - Roll the dice. Defaults to one dice and six sides"""
+        if len(args) > 2:
+                return "You need to provide none, one or two parameters"
+
         dice = 1
         sides = 6
         args = args.strip().split()
-        if len(args) > 2:
-                return 'You need to provide none, one or two parameters.'
-
         try:
             dice = int(args[0])
             sides = int(args[1])
         except ValueError:
-            return 'You need to provide integer parameters.'
+            return "You need to provide integer parameters"
         except IndexError:
             pass
 
-        if not 0 <= dice <= 50:
+        if not 1 <= dice <= 50:
             return "That's an absurd number of dice, try again"
-        if not 1 <= sides <= 2**8:
+        if not 1 <= sides <= 256:
             return "That's an absurd number of sides, try again"
 
         result = [random.randint(1, sides) for i in xrange(dice)]
-        return 'I rolled {} dice with {} sides each. The result is [{}]'.format(
-            dice, sides, ']['.join(map(str, result)))
+        return "I rolled {} dice with {} sides each. The result is [{}]".format(
+            dice, sides, "][".join(map(str, result))
+        )
 
     @botcmd
     def roll(self, mess, args):
@@ -314,33 +321,34 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
     @botcmd
     def flipcoin(self, mess, args):
-        '''flips a coin'''
+        """Flips a coin"""
         return random.choice(["Heads!", "Tails!"])
 
     @botcmd
     def pickone(self, mess, args):
-        '''<option1> or <option2> [or <option3> ...] - Chooses an option for you'''
-        args = args.strip().split(' or ')
+        """<option1> or <option2> [or <option3> ...] - Chooses an option for you"""
+        args = args.strip().split(" or ")
+
         if len(args) > 1:
             return random.choice(args)
         else:
-            return 'You need to provide at least 2 options to choose from.'
+            return "You need to provide at least 2 options to choose from"
 
     @botcmd
     def ping(self, mess, args):
-        '''[-a] - Is this thing on? The -a flag makes the bot answer to you specifically.'''
+        """[-a] - Is this thing on? The -a flag makes the bot answer to you specifically"""
         if args == "-a":
-            return '{}: Pong.'.format(self.get_sender_username(mess))
+            return "{}: Pong".format(self.get_sender_username(mess))
         else:
-            return 'Pong.'
+            return "Pong"
 
     def sendBcast(self, broadcast, author):
-        result = ''
+        # API docs: http://goo.gl/cTYPzg
         messaging = ET.Element("messaging")
         messages = ET.SubElement(messaging, "messages")
         message = ET.SubElement(messages, "message")
         id = ET.SubElement(message, "id")
-        id.text = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        id.text = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
         target = ET.SubElement(message, "target")
         target.text = vmc.target
         sender = ET.SubElement(message, "from")
@@ -349,28 +357,29 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         text.text = broadcast
         result = '<?xml version="1.0"?>' + ET.tostring(messaging)
 
-        headers = {"X-SourceID": vmc.id, "X-SharedKey": vmc.key}
-        r = requests.post(url=vmc.url, data=result, headers=headers)
+        r = requests.post(
+            vmc.url, data=result,
+            headers={'User-Agent': "VM JabberBot", 'X-SourceID': vmc.id, 'X-SharedKey': vmc.key}
+        )
         return r.status_code
 
     @botcmd
     def bcast(self, mess, args):
-        ''' vm <message> - Sends a message to XVMX members
+        """vm <message> - Sends a broadcast to XVMX members
 
         Must be <=1kb including the tag line.
         "vm" required to avoid accidental bcasts, only works in dir chat.
-        Do not abuse this or Solo's wrath shall be upon you.'''
-        # API docs: https://goo.gl/cTYPzg
-        if args[:2] != 'vm' or len(args) <= 3:
+        Do not abuse this or Solo's wrath shall be upon you.
+        """
+        if args[:2] != "vm" or len(args) <= 3:
             return None
 
-        srjid = self.get_uname_from_mess(mess)
+        if str(mess.getFrom()).split('@')[0] != "vm_dir":
+            return "Broadcasting is only enabled in director chat"
 
-        if str(mess.getFrom()).split("@")[0] != 'vm_dir':
-            return "Broadcasting is only enabled in director chat."
-
-        if srjid not in self.directors:
-            return "You don't have the rights to send broadcasts."
+        sender = self.get_uname_from_mess(mess)
+        if sender not in self.directors:
+            return "You don't have the rights to send broadcasts"
 
         broadcast = args[3:]
 
@@ -380,19 +389,21 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
                     "Please try again with less of a tale. "
                     "You could try, y'know, a forum post.").format(len(broadcast))
 
-        status = self.sendBcast(broadcast, "{} via VMBot".format(srjid))
+        status = self.sendBcast(broadcast, "{} via VMBot".format(sender))
         if status == 200:
             reply = "{}, I have sent your broadcast to {}".format(
-                self.get_sender_username(mess), vmc.target)
+                self.get_sender_username(mess), vmc.target
+            )
         else:
-            reply = ("{}, I failed to send your broadcast to {}"
-                     " (Server returned error code <i>{}</i>)").format(
-                         self.get_sender_username(mess), vmc.target, status)
+            reply = ("{}, I failed to send your broadcast to {} "
+                     "(API returned error code {})").format(self.get_sender_username(mess),
+                                                            vmc.target, status)
 
         return reply
 
     @botcmd
     def pingall(self, mess, args):
+        """Pings everyone in the current MUC room"""
         if self.get_uname_from_mess(mess) not in (self.directors + self.admins):
             return ":getout:"
 
@@ -409,36 +420,38 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
-        '''reload - Kills the bot's process
+        """Kills the bot's process
 
-        If ran in a while true loop on the shell, it'll immediately reconnect.'''
+        If ran in a while true loop on the shell, it'll immediately reconnect.
+        """
         if not args:
             if self.get_uname_from_mess(mess) in self.admins:
-                reply = 'afk shower'
+                reply = "afk shower"
                 self.quit()
             else:
-                reply = 'You are not authorized to reload the bot, please go and DIAF!'
+                reply = "You are not authorized to reload the bot, please go and DIAF!"
+
             return reply
 
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
-        '''gitpull - pulls the latest commit from the bot repository and updates the bot with it.'''
-        srjid = self.get_uname_from_mess(mess)
-        if str(mess.getFrom()).split("@")[0] != 'vm_dir':
-            return "git pull is only enabled in director chat."
+        """Pulls the latest commit from the bot repository and updates the bot with it"""
+        if str(mess.getFrom()).split("@")[0] != "vm_dir":
+            return "git pull is only enabled in director chat"
 
-        if srjid not in self.admins:
-            return "You don't have the rights to git pull."
+        sender = self.get_uname_from_mess(mess)
+        if sender not in self.admins:
+            return "You are not allowed to git pull"
 
-        p = subprocess.Popen(['git', 'pull', ],
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             cwd=os.path.abspath(os.pardir))
         out, err = p.communicate()
-        reply = ('\n').join([out, err]).strip()
+        reply = '\n'.join([out, err]).strip()
 
         return reply
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Grabbing values from imported config file
     morgooglie = VMBot(vmc.username, vmc.password, vmc.res, kmFeed=True)
     morgooglie.muc_join_room(vmc.chatroom1, vmc.nickname)
