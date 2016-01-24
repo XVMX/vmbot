@@ -166,8 +166,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         "borodimer"
     ]
     admins = [
-        "jack_haydn",
-        "thirteen_fish",
         "joker_gates"
     ]
     pubbietalk = [
