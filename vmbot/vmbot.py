@@ -18,6 +18,7 @@ from jabberbot import JabberBot, botcmd
 import calendar
 import xml.etree.ElementTree as ET
 import time
+from datetime import datetime
 import re
 import logging
 import random
@@ -188,6 +189,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
     ]
 
     def __init__(self, *args, **kwargs):
+        self.startupTime = datetime.now()
         self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
 
         super(VMBot, self).__init__(*args, **kwargs)
@@ -392,6 +394,13 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         res = "All hands on {} dick!\n".format(self.get_sender_username(mess))
         res += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
         return res
+
+    @botcmd
+    def uptime(self, mess, args):
+        """Displays for how long the bot is running already"""
+        return "arc_codie has a server, but it hasn't been up as long as {}".format(
+            datetime.now() - self.startupTime
+        )
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
