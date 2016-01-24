@@ -25,7 +25,7 @@ sqlite3 ./sqlite-latest.sqlite ".dump invTypes" >> ./dump.sql
 sqlite3 ./staticdata.sqlite < ./dump.sql
 
 echo "***"
-echo "Deleting downloaded files"
+echo "Deleting temporary/downloaded files"
 echo "***"
 rm ./dump.sql ./sqlite-latest.sqlite ./sqlite-latest.sqlite.bz2.md5
 

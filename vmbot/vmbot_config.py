@@ -2,7 +2,7 @@ from ConfigParser import SafeConfigParser
 
 
 parser = SafeConfigParser()
-parser.read('data/vmbot.cfg')
+parser.read("data/vmbot.cfg")
 
 # Log level
 loglevel = parser.get('Logging', 'level')
