@@ -308,6 +308,11 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
             dice, sides, ']['.join(map(str, result)))
 
     @botcmd
+    def roll(self, mess, args):
+        """Displays a random number between 1 and 100"""
+        return str(random.randint(1, 100))
+
+    @botcmd
     def flipcoin(self, mess, args):
         '''flips a coin'''
         return random.choice(["Heads!", "Tails!"])
