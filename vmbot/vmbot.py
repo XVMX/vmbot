@@ -183,7 +183,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         "thann(?:y|ies)",
         "(?!:)murica(?!:)",
         "yolo",
-        "swag"
+        "swag",
+        "wewlad"
     ]
 
     def __init__(self, *args, **kwargs):
