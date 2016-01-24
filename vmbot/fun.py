@@ -167,24 +167,24 @@ class Fun(object):
 
         return random.choice(emotes).split()[-1]
 
-    @botcmd
-    def rtq(self, mess, args):
-        '''Like a box of chocolates, but without emotes this time'''
-        r = requests.get("http://bash.org/?random")
-        soup = BeautifulSoup(r.text, "html.parser")
+    # Disabled because bash.org is down currently
+    # @botcmd
+    # def rtq(self, mess, args):
+    #     """Like a box of chocolates, but without emotes this time"""
+    #     r = requests.get("http://bash.org/?random")
+    #     soup = BeautifulSoup(r.text, "html.parser")
 
-        quoteLinks = soup.find_all("a", title="Permanent link to this quote.")
-        validIDs = list()
-        for link in quoteLinks:
-            validIDs.append(int(link.get("href")[1:]))
-        quoteID = random.choice(validIDs)
+    #     validIDs = []
+    #     for link in soup.find_all("a", title="Permanent link to this quote."):
+    #         validIDs.append(int(link.get("href")[1:]))
+    #     quoteID = random.choice(validIDs)
 
-        quoteLink = "http://bash.org/?{}".format(quoteID)
-        r = requests.get(quoteLink)
-        soup = BeautifulSoup(r.text, "html.parser")
-        quote = soup.find(class_="qt").text.encode("ascii", "replace")
+    #     quoteLink = "http://bash.org/?{}".format(quoteID)
+    #     r = requests.get(quoteLink)
+    #     soup = BeautifulSoup(r.text, "html.parser")
+    #     quote = soup.find(class_="qt").text.encode("ascii", "replace")
 
-        return "{}\n{}".format(quote, quoteLink)
+    #     return "{}\n{}".format(quote, quoteLink)
 
     @botcmd
     def rtxkcd(self, mess, args):
