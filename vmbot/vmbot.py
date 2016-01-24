@@ -51,8 +51,7 @@ logger.addHandler(ch)
 
 
 class MUCJabberBot(JabberBot):
-    ''' Add features in JabberBot to allow it to handle specific
-    characteristics of multiple users chatroom (MUC). '''
+    """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
     max_chat_chars = 2000
@@ -63,35 +62,32 @@ class MUCJabberBot(JabberBot):
         self.nick_dict = {}
         super(MUCJabberBot, self).__init__(*args, **kwargs)
 
-    def unknown_command(self, mess, cmd, args):
-        # This should fix the bot replying to IMs (SOLODRAKBANSOLODRAKBANSOLODRAKBAN)
-        return ''
-
     def get_uname_from_mess(self, mess):
+        nick = self.get_sender_username(mess)
         node = mess.getFrom().getNode()
-        juid = self.nick_dict[node][self.get_sender_username(mess)]
-        return juid.split('@')[0]
+        jid = self.nick_dict[node][nick]
+        return jid.split('@')[0]
 
     def callback_presence(self, conn, presence):
-        type_ = presence.getType()
         nick = presence.getFrom().getResource()
         node = presence.getFrom().getNode()
         jid = presence.getJid()
+
         if jid is not None:
             if node not in self.nick_dict:
                 self.nick_dict[node] = {}
-            if type_ == self.OFFLINE and nick in self.nick_dict[node]:
+
+            if presence.getType() == self.OFFLINE and nick in self.nick_dict[node]:
                 del self.nick_dict[node][nick]
             else:
                 self.nick_dict[node][nick] = jid
+
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
-        '''Restricts the bot from responding to itself or to PMs'''
-
-        # solodrakban protection
+        # solodrakban (PM) protection
         # Change this to be limited to certain people if you want by
-        # if self.get_sender_username(mess) == 'solodrakban":
+        # if self.get_sender_username(mess) == "solodrakban":
         if mess.getType() != "groupchat":
             return
 
@@ -104,11 +100,10 @@ class MUCJabberBot(JabberBot):
         # FIXME: this should be integrated into the default send,
         # forcepm should be part of botcmd
         server = vmc.username.split('@')[1]
-        if receiver is None:
-            receiver = self.get_uname_from_mess(mess)
+        receiver = receiver or self.get_uname_from_mess(mess)
 
         if len(text) > self.max_chat_chars or forcePM:
-            self.send('{}@{}'.format(receiver, server), text)
+            self.send("{}@{}".format(receiver, server), text)
             return True
         else:
             return False
@@ -116,6 +111,7 @@ class MUCJabberBot(JabberBot):
     @botcmd
     def help(self, mess, args):
         reply = super(MUCJabberBot, self).help(mess, args)
+
         if not args:
             self.longreply(mess, reply, forcePM=True)
             return "Private message sent"
@@ -138,10 +134,12 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
         def wrapper(*args, **kwargs):
             signal.signal(signal.SIGALRM, _handle_timeout)
             signal.alarm(seconds)
+
             try:
                 result = func(*args, **kwargs)
             finally:
                 signal.alarm(0)
+
             return result
 
         return wraps(func)(wrapper)
