@@ -15,38 +15,36 @@
 
 from jabberbot import JabberBot, botcmd
 
-import calendar
-import xml.etree.ElementTree as ET
+import logging
 import time
 from datetime import datetime
-import re
-import logging
-import random
-import requests
-from functools import wraps
-import errno
+import calendar
 import os
-import signal
 import subprocess
+import errno
+import signal
+from functools import wraps
+import random
+import re
+import xml.etree.ElementTree as ET
 
-from sympy.printing.pretty import pretty
+import requests
 from sympy.parsing.sympy_parser import parse_expr
-
+from sympy.printing.pretty import pretty
 import pint
 
-
-# Change working directory to vmbot.py's directory to load data correctly
+# Change working directory to vmbot.py's directory to load submodules
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 import vmbot_config as vmc
 
 from fun import Say, Fun, Chains
-from faq import FAQ
 from utils import CREST, Price, EveUtils
+from faq import FAQ
 from wh import Wormhole
 
 
-logger = logging.getLogger('jabberbot')
+logger = logging.getLogger("jabberbot")
 logger.setLevel(logging.getLevelName(vmc.loglevel))
 ch = logging.StreamHandler()
 logger.addHandler(ch)
