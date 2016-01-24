@@ -27,7 +27,6 @@ import errno
 import os
 import signal
 import subprocess
-import sqlite3
 
 from sympy.printing.pretty import pretty
 from sympy.parsing.sympy_parser import parse_expr
@@ -191,7 +190,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
 
     def __init__(self, *args, **kwargs):
         self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
-        self.nextReminder = None
 
         super(VMBot, self).__init__(*args, **kwargs)
 
@@ -203,7 +201,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
             "(?:^|\W)(?:{})(?:$|\W)".format("|".join(self.pubbietalk)), re.IGNORECASE)
 
         # Initialize asynchronous commands
-        self.initReminder()
         if self.kmFeedTrigger:
             self.kmFeedID = int(
                 requests.get(
@@ -216,8 +213,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
         if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
             self.kmFeed()
             self.kmFeedTrigger += 5 * 60
-        if self.nextReminder and self.nextReminder['time'] <= time.time():
-            self.processReminder()
 
         return super(VMBot, self).idle_proc()
 
@@ -247,72 +242,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
                 self.send_simple_reply(mess, zBotReply[:-6])
 
         return reply
-
-    def initReminder(self):
-        conn = sqlite3.connect("data/remindme.sqlite")
-        cur = conn.cursor()
-        try:
-            cur.execute('''SELECT time, text, username, chat, type, thread
-                           FROM remindme
-                           ORDER BY time ASC
-                           LIMIT 1;''')
-            res = cur.fetchone()
-            if not res:
-                raise ValueError("No reminders")
-            self.nextReminder = {"time": res[0],
-                                 "text": res[1],
-                                 "username": res[2],
-                                 "chat": res[3],
-                                 "type": res[4],
-                                 "thread": res[5]}
-        except (sqlite3.OperationalError, ValueError):
-            pass
-        cur.close()
-        conn.close()
-        return
-
-    def processReminder(self):
-        # Send reminder
-        reply = "{}: You told me to message you regarding: {}".format(
-            self.nextReminder['username'], self.nextReminder['text'])
-        response = self.build_message(reply)
-        response.setTo(self.nextReminder['chat'])
-        response.setType(self.nextReminder['type'])
-        response.setThread(self.nextReminder['thread'])
-        self.send_message(response)
-
-        # Delete old reminder and set new one
-        conn = sqlite3.connect("data/remindme.sqlite")
-        cur = conn.cursor()
-        try:
-            cur.execute('''DELETE FROM remindme
-                           WHERE `time` = :time''',
-                        {"time": self.nextReminder['time']})
-            cur.execute('''SELECT `time`, `text`, username, chat, type, thread
-                           FROM remindme
-                           ORDER BY time ASC
-                           LIMIT 1;''')
-            res = cur.fetchone()
-            if not res:
-                raise ValueError("No more reminders left")
-            self.nextReminder = {"time": res[0],
-                                 "text": res[1],
-                                 "username": res[2],
-                                 "chat": res[3],
-                                 "type": res[4],
-                                 "thread": res[5]}
-        except sqlite3.OperationalError as ex:
-            self.nextReminder = None
-            self.send(vmc.chatroom1,
-                      "RemindMe Error: {}".format(ex),
-                      in_reply_to=None,
-                      message_type='groupchat')
-        except ValueError:
-            self.nextReminder = None
-        conn.commit()
-        cur.close()
-        conn.close()
-        return
 
     @botcmd
     def math(self, mess, args):
@@ -398,67 +327,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, FAQ, CREST, Price, EveUtils, Wormhol
             return '{}: Pong.'.format(self.get_sender_username(mess))
         else:
             return 'Pong.'
-
-    @botcmd
-    def remindme(self, mess, args):
-        '''<delay>@<text> - Messages you with message containing <text> after <delay>
-
-Delay format: [0-24h] [0-59m] [0-59s]'''
-        args = [item.strip() for item in args.strip().split("@")]
-        try:
-            delayText = args[0].split()
-            text = args[1]
-        except IndexError:
-            return "Please provide 2 parameters: <delay>@<text>"
-
-        delay = 0
-        try:
-            for part in delayText:
-                part = part.lower()
-                if "s" in part:
-                    delay += int(part.replace("s", ""))
-                elif "m" in part:
-                    delay += 60 * int(part.replace("m", ""))
-                elif "h" in part:
-                    delay += 60 * 60 * int(part.replace("h", ""))
-        except ValueError:
-            return "Failed to parse the delay"
-
-        if delay <= 0:
-            return "Please specify a (positive) delay"
-        elif delay > 24 * 60 * 60:
-            return "Please specify a delay lower than 1 day"
-
-        # Add new reminder
-        newReminder = {"time": time.time() + delay,
-                       "text": text,
-                       "username": self.get_sender_username(mess),
-                       "chat": mess.getFrom().getStripped(),
-                       "type": mess.getType(),
-                       "thread": mess.getThread()}
-        conn = sqlite3.connect("data/remindme.sqlite")
-        cur = conn.cursor()
-        try:
-            cur.execute('''CREATE TABLE IF NOT EXISTS remindme (
-                             `time` REAL NOT NULL UNIQUE ON CONFLICT ABORT,
-                             `text` TEXT NOT NULL,
-                             username TEXT NOT NULL,
-                             chat TEXT NOT NULL,
-                             type TEXT NOT NULL,
-                             thread TEXT
-                           );''')
-            cur.execute('''INSERT INTO remindme
-                           VALUES (:time, :text, :username, :chat, :type, :thread);''',
-                        newReminder)
-        except sqlite3.OperationalError as ex:
-            return "RemindMe Error: {}".format(ex)
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        if not self.nextReminder or newReminder['time'] < self.nextReminder['time']:
-            self.nextReminder = newReminder
-        return "I will remind you in {}".format(args[0])
 
     def sendBcast(self, broadcast, author):
         result = ''
