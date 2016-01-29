@@ -225,11 +225,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, CREST, Price, EveUtils, FAQ, Wormhol
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
 
-        fromHist = False
-        timestamp = mess.getTimestamp()
-        if timestamp:
-            messageTime = calendar.timegm(time.strptime(timestamp, "%Y%m%dT%H:%M:%S"))
-            fromHist = messageTime < time.time() - 10
+        # See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
+        fromHist = "urn:xmpp:delay" in mess.getProperties()
 
         message = mess.getBody()
         if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
