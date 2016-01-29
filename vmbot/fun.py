@@ -167,24 +167,36 @@ class Fun(object):
 
         return random.choice(emotes).split()[-1]
 
-    # Disabled because bash.org is down currently
-    # @botcmd
-    # def rtq(self, mess, args):
-    #     """Like a box of chocolates, but without emotes this time"""
-    #     r = requests.get("http://bash.org/?random")
-    #     soup = BeautifulSoup(r.text, "html.parser")
+    @botcmd
+    def rtq(self, mess, args):
+        """Like a box of chocolates, but without emotes this time"""
+        try:
+            r = requests.get("http://bash.org/?random")
+        except requests.exceptions.RequestException as e:
+            return "Error while connecting to http://bash.org: {}".format(e)
+        soup = BeautifulSoup(r.text, "html.parser")
 
-    #     validIDs = []
-    #     for link in soup.find_all("a", title="Permanent link to this quote."):
-    #         validIDs.append(int(link.get("href")[1:]))
-    #     quoteID = random.choice(validIDs)
+        validIDs = {int(link['href'][1:]) for link
+                    in soup.find_all("a", title="Permanent link to this quote.")}
 
-    #     quoteLink = "http://bash.org/?{}".format(quoteID)
-    #     r = requests.get(quoteLink)
-    #     soup = BeautifulSoup(r.text, "html.parser")
-    #     quote = soup.find(class_="qt").text.encode("ascii", "replace")
+        if not validIDs:
+            return "Failed to load any quotes"
 
-    #     return "{}\n{}".format(quote, quoteLink)
+        quoteID = random.choice(tuple(validIDs))
+        quoteLink = "http://bash.org/?{}".format(quoteID)
+
+        try:
+            r = requests.get(quoteLink)
+        except requests.exceptions.RequestException as e:
+            return "Error while connecting to http://bash.org: {}".format(e)
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        try:
+            quote = soup.find("p", class_="qt").text.encode("ascii", "replace")
+        except AttributeError:
+            return "Failed to load quote #{} from {}".format(quoteID, quoteLink)
+
+        return "{}\n{}".format(quote, quoteLink)
 
     @botcmd
     def rtxkcd(self, mess, args):
