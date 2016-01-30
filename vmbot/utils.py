@@ -12,13 +12,14 @@ import sqlite3
 
 
 class ISK(float):
+    """Represent ISK values."""
     def __format__(self, format_spec):
-        valCopy = self
+        """Format the ISK value with commonly used prefixes."""
         for unit in ['', 'k', 'm', 'b']:
-            if valCopy < 1000:
-                return "{}{}".format(format(valCopy, format_spec), unit)
-            valCopy /= 1000
-        return "{}t".format(format(valCopy, format_spec))
+            if self < 1000:
+                return "{}{}".format(format(self, format_spec), unit)
+            self /= 1000
+        return "{}t".format(format(self, format_spec))
 
 
 class PriceError(StandardError):
