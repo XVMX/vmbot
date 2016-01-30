@@ -7,7 +7,6 @@ import re
 import requests
 import json
 import calendar
-import base64
 import vmbot_config as vmc
 import sqlite3
 
@@ -22,125 +21,87 @@ class ISK(float):
         return "{}t".format(format(valCopy, format_spec))
 
 
-class CREST(object):
-    class CRESTError(StandardError):
-        pass
-
-    def getAccessToken(self):
-        try:
-            self._access_token
-            self._token_expiry
-        except AttributeError:
-            self._access_token = ''
-            self._token_expiry = 0
-
-        if self._token_expiry >= time.time():
-            return self._access_token
-
-        # FIXME: check on instantiation
-        assert(vmc.refresh_token)
-        assert(vmc.client_secret)
-
-        data = {'grant_type': 'refresh_token',
-                'refresh_token': vmc.refresh_token}
-        headers = {'Authorization': 'Basic ' +
-                   base64.b64encode('{}:{}'.format(vmc.client_id, vmc.client_secret)),
-                   'User-Agent': 'VM JabberBot'}
-        r = requests.post('https://login.eveonline.com/oauth/token',
-                          data=data, headers=headers)
-
-        res = r.json()
-        try:
-            self._access_token = res['access_token']
-            self._token_expiry = time.time() + res['expires_in']
-        except KeyError:
-            raise self.CRESTError('Error: {}: {}'.format(res['error'], res['error_description']))
-        return self._access_token
+class PriceError(StandardError):
+    pass
 
 
 class Price(object):
-    class PriceError(StandardError):
-        pass
-
     def getPriceVolume(self, orderType, region, system, item):
-        url = 'https://crest-tq.eveonline.com/market/{}/orders/{}/'.format(region, orderType)
-        url += '?type=https://crest-tq.eveonline.com/types/{}/'.format(item)
-        header = {'Authorization': 'Bearer {}'.format(self.getAccessToken()),
-                  'User-Agent': 'VM JabberBot'}
+        url = "https://public-crest.eveonline.com/market/{}/orders/{}/".format(region, orderType)
+        url += "?type=https://public-crest.eveonline.com/types/{}/".format(item)
+
         try:
-            r = requests.get(url, headers=header, timeout=5)
+            r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
         except requests.exceptions.RequestException as e:
-            raise self.PriceError("Error connecting to CREST servers: {}".format(e))
+            raise PriceError("Error while connecting to CREST: {}".format(e))
         if r.status_code != 200:
-            raise self.PriceError('The CREST-API returned error <b>{}</b>'.format(r.status_code))
+            raise PriceError("CREST returned error code {}".format(r.status_code))
+
         res = r.json()
 
-        volume = sum([order['volume'] for order in res['items']
-                     if order['location']['name'].startswith(system)])
-        direction = (min if orderType == 'sell' else max)
+        orders = [order for order in res['items'] if order['location']['name'].startswith(system)]
+        volume = sum([order['volume'] for order in orders])
+        direction = min if orderType == "sell" else max
         try:
-            price = direction([order['price'] for order in res['items']
-                              if order['location']['name'].startswith(system)])
+            price = direction([order['price'] for order in orders])
         except ValueError:
             price = 0
 
         return (volume, price)
 
     def disambiguate(self, given, like, category):
-        if like:
-            reply = '<br />Other {} like "{}": {}'.format(category, given, ', '.join(like[:3]))
-            if len(like) > 3:
-                reply += ', and {} others'.format(len(like) - 3)
-            return reply
-        else:
-            return ''
+        reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
+        if len(like) > 3:
+            reply += ", and {} others".format(len(like) - 3)
+        return reply
 
     @botcmd
     def price(self, mess, args):
-        '''<item>@[system] - Displays price of item in system, defaulting to Jita'''
-        args = [item.strip() for item in args.strip().split('@')]
-        if len(args) < 1 or len(args) > 2 or args[0] == '':
-            return 'Please specify one item name and optional one system name: <item>@[system]'
+        """<item>@[system] - Displays price of item in system, defaulting to Jita"""
+        args = [item.strip() for item in args.split('@')]
+        if len(args) not in (1, 2) or args[0] == "":
+            return "Please provide an item name and optionally a system name: <item>@[system]"
 
         item = args[0]
         try:
             system = args[1]
         except IndexError:
-            system = 'Jita'
+            system = "Jita"
 
-        if item.lower() in ('plex', 'pilot license',
-                            'pilot license extension',
+        # PLEX aliases
+        if item.lower() in ("plex", "pilot license",
+                            "pilot license extension",
                             "pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
-        conn = sqlite3.connect('data/staticdata.sqlite')
+        conn = sqlite3.connect("data/staticdata.sqlite")
         conn.text_factory = lambda t: unicode(t, "utf-8", "replace")
-        cur = conn.cursor()
-        cur.execute(
-            '''SELECT regionID, solarSystemName
-               FROM mapSolarSystems
-               WHERE solarSystemName LIKE :name;''',
-            {'name': '%' + system + '%'})
-        systems = cur.fetchall()
-        if not systems:
-            return "Can't find a matching system!"
 
-        cur.execute(
-            '''SELECT typeID, typeName
+        systems = conn.execute(
+            """SELECT regionID, solarSystemName
+               FROM mapSolarSystems
+               WHERE solarSystemName LIKE :name;""",
+            {'name': "%{}%".format(system)}
+        ).fetchall()
+        if not systems:
+            return "Can't find a matching system"
+
+        items = conn.execute(
+            """SELECT typeID, typeName
                FROM invTypes
                WHERE typeName LIKE :name
-                AND marketGroupID IS NOT NULL
-                AND marketGroupID < 100000;''',
-            {'name': '%' + item + '%'})
-        items = cur.fetchall()
+                 AND marketGroupID IS NOT NULL
+                 AND marketGroupID < 100000;""",
+            {'name': "%{}%".format(item)}
+        ).fetchall()
         if not items:
-            return "Can't find a matching item!"
-        cur.close()
+            return "Can't find a matching item"
+
         conn.close()
 
         # Sort by length of name so that the most similar item is first
-        items.sort(lambda x, y: cmp(len(x[1]), len(y[1])))
-        systems.sort(lambda x, y: cmp(len(x[1]), len(y[1])))
+        items.sort(cmp=lambda x, y: cmp(len(x), len(y)), key=lambda x: x[1])
+        systems.sort(cmp=lambda x, y: cmp(len(x), len(y)), key=lambda x: x[1])
 
         typeID, typeName = items.pop(0)
         regionID, systemName = systems.pop(0)
@@ -148,21 +109,21 @@ class Price(object):
         systemName = systemName.encode("ascii", "replace")
 
         try:
-            sellvolume, sellprice = self.getPriceVolume('sell', regionID, systemName, typeID)
-            buyvolume, buyprice = self.getPriceVolume('buy', regionID, systemName, typeID)
-        except (self.CRESTError, self.PriceError) as e:
+            sellvolume, sellprice = self.getPriceVolume("sell", regionID, systemName, typeID)
+            buyvolume, buyprice = self.getPriceVolume("buy", regionID, systemName, typeID)
+        except PriceError as e:
             return str(e)
 
-        reply = '<b>{}</b> in <b>{}</b>:<br />'.format(typeName, systemName)
-        reply += 'Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />'.format(sellprice, sellvolume)
-        reply += 'Buys: <b>{:,.2f}</b> ISK -- {:,} units'.format(buyprice, buyvolume)
+        reply = "<b>{}</b> in <b>{}</b>:<br />".format(typeName, systemName)
+        reply += "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />".format(sellprice, sellvolume)
+        reply += "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />".format(buyprice, buyvolume)
         try:
-            reply += '<br />Spread: {:,.2%}'.format((sellprice - buyprice) / sellprice)
+            reply += "Spread: {:,.2%}".format((sellprice - buyprice) / sellprice)
         except ZeroDivisionError:
-            # By request from Jack
-            reply += '<br />Spread: NaNNaNNaNNaNNaNBatman!'
+            # By request from Jack (See https://www.destroyallsoftware.com/talks/wat)
+            reply += "Spread: NaNNaNNaNNaNNaNBatman!"
 
-        if args and items:
+        if items:
             reply += self.disambiguate(args[0], zip(*items)[1], "items")
         if len(args) > 1 and systems:
             reply += self.disambiguate(args[1], zip(*systems)[1], "systems")

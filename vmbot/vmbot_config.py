@@ -25,8 +25,3 @@ target = parser.get('GSF Broadcast', 'target')
 # RC blacklist API
 blurl = parser.get('RC Blacklist', 'url')
 blkey = parser.get('RC Blacklist', 'key')
-
-# SSO-CREST
-client_id = parser.get('SSO-CREST', 'client_id')
-client_secret = parser.get('SSO-CREST', 'client_secret')
-refresh_token = parser.get('SSO-CREST', 'refresh_token')
