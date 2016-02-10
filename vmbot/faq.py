@@ -1,8 +1,8 @@
 from jabberbot import botcmd
 
+from datetime import datetime
 import shlex
 import sqlite3
-from datetime import datetime
 
 
 class FAQ(object):

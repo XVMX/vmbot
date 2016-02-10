@@ -1,14 +1,16 @@
 from jabberbot import botcmd
 
-from datetime import datetime, timedelta
-import xml.etree.ElementTree as ET
 import time
-import re
-import requests
-import json
+from datetime import datetime, timedelta
 import calendar
-import vmbot_config as vmc
+import re
+import json
+import xml.etree.ElementTree as ET
 import sqlite3
+
+import requests
+
+import vmbot_config as vmc
 
 
 class ISK(float):
