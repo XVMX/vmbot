@@ -364,39 +364,27 @@ class EveUtils(object):
 
     @botcmd
     def evetime(self, mess, args):
-        '''Displays the current evetime and server status
-
-<+offset> - Displays the current evetime, server status and the resulting evetime of the offset'''
-        timefmt = '%Y-%m-%d %H:%M:%S'
+        """[+offset] - Displays the current evetime, server status and evetime + offset if given"""
+        timefmt = "%Y-%m-%d %H:%M:%S"
         evetime = datetime.utcnow()
-        reply = 'The current EVE time is ' + evetime.strftime(timefmt)
+        reply = "The current EVE time is {}".format(evetime.strftime(timefmt))
+
         try:
-            offset_time = timedelta(hours=int(args)) + evetime
-            reply += ' and {} hour(s) is {}'.format(args.strip(), offset_time.strftime(timefmt))
+            offset_time = evetime + timedelta(hours=int(args))
+            reply += " and {} hour(s) is {}".format(args.strip(), offset_time.strftime(timefmt))
         except ValueError:
             pass
+
         try:
-            cached = self.getCache('https://api.eveonline.com/server/serverstatus.xml.aspx')
-            if not cached:
-                r = requests.get('https://api.eveonline.com/server/serverstatus.xml.aspx',
-                                 headers={'User-Agent': 'VM JabberBot'},
-                                 timeout=3)
-                if r.status_code != 200 or r.encoding != 'utf-8':
-                    return ('The ServerStatus-API returned error code <b>{}</b>'
-                            ' or the XML encoding is broken.').format(r.status_code)
-                xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/server/serverstatus.xml.aspx',
-                              doc=str(r.text),
-                              expiry=int(calendar.timegm(
-                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
+            xml = self.getEVEXMLEndpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx",
+                                         3)
+            if xml[1][0].text == "True":
+                reply += "\nThe server is online and {} players are playing".format(xml[1][1].text)
             else:
-                xml = ET.fromstring(cached)
-            if xml[1][0].text == 'True':
-                reply += '\nThe server is online and {} players are playing'.format(xml[1][1].text)
-            else:
-                reply += '\nThe server is offline'
-        except requests.exceptions.RequestException as e:
-            reply += '\nThere is a problem with the API server. Can\'t access ServerStatus-API.'
+                reply += "\nThe server is offline"
+        except:
+            pass
+
         return reply
 
     @botcmd
