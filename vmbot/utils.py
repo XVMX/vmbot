@@ -529,21 +529,23 @@ class EveUtils(object):
 
     @botcmd
     def rcbl(self, mess, args):
-        '''<name>[, ...] - Asks the RC API if <pilot name> has an entry in the blacklist.'''
+        """<name>[, ...] - Displays if name has an entry in the blacklist"""
         # Remove verify=False as soon as python 2.7.7 hits (exp. May 31, 2014).
         # Needed due to self-signed cert with multiple domains + requests/urllib3
         # Ref.:
         #     https://github.com/kennethreitz/requests/issues/1977
         #     http://legacy.python.org/dev/peps/pep-0466/
         #     http://legacy.python.org/dev/peps/pep-0373/
-        result = []
-        for pilot in [a.strip() for a in args.split(',')]:
-            response = requests.get(''.join([vmc.blurl, vmc.blkey, '/', pilot]), verify=False)
-            result.append('{} is {}'.format(pilot, response.json()[0]['output']))
+        results = []
+        for pilot in [item.strip() for item in args.split(',')]:
+            try:
+                r = requests.get("{}{}/{}".format(vmc.blurl, vmc.blkey, pilot),
+                                 headers={'User-Agent': "XVMX JabberBot"}, timeout=3, verify=False)
+                results.append("{} is {}".format(pilot, r.json()[0]['output']))
+            except:
+                pass
 
-        if len(result) > 1:
-            result.insert(0, '')
-        return '<br />'.join(result)
+        return "<br />".join(results)
 
     def getCache(self, path, params=dict()):
         conn = sqlite3.connect("data/api.cache")
