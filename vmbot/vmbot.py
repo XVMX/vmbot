@@ -187,7 +187,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, CREST, Price, EveUtils, FAQ, Wormhol
         "(?!:)murica(?!:)",
         "yolo",
         "swag",
-        "wewlad"
+        "wewlad",
+        "fam"
     ]
 
     def __init__(self, *args, **kwargs):
