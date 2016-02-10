@@ -139,7 +139,7 @@ class APIError(StandardError):
 
 
 class EveUtils(object):
-    cache_version = 2
+    cache_version = 3
 
     def getTypeName(self, typeID):
         """Resolve a typeID to its name."""
@@ -593,107 +593,86 @@ class EveUtils(object):
         return '<br />'.join(result)
 
     def getCache(self, path, params=dict()):
-        try:
-            conn = sqlite3.connect("data/api.cache")
-            cur = conn.cursor()
+        conn = sqlite3.connect("data/api.cache")
 
-            if len(params) == 0:
-                cur.execute(
-                    '''SELECT response
+        try:
+            if not params:
+                res = conn.execute(
+                    """SELECT response
                        FROM cache
                        WHERE path = :path
-                        AND expiry > :expiry;''',
-                    {"path": path,
-                     "expiry": time.time()})
-                res = cur.fetchall()
-                cur.close()
-                conn.close()
-                if len(res) != 1:
-                    return None
-                return res[0][0]
-
-            params = json.dumps(params)
-            cur.execute(
-                '''SELECT response
-                   FROM cache
-                   WHERE path = :path
-                    AND params = :params
-                    AND expiry > :expiry;''',
-                {"path": path,
-                 "params": params,
-                 "expiry": int(time.time())})
-            res = cur.fetchall()
-            cur.close()
-            conn.close()
-            if len(res) != 1:
-                return None
-            return res[0][0]
+                         AND expiry > :expiry;""",
+                    {'path': path, 'expiry': time.time()}
+                ).fetchall()
+            else:
+                res = conn.execute(
+                    """SELECT response
+                       FROM cache
+                       WHERE path = :path
+                         AND params = :params
+                         AND expiry > :expiry;""",
+                    {'path': path, 'params': json.dumps(params), 'expiry': int(time.time())}
+                ).fetchall()
         except:
+            conn.close()
             return None
 
+        conn.close()
+        return res[0][0] if len(res) == 1 else None
+
     def setCache(self, path, doc, expiry, params=dict()):
-        try:
-            conn = sqlite3.connect("data/api.cache")
-            cur = conn.cursor()
-            cur.execute(
-                '''CREATE TABLE IF NOT EXISTS metadata (
-                     type VARCHAR(255) NOT NULL UNIQUE,
-                     value INT NOT NULL
-                   );''')
+        conn = sqlite3.connect("data/api.cache")
 
-            cur.execute(
-                '''SELECT value
-                   FROM metadata
-                   WHERE type='version';''')
-            res = cur.fetchall()
-            if len(res) == 1 and res[0][0] != self.cache_version:
-                cur.execute("DROP TABLE cache;")
-            conn.commit()
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS metadata (
+                 type TEXT NOT NULL UNIQUE,
+                 value INTEGER NOT NULL
+               );"""
+        )
 
-            cur.execute(
-                '''INSERT OR REPLACE INTO metadata
-                   VALUES (:type, :version);''',
-                {"type": "version",
-                 "version": self.cache_version})
-            cur.execute(
-                '''CREATE TABLE IF NOT EXISTS cache (
-                     path VARCHAR(255) NOT NULL,
-                     params VARCHAR(255),
-                     response TEXT NOT NULL,
-                     expiry INT
-                   );''')
-            cur.execute(
-                '''CREATE UNIQUE INDEX IF NOT EXISTS
-                   Query ON cache (path, params);''')
-            cur.execute(
-                '''DELETE FROM cache
-                   WHERE expiry <= :expiry;''',
-                {"expiry": int(time.time())})
+        res = conn.execute(
+            """SELECT value
+               FROM metadata
+               WHERE type = "version";"""
+        ).fetchall()
+        if res and res[0][0] < self.cache_version:
+            conn.execute("DROP TABLE cache;")
+        conn.commit()
 
-            if len(params) == 0:
-                cur.execute(
-                    '''INSERT INTO cache
-                       VALUES (:path, :params, :response, :expiry);''',
-                    {"path": path,
-                     "params": "",
-                     "response": doc,
-                     "expiry": expiry})
-                conn.commit()
-                cur.close()
-                conn.close()
-                return True
+        conn.execute(
+            """INSERT OR REPLACE INTO metadata
+               VALUES ("version", :version);""",
+            {'version': self.cache_version}
+        )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS cache (
+                 path TEXT NOT NULL,
+                 params TEXT,
+                 response TEXT NOT NULL,
+                 expiry INTEGER NOT NULL,
+                 CONSTRAINT Query UNIQUE (path, params)
+               );"""
+        )
+        conn.execute(
+            """DELETE FROM cache
+               WHERE expiry <= :expiry;""",
+            {'expiry': int(time.time())}
+        )
+        conn.commit()
 
-            params = json.dumps(params)
-            cur.execute(
-                '''INSERT INTO cache
-                   VALUES (:path, :params, :response, :expiry);''',
-                {"path": path,
-                 "params": params,
-                 "response": doc,
-                 "expiry": expiry})
-            conn.commit()
-            cur.close()
-            conn.close()
-            return True
-        except:
-            return False
+        if not params:
+            conn.execute(
+                """INSERT INTO cache
+                   VALUES (:path, "", :response, :expiry);""",
+                {'path': path, 'response': doc, 'expiry': expiry}
+            )
+        else:
+            conn.execute(
+                """INSERT INTO cache
+                   VALUES (:path, :params, :response, :expiry);""",
+                {'path': path, 'params': json.dumps(params), 'response': doc, 'expiry': expiry}
+            )
+
+        conn.commit()
+        conn.close()
+        return True
