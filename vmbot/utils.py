@@ -261,120 +261,105 @@ class EveUtils(object):
 
     @botcmd
     def character(self, mess, args):
-        '''<character name> - Displays Employment information of a single character
+        """<character name>[, ...] - Displays employment information of character(s)"""
+        if not args:
+            return "Please provide character name(s), separated by commas"
 
-<character name,character name,...> Displays Employment information of multiple characters'''
+        args = [item.strip() for item in args.split(',')]
+        if len(args) > 10:
+            return "Please limit your search to up to 10 characters at once"
+
         try:
-            args = [item.strip() for item in args.strip().split(',')]
-            if args[0] == '':
-                return 'Please provide character name(s), separated by commas'
-            if len(args) > 10:
-                return 'Please limit your search to 10 characters at once'
-            reply = ''
-            cached = self.getCache('https://api.eveonline.com/eve/CharacterID.xml.aspx',
-                                   params={'names': ','.join(map(str, args))})
-            if not cached:
-                r = requests.post('https://api.eveonline.com/eve/CharacterID.xml.aspx',
-                                  data={'names': ','.join(map(str, args))},
-                                  headers={'User-Agent': 'VM JabberBot'},
-                                  timeout=3)
-                if r.status_code != 200 or r.encoding != 'utf-8':
-                    return ('The CharacterID-API returned error code <b>{}</b>'
-                            ' or the XML encoding is broken.').format(r.status_code)
-                xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/CharacterID.xml.aspx',
-                              doc=str(r.text),
-                              expiry=int(calendar.timegm(
-                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                              params={'names': ','.join(map(str, args))})
-            else:
-                xml = ET.fromstring(cached)
-            args = []
-            for character in xml[1][0]:
-                if int(character.attrib['characterID']) != 0:
-                    args.append(character.attrib['characterID'])
-                else:
-                    reply += 'Character <b>{}</b> does not exist<br />'.format(
-                        character.attrib['name'])
-            if len(args) == 0:
-                return 'None of these character(s) exist'
-            cached = self.getCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
-                                   params={'ids': ','.join(map(str, args))})
-            if not cached:
-                r = requests.post('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
-                                  data={'ids': ','.join(map(str, args))},
-                                  headers={'User-Agent': 'VM JabberBot'},
-                                  timeout=4)
-                if r.status_code != 200 or r.encoding != 'utf-8':
-                    return ('The CharacterAffiliation-API returned error code <b>{}</b>'
-                            ' or the XML encoding is broken.').format(r.status_code)
-                xml = ET.fromstring(r.text)
-                self.setCache('https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx',
-                              doc=str(r.text),
-                              expiry=int(calendar.timegm(
-                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                              params={'ids': ','.join(map(str, args))})
-            else:
-                xml = ET.fromstring(cached)
-            for row in xml[1][0]:
-                character = row.attrib
-                reply += str(character['characterName'])
-                reply += ' is in corporation <b>' + str(character['corporationName']) + '</b>'
-                reply += ((' in alliance <b>{}</b>'.format(character['allianceName']))
-                          if str(character['allianceName']) != '' else '')
-                reply += ((' in faction <b>{}</b>'.format(character['factionName']))
-                          if str(character['factionName']) != '' else '')
-                reply += '<br />'
-            if len(args) == 1:
-                r = requests.get('http://evewho.com/api.php',
-                                 params={'type': 'character', 'id': args[0]},
-                                 headers={'User-Agent': 'VM JabberBot'},
-                                 timeout=5)
-                if r.status_code != 200:
-                    return 'The EVEWho-API returned error code <b>{}</b>.'.format(r.status_code)
-                evewhoapi = r.json()
-                if evewhoapi['info'] is None:
-                    reply += 'Eve Who got no data for this character<br />'
-                else:
-                    reply += 'Security status: <b>{}</b><br />'.format(
-                        evewhoapi['info']['sec_status'])
-                    corporations = []
-                    for corp in evewhoapi['history'][-10:]:
-                        corporations.append(corp['corporation_id'])
-                    corporations = list(set(corporations))
-                    cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                                           params={'ids': ','.join(map(str, corporations))})
-                    if not cached:
-                        r = requests.post('https://api.eveonline.com/eve/charactername.xml.aspx',
-                                          data={'ids': ','.join(map(str, corporations))},
-                                          timeout=3)
-                        if r.status_code != 200 or r.encoding != 'utf-8':
-                            return ('The CharacterAffiliation-API returned error code <b>{}</b>'
-                                    ' or the XML encoding is broken.').format(r.status_code)
-                        xml = ET.fromstring(r.text)
-                        self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                                      doc=str(r.text),
-                                      expiry=int(calendar.timegm(
-                                          time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                                      params={'ids': ','.join(map(str, corporations))})
-                    else:
-                        xml = ET.fromstring(cached)
-                    corporations = {}
-                    for corp in xml[1][0]:
-                        corporations[corp.attrib['characterID']] = corp.attrib['name']
-                    for corp in evewhoapi['history'][-10:]:
-                        reply += 'From ' + str(corp['start_date'])
-                        reply += ' til ' + (str(corp['end_date'])
-                                            if str(corp['end_date']) != 'None' else 'now')
-                        reply += ' in <b>' + str(corporations[corp['corporation_id']]) + '</b>'
-                        reply += '<br />'
-                    if len(evewhoapi['history']) > 10:
-                        reply += ('The full history is available under '
-                                  'http://evewho.com/pilot/{}/<br />').format(
-                                      str(evewhoapi['info']['name']).replace(' ', '+'))
-            reply = reply[:-6]
+            xml = self.getEVEXMLEndpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx", 3,
+                                         {'names': ','.join(args)})
+        except APIError as e:
+            return str(e)
+
+        charIDs = [int(character.attrib['characterID']) for character in xml[1][0]
+                   if int(character.attrib['characterID'])]
+
+        if not charIDs:
+            return "None of these character(s) exist"
+
+        try:
+            xml = self.getEVEXMLEndpoint(
+                "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx", 5,
+                {'ids': ','.join(map(str, charIDs))}
+            )
+        except APIError as e:
+            return str(e)
+
+        # Basic multi-character information
+        charDescriptions = []
+        for row in xml[1][0]:
+            charName = row.attrib['characterName']
+            corpName = row.attrib['corporationName']
+            allianceName = row.attrib['allianceName']
+            factionName = row.attrib['factionName']
+            corpTicker, allianceTicker = self.getTickers(int(row.attrib['corporationID']), None)
+
+            charDescription = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
+                charName, corpName, self.formatTickers(corpTicker, None)
+            )
+            if allianceName:
+                charDescription += " in <b>{} {}</b>".format(
+                    allianceName, self.formatTickers(None, allianceTicker)
+                )
+            if factionName:
+                charDescription += " which is part of <b>{}</b>".format(factionName)
+
+            charDescriptions.append(charDescription)
+
+        reply = "<br />".join(charDescriptions)
+
+        if len(charIDs) > 1:
+            return reply
+
+        # Detailed single-character information
+        try:
+            r = requests.get("http://evewho.com/api.php",
+                             params={'type': "character", 'id': charIDs[0]},
+                             headers={'User-Agent': "XVMX JabberBot"}, timeout=3)
         except requests.exceptions.RequestException as e:
-            return 'There is a problem with the API server. Can\'t connect to the server.'
+            return "{}<br />Error while connecting to Eve Who-API: {}".format(reply, e)
+        if r.status_code != 200:
+            return "{}<br />Eve Who-API returned error code {}".format(reply, r.status_code)
+
+        res = r.json()
+        if res['info'] is None:
+            return "{}<br />Failed to load data from Eve Who for this character".format(reply)
+
+        reply += "<br />Security status: <b>{}</b>".format(res['info']['sec_status'])
+
+        corpIDs = list({int(corp['corporation_id']) for corp in res['history'][-10:]})
+        try:
+            xml = self.getEVEXMLEndpoint(
+                "https://api.eveonline.com/eve/CharacterName.xml.aspx",
+                3, {'ids': ','.join(map(str, corpIDs))}
+            )
+        except APIError as e:
+            return "{}<br/>Error while loading corp history: {}".format(reply, e)
+
+        corps = {}
+        for row in xml[1][0]:
+            corpID = row.attrib['characterID']
+            corpTicker, allianceTicker = self.getTickers(corpID, None)
+            corps[corpID] = {'corpName': row.attrib['name'], 'corpTicker': corpTicker}
+
+        for corpRecord in res['history'][-10:]:
+            corpData = corps[corpRecord['corporation_id']]
+            reply += "<br />From {} til {} in <b>{} {}</b>".format(
+                corpRecord['start_date'],
+                corpRecord['end_date'] or "now",
+                corpData['corpName'],
+                self.formatTickers(corpData['corpTicker'], None)
+            )
+
+        if len(res['history']) > 10:
+            reply += "<br/>The full history is available under http://evewho.com/pilot/{}/".format(
+                res['info']['name'].replace(' ', '+')
+            )
+
         return reply
 
     @botcmd
