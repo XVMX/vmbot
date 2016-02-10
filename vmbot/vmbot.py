@@ -209,7 +209,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
                 self.kmFeedID = requests.get(
                     "https://zkillboard.com/api/losses/corporationID/2052404106/"
                     "limit/1/no-items/no-attackers/",
-                    headers={'User-Agent': "VM JabberBot"}
+                    headers={'User-Agent': "XVMX JabberBot"}
                 ).json()[0]['killID']
             except requests.exceptions.RequestException:
                 self.kmFeedTrigger = None
@@ -362,7 +362,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
             try:
                 r = requests.post(
                     vmc.url, data=result,
-                    headers={'User-Agent': "VM JabberBot",
+                    headers={'User-Agent': "XVMX JabberBot",
                              'X-SourceID': vmc.id, 'X-SharedKey': vmc.key}
                 )
                 return r.status_code
