@@ -492,44 +492,40 @@ class EveUtils(object):
         return reply
 
     def kmFeed(self):
-        '''Sends a message to the first chatroom with the latest losses'''
+        """Send a message to the first chatroom with the latest losses."""
+        url = "https://zkillboard.com/api/corporationID/2052404106/losses/"
+        url += "afterKillID/{}/no-items/no-attackers/".format(self.kmFeedID)
 
-        r = requests.get(('https://zkillboard.com/api/corporationID/2052404106/losses/'
-                          'afterKillID/{}/no-items/no-attackers/').format(self.kmFeedID),
-                         headers={'Accept-Encoding': 'gzip',
-                                  'User-Agent': 'VM JabberBot'},
-                         timeout=5)
-        if r.status_code != 200 or r.encoding != 'utf-8':
+        try:
+            r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
+        except requests.exceptions.RequestException:
+            return
+        if r.status_code != 200:
             return
 
         losses = r.json()
-        if losses:
-            self.kmFeedID = int(losses[0]['killID'])
-            reply = "{} new loss(es):<br />".format(len(losses))
-            for loss in losses:
-                killID = int(loss['killID'])
-                victim = loss['victim']
-                solarSystemData = self.getSolarSystemData(int(loss['solarSystemID']))
-                killTime = str(loss['killTime'])
-                totalValue = ISK(loss['zkb']['totalValue'])
-                ticker = "XVMX | CONDI" if victim['characterName'] else "CONDI"
+        if not losses:
+            return
 
-                reply += "{} [{}] | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
-                    victim['characterName'] if victim['characterName']
-                    else victim['corporationName'],
-                    ticker,
-                    self.getTypeName(victim['shipTypeID']),
-                    totalValue,
-                    solarSystemData['solarSystemName'],
-                    solarSystemData['regionName'],
-                    killTime,
-                    "https://zkillboard.com/kill/{}/".format(killID)
-                )
-                reply += "<br />"
-            reply = reply[:-6]
-            self.send(vmc.chatroom1, reply, in_reply_to=None, message_type='groupchat')
+        self.kmFeedID = losses[0]['killID']
 
-        return
+        reply = "{} new loss(es):".format(len(losses))
+        for loss in reversed(losses):
+            victim = loss['victim']
+            solarSystemData = self.getSolarSystemData(loss['solarSystemID'])
+
+            reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
+                victim['characterName'] or victim['corporationName'],
+                self.formatTickers("XVMX", "CONDI"),
+                self.getTypeName(victim['shipTypeID']),
+                ISK(loss['zkb']['totalValue']),
+                solarSystemData['solarSystemName'],
+                solarSystemData['regionName'],
+                loss['killTime'],
+                "https://zkillboard.com/kill/{}/".format(loss['killID'])
+            )
+
+        self.send(vmc.chatroom1, reply, message_type="groupchat")
 
     @botcmd
     def rcbl(self, mess, args):
