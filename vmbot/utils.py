@@ -389,123 +389,107 @@ class EveUtils(object):
 
     @botcmd
     def zbot(self, mess, args):
-        '''<zKB link> - Displays statistics of a killmail
-
-<zKB link> compact - Displays statistics of a killmail in one line'''
-
+        """<zKB link> [compact] - Displays statistics of a killmail (as a oneliner with compact)"""
         args = args.strip().split(" ", 1)
-        regex = re.match('https?:\/\/zkillboard\.com\/kill\/(\d+)\/?', args[0])
+
+        regex = re.match("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", args[0])
         if regex is None:
-            return 'Please provide a link to a zKB Killmail'
+            return "Please provide a link to a zKB Killmail"
+
         killID = regex.group(1)
         compact = len(args) == 2
 
-        cached = self.getCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID))
+        url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
+        cached = self.getCache(url)
         if not cached:
-            r = requests.get('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
-                             headers={'Accept-Encoding': 'gzip',
-                                      'User-Agent': 'VM JabberBot'},
-                             timeout=5)
-            if r.status_code != 200 or r.encoding != 'utf-8':
-                return ('The zKB-API returned error code <b>{}</b>'
-                        ' or the encoding is broken.').format(r.status_code)
+            try:
+                r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
+            except requests.exceptions.RequestException as e:
+                return "Error while connecting to zKB-API: {}".format(e)
+            if r.status_code != 200:
+                return "zKB-API returned error code {}".format(r.status_code)
+
             killdata = r.json()
-            self.setCache('https://zkillboard.com/api/killID/{}/no-items/'.format(killID),
-                          doc=str(r.text),
-                          expiry=int(time.time() + 24 * 60 * 60))
+            self.setCache(url, doc=r.text, expiry=int(time.time() + 24 * 60 * 60))
         else:
             killdata = json.loads(cached)
 
         if not killdata:
-            return "Can't find a killmail for {}".format(regex.group(0))
+            return "Failed to find a killmail for {}".format(regex.group(0))
 
         victim = killdata[0]['victim']
-        solarSystemData = self.getSolarSystemData(int(killdata[0]['solarSystemID']))
-        killTime = str(killdata[0]['killTime'])
+        solarSystemData = self.getSolarSystemData(killdata[0]['solarSystemID'])
         attackers = killdata[0]['attackers']
-        totalValue = ISK(killdata[0]['zkb']['totalValue'])
-        points = int(killdata[0]['zkb']['points'])
-
         corpTicker, allianceTicker = self.getTickers(victim['corporationID'], victim['allianceID'])
-        ticker = ""
-        if victim['characterName']:
-            ticker += "["
-            ticker += str(corpTicker)
-            ticker += " | {}".format(allianceTicker) if allianceTicker else ""
-            ticker += "] "
-        elif allianceTicker:
-            ticker += "[{}] ".format(allianceTicker)
 
-        reply = "{} {}| {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
-            victim['characterName'] if victim['characterName'] else victim['corporationName'],
-            ticker,
+        reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
+            victim['characterName'] or victim['corporationName'],
+            self.formatTickers(corpTicker, allianceTicker),
             self.getTypeName(victim['shipTypeID']),
-            totalValue,
+            ISK(killdata[0]['zkb']['totalValue']),
             solarSystemData['solarSystemName'],
             solarSystemData['regionName'],
             len(attackers),
-            killTime
+            killdata[0]['killTime']
         )
 
         if compact:
             return reply
 
-        reply += '<br />'
         if victim['characterName']:
-            reply += '{} is in corporation {}'.format(
-                victim['characterName'], victim['corporationName'])
-            reply += (' in alliance {}'.format(victim['allianceName'])
-                      if victim['allianceName'] else '')
-            reply += (' in faction {}'.format(victim['factionName'])
-                      if victim['factionName'] else '')
+            reply += "<br /><b>{}</b> is part of corporation <b>{} {}</b>".format(
+                victim['characterName'], victim['corporationName'],
+                self.formatTickers(corpTicker, None)
+            )
         else:
-            reply += 'The POS is owned by corporation {}'.format(victim['corporationName'])
-            reply += (' in alliance {}'.format(victim['allianceName'])
-                      if victim['allianceName'] else '')
-            reply += (' in faction {}'.format(victim['factionName'])
-                      if victim['factionName'] else '')
-        reply += ' and took <b>{:,}</b> damage'.format(victim['damageTaken'])
-        reply += ' for <b>{:,} point(s)</b>'.format(points)
-        reply += '<br />'
+            reply += "<br />The structure is owned by corporation {} {}".format(
+                victim['corporationName'], self.formatTickers(corpTicker, None)
+            )
+        if victim['allianceName']:
+            reply += " in <b>{} {}</b>".format(victim['allianceName'],
+                                               self.formatTickers(None, allianceTicker))
+        if victim['factionName']:
+            reply += " which is part of <b>{}</b>".format(victim['factionName'])
 
-        attackerDetails = list()
-        for char in attackers:
-            attackerDetails.append({'characterName': str(char['characterName']),
-                                    'corporationName': str(char['corporationName']),
-                                    'damageDone': int(char['damageDone']),
-                                    'shipTypeID': int(char['shipTypeID']),
-                                    'finalBlow': char['finalBlow'] == 1})
+        reply += " and took <b>{:,} damage</b> for <b>{:,} point(s)</b>".format(
+            victim['damageTaken'], killdata[0]['zkb']['points']
+        )
+
+        attackerDetails = [{'characterName': char['characterName'],
+                            'corporationID': char['corporationID'],
+                            'corporationName': char['corporationName'],
+                            'damageDone': char['damageDone'],
+                            'shipTypeName': self.getTypeName(char['shipTypeID']),
+                            'finalBlow': bool(char['finalBlow'])} for char in attackers]
         # Sort after inflicted damage
         attackerDetails.sort(key=lambda x: x['damageDone'], reverse=True)
 
-        # Add ship type names to attackerDetails
-        for char in attackerDetails:
-            char['shipTypeName'] = str(self.getTypeName(char['shipTypeID']))
-
-        # Print attackerDetails
+        # Add attackerDetails
+        detailedInfo = "<b>{}</b> {} (<b>{}</b>) inflicted <b>{:,} damage</b> "
+        detailedInfo += "(<i>{:,.2%} of total damage</i>)"
         for char in attackerDetails[:5]:
-            reply += ('<b>{}\'s {}</b> did <b>{:,} damage</b>'
-                      ' (<i>{:,.2%} of total damage</i>)').format(
-                          char['characterName'] or char['corporationName'],
-                          char['shipTypeName'],
-                          char['damageDone'],
-                          char['damageDone'] / float(victim['damageTaken']))
-            reply += ' and scored the <b>final blow</b>' if char['finalBlow'] else ''
-            reply += '<br />'
+            corpTicker, allianceTicker = self.getTickers(char['corporationID'], None)
 
-        # Print final blow if not already included
+            reply += "<br />"
+            reply += detailedInfo.format(char['characterName'] or char['corporationName'],
+                                         self.formatTickers(corpTicker, allianceTicker),
+                                         char['shipTypeName'], char['damageDone'],
+                                         char['damageDone'] / float(victim['damageTaken']))
+            reply += " and scored the <b>final blow</b>" if char['finalBlow'] else ""
+
+        # Add final blow if not already included
         if "final blow" not in reply:
             char = [char for char in attackerDetails if char['finalBlow']][0]
-            reply += ('<b>{}\'s {}</b> did <b>{:,} damage</b>'
-                      ' (<i>{:,.2%} of total damage</i>)').format(
-                          char['characterName'] or char['corporationName'],
-                          char['shipTypeName'],
-                          char['damageDone'],
-                          char['damageDone'] / float(victim['damageTaken']))
-            reply += ' and scored the <b>final blow</b>'
-            reply += '<br />'
+            corpTicker, allianceTicker = self.getTickers(char['corporationID'], None)
 
-        return reply[:-6]
+            reply += "<br />"
+            reply += detailedInfo.format(char['characterName'] or char['corporationName'],
+                                         self.formatTickers(corpTicker, allianceTicker),
+                                         char['shipTypeName'], char['damageDone'],
+                                         char['damageDone'] / float(victim['damageTaken']))
+            reply += " and scored the <b>final blow</b>"
+
+        return reply
 
     def kmFeed(self):
         '''Sends a message to the first chatroom with the latest losses'''
