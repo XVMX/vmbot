@@ -134,33 +134,33 @@ class Price(object):
         return reply
 
 
+class APIError(StandardError):
+    pass
+
+
 class EveUtils(object):
     cache_version = 2
 
     def getTypeName(self, typeID):
-        '''Resolves a typeID to its name'''
-        if typeID == 0:
-            return "[Unknown]"
-        conn = sqlite3.connect('data/staticdata.sqlite')
-        cur = conn.cursor()
-        cur.execute(
-            '''SELECT typeID, typeName
+        """Resolve a typeID to its name."""
+        conn = sqlite3.connect("data/staticdata.sqlite")
+        items = conn.execute(
+            """SELECT typeID, typeName
                FROM invTypes
-               WHERE typeID = :id;''',
-            {'id': typeID})
-        items = cur.fetchall()
-        cur.close()
+               WHERE typeID = :id;""",
+            {'id': typeID}
+        ).fetchall()
         conn.close()
+
         if not items:
-            return "[Unknown]"
+            return "{Failed to load}"
         return items[0][1]
 
     def getSolarSystemData(self, solarSystemID):
-        '''Resolves a solarSystemID to its data'''
-        conn = sqlite3.connect('data/staticdata.sqlite')
-        cur = conn.cursor()
-        cur.execute(
-            '''SELECT solarSystemID, solarSystemName,
+        """Resolve a solarSystemID to its data."""
+        conn = sqlite3.connect("data/staticdata.sqlite")
+        systems = conn.execute(
+            """SELECT solarSystemID, solarSystemName,
                       mapSolarSystems.constellationID, constellationName,
                       mapSolarSystems.regionID, regionName
                FROM mapSolarSystems
@@ -168,84 +168,96 @@ class EveUtils(object):
                  ON mapConstellations.constellationID = mapSolarSystems.constellationID
                INNER JOIN mapRegions
                  ON mapRegions.regionID = mapSolarSystems.regionID
-               WHERE solarSystemID = :id;''',
-            {'id': solarSystemID})
-        systems = cur.fetchall()
-        cur.close()
+               WHERE solarSystemID = :id;""",
+            {'id': solarSystemID}
+        ).fetchall()
         conn.close()
+
         if not systems:
-            return {'solarSystemID': 0, 'solarSystemName': "[Unknown]",
-                    'constellationID': 0, 'constellationName': "[Unknown]",
-                    'regionID': 0, 'regionName': "[Unknown]"}
+            return {'solarSystemID': 0, 'solarSystemName': "{Failed to load}",
+                    'constellationID': 0, 'constellationName': "{Failed to load}",
+                    'regionID': 0, 'regionName': "{Failed to load}"}
         return {'solarSystemID': systems[0][0], 'solarSystemName': systems[0][1],
                 'constellationID': systems[0][2], 'constellationName': systems[0][3],
                 'regionID': systems[0][4], 'regionName': systems[0][5]}
 
-    def getName(self, nameID):
-        '''Resolves charID, corpID, allianceID, factionID, etc to its name'''
-        try:
-            cached = self.getCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                                   params={'ids': nameID})
-            if not cached:
-                r = requests.post(('https://api.eveonline.com/eve/charactername.xml.aspx'),
-                                  data={'ids': nameID},
-                                  headers={'User-Agent': 'VM JabberBot'},
-                                  timeout=3)
-                xml = ET.fromstring(r.text.encode('ascii', 'replace'))
-                self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                              doc=r.text.encode('ascii', 'replace'),
-                              expiry=int(calendar.timegm(
-                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                              params={'ids': nameID})
-            else:
-                xml = ET.fromstring(cached)
-            apireply = str(xml[1][0][0].attrib['name'])
-        except:
-            apireply = "[Unknown]"
-        finally:
-            return apireply
-
-    def getTickers(self, corporationID, allianceID=None):
-        # Corp ticker
-        cached = self.getCache('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
-                               params={'corporationID': corporationID})
+    def getEVEXMLEndpoint(self, url, timeout, data=dict()):
+        """Parse XML document associated with EVE XML-API url."""
+        cached = self.getCache(url, params=data)
         if not cached:
-            r = requests.post('https://api.eveonline.com/corp/CorporationSheet.xml.aspx',
-                              data={'corporationID': corporationID},
-                              headers={'User-Agent': 'VM JabberBot'},
-                              timeout=3)
-            xml = ET.fromstring(r.text.encode('ascii', 'replace'))
-            self.setCache('https://api.eveonline.com/eve/charactername.xml.aspx',
-                          doc=r.text.encode('ascii', 'replace'),
-                          expiry=int(calendar.timegm(
-                              time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))),
-                          params={'corporationID': corporationID})
+            try:
+                r = requests.post(url, data=data, headers={'User-Agent': "XVMX JabberBot"},
+                                  timeout=timeout)
+            except requests.exceptions.RequestException as e:
+                raise APIError("Error while connecting to XML-API: {}".format(e))
+            if r.status_code != 200:
+                raise APIError("XML-API returned error code {}".format(r.status_code))
+
+            xml = ET.fromstring(r.text)
+            self.setCache(
+                url, doc=r.text,
+                expiry=int(calendar.timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S"))),
+                params=data
+            )
         else:
             xml = ET.fromstring(cached)
-        corpTicker = str(xml[1].find('ticker').text)
+
+        return xml
+
+    def getTickers(self, corporationID, allianceID):
+        """Resolve corpID/allianceID to their respective ticker(s)."""
+        # Corp ticker
+        corpTicker = None
+        if corporationID:
+            corpTicker = "{Failed to load}"
+            try:
+                xml = self.getEVEXMLEndpoint(
+                    "https://api.eveonline.com/corp/CorporationSheet.xml.aspx", 3,
+                    {'corporationID': corporationID}
+                )
+
+                corpTicker = str(xml[1].find("ticker").text)
+                allianceID = allianceID or int(xml[1].find("allianceID").text) or None
+            except:
+                pass
 
         # Alliance ticker
         allianceTicker = None
         if allianceID:
-            cached = self.getCache('https://api.eveonline.com/eve/AllianceList.xml.aspx')
-            if not cached:
-                r = requests.post('https://api.eveonline.com/eve/AllianceList.xml.aspx',
-                                  timeout=5)
-                xml = ET.fromstring(r.text.encode('ascii', 'replace'))
-                self.AllianceList = xml
-                self.setCache('https://api.eveonline.com/eve/AllianceList.xml.aspx',
-                              doc=r.text.encode('ascii', 'replace'),
-                              expiry=int(calendar.timegm(
-                                  time.strptime(xml[2].text, '%Y-%m-%d %H:%M:%S'))))
-            else:
-                if hasattr(self, 'AllianceList'):
-                    xml = self.AllianceList
-                else:
-                    xml = ET.fromstring(cached)
+            allianceTicker = "{Failed to load}"
+            try:
+                url = "https://api.eveonline.com/eve/AllianceList.xml.aspx"
+                cached = self.getCache(url)
+                if not cached:
+                    r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
+                    if r.status_code != 200:
+                        raise APIError("XML-API returned error code {}".format(r.status_code))
+
+                    xml = ET.fromstring(r.text)
                     self.AllianceList = xml
-            node = xml[1][0].find("*[@allianceID='{}']".format(allianceID))
-            allianceTicker = node.attrib['shortName']
+                    self.setCache(
+                        url, doc=r.text,
+                        expiry=int(calendar.timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S")))
+                    )
+                elif not hasattr(self, 'AllianceList'):
+                    self.AllianceList = ET.fromstring(cached)
+
+                node = self.AllianceList[1][0].find("*[@allianceID='{}']".format(allianceID))
+                allianceTicker = node.attrib['shortName']
+            except:
+                pass
+
         return (corpTicker, allianceTicker)
+
+    def formatTickers(self, corporationTicker, allianceTicker):
+        "Format ticker(s) like the EVE client does."
+        ticker = ""
+        if corporationTicker:
+            ticker += "[{}] ".format(corporationTicker)
+        if allianceTicker:
+            # Wrapped in <span></span> to force XHTML parsing
+            ticker += "<span>&lt;{}&gt;</span> ".format(allianceTicker)
+        return ticker[:-1]
 
     @botcmd
     def character(self, mess, args):
