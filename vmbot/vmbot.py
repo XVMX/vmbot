@@ -193,6 +193,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
     def __init__(self, *args, **kwargs):
         self.startupTime = datetime.now()
         self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
+        self.newsFeedTrigger = time.time() if kwargs.pop('newsFeed', False) else None
 
         super(VMBot, self).__init__(*args, **kwargs)
 
@@ -215,11 +216,18 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
             except requests.exceptions.RequestException:
                 self.kmFeedTrigger = None
 
+        if self.newsFeedTrigger:
+            self.newsFeedIDs = {'news': None, 'devblog': None}
+
     def idle_proc(self):
         """Execute asynchronous commands."""
         if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
             self.kmFeed()
             self.kmFeedTrigger += 5 * 60
+
+        if self.newsFeedTrigger and self.newsFeedTrigger <= time.time():
+            self.newsFeed()
+            self.newsFeedTrigger += 60 * 60
 
         return super(VMBot, self).idle_proc()
 
@@ -443,7 +451,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
 
 if __name__ == "__main__":
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, kmFeed=True)
+    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, kmFeed=True, newsFeed=True)
     morgooglie.muc_join_room(vmc.chatroom1, vmc.nickname)
     morgooglie.muc_join_room(vmc.chatroom2, vmc.nickname)
     morgooglie.muc_join_room(vmc.chatroom3, vmc.nickname)

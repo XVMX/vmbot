@@ -527,6 +527,73 @@ class EveUtils(object):
 
         self.send(vmc.chatroom1, reply, message_type="groupchat")
 
+    def newsFeed(self):
+        """Send a message to the first chatroom with the latest EVE news and devblogs."""
+        def getCCPFeed(feedType):
+            """Find all new Atom entries available at feedType.
+
+            feedType must be either "news" or "devblog".
+            """
+            if feedType == "news":
+                url = "http://newsfeed.eveonline.com/en-US/44/articles/page/1/20"
+            elif feedType == "devblog":
+                url = "http://newsfeed.eveonline.com/en-US/2/articles/page/1/20"
+            else:
+                raise ValueError('feedType must be either "news" or "devblog"')
+
+            try:
+                r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=3)
+            except requests.exceptions.RequestException as e:
+                raise APIError("Error while connecting to Atom-Feed: {}".format(e))
+            if r.status_code != 200:
+                raise APIError("Atom-Feed returned error code {}".format(r.status_code))
+
+            rss = ET.fromstring(r.text)
+            ns = {'atom': "http://www.w3.org/2005/Atom", 'title': "http://ccp/custom",
+                  'media': "http://search.yahoo.com/mrss/"}
+
+            entries = [{'id': node.find("atom:id", ns).text,
+                        'title': node.find("atom:title", ns).text,
+                        'url': node.find("atom:link[@rel='alternate']", ns).attrib['href'],
+                        'updated': node.find("atom:updated", ns).text}
+                       for node in rss.findall("atom:entry", ns)]
+
+            # ISO 8601 (eg 2016-02-10T16:35:32Z)
+            entries.sort(key=lambda x: time.strptime(x['updated'], "%Y-%m-%dT%H:%M:%SZ"),
+                         reverse=True)
+
+            if self.newsFeedIDs[feedType] is None:
+                self.newsFeedIDs[feedType] = entries[0]
+                return []
+            else:
+                idx = next(idx for (idx, entry) in enumerate(entries)
+                           if entry['id'] == self.newsFeedIDs[feedType])
+                self.newsFeedIDs[feedType] = entries[0]
+                return entries[:idx]
+
+        newsEntries = None
+        devblogEntries = None
+        try:
+            newsEntries = getCCPFeed("news")
+        except:
+            pass
+        try:
+            devblogEntries = getCCPFeed("devblog")
+        except:
+            pass
+
+        if newsEntries:
+            reply = "{} new EVE news:".format(len(newsEntries))
+            for entry in newsEntries:
+                reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
+            self.send(vmc.chatroom1, reply, message_type="groupchat")
+
+        if devblogEntries:
+            reply = "{} new devblog(s):".format(len(devblogEntries))
+            for entry in devblogEntries:
+                reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
+            self.send(vmc.chatroom1, reply, message_type="groupchat")
+
     @botcmd
     def rcbl(self, mess, args):
         """<name>[, ...] - Displays if name has an entry in the blacklist"""
