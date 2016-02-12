@@ -263,17 +263,17 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
 
         try:
             reply = do_math(args)
-
-            if '\n' in reply:
-                reply = "\n{}".format(reply)
-            reply = '<font face="monospace">{}</font>'.format(
-                reply.replace('\n', '</font><br/><font face="monospace">')
-            )
         except Exception as e:
             return str(e)
 
+        if '\n' in reply:
+            reply = "\n{}".format(reply)
+        reply = '<font face="monospace">{}</font>'.format(
+            reply.replace('\n', '</font><br/><font face="monospace">')
+        )
+
         if len(reply) > self.max_chat_chars:
-            reply = "I've evaluated your expression but it's too long to send in a groupchat"
+            return "I've evaluated your expression but it's too long to send in a groupchat"
 
         return reply
 
@@ -298,7 +298,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
 
         dice = 1
         sides = 6
-        args = args.strip().split()
+        args = args.split()
         try:
             dice = int(args[0])
             sides = int(args[1])
