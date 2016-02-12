@@ -36,7 +36,7 @@ import pint
 # Change working directory to vmbot.py's directory to load submodules
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-import vmbot_config as vmc
+from vmbot_config import config as vmc
 
 from fun import Say, Fun, Chains
 from utils import Price, EveUtils
@@ -45,9 +45,8 @@ from wh import Wormhole
 
 
 logger = logging.getLogger("jabberbot")
-logger.setLevel(logging.getLevelName(vmc.loglevel))
-ch = logging.StreamHandler()
-logger.addHandler(ch)
+logger.setLevel(logging.getLevelName(vmc['loglevel']))
+logger.addHandler(logging.StreamHandler())
 
 
 class MUCJabberBot(JabberBot):
@@ -66,6 +65,7 @@ class MUCJabberBot(JabberBot):
         nick = self.get_sender_username(mess)
         node = mess.getFrom().getNode()
         jid = self.nick_dict[node][nick]
+
         return jid.split('@')[0]
 
     def callback_presence(self, conn, presence):
@@ -91,7 +91,7 @@ class MUCJabberBot(JabberBot):
         if mess.getType() != "groupchat":
             return
 
-        if vmc.nickname == self.get_sender_username(mess):
+        if self.get_sender_username(mess) == vmc['jabber']['nickname']:
             return
 
         return super(MUCJabberBot, self).callback_message(conn, mess)
@@ -99,7 +99,7 @@ class MUCJabberBot(JabberBot):
     def longreply(self, mess, text, forcePM=False, receiver=None):
         # FIXME: this should be integrated into the default send,
         # forcepm should be part of botcmd
-        server = vmc.username.split('@')[1]
+        server = vmc['jabber']['username'].split('@')[1]
         receiver = receiver or self.get_uname_from_mess(mess)
 
         if len(text) > self.max_chat_chars or forcePM:
@@ -238,7 +238,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
         fromHist = "urn:xmpp:delay" in mess.getProperties()
 
         message = mess.getBody()
-        if message and self.get_sender_username(mess) != vmc.nickname and not fromHist:
+        if message and self.get_sender_username(mess) != vmc['jabber']['nickname'] and not fromHist:
             if self.pubbieRegex.search(message) is not None:
                 self.muc_kick(mess.getFrom().getStripped(), self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
@@ -361,7 +361,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
             id = ET.SubElement(message, "id")
             id.text = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
             target = ET.SubElement(message, "target")
-            target.text = vmc.target
+            target.text = vmc['bcast']['target']
             sender = ET.SubElement(message, "from")
             sender.text = author
             text = ET.SubElement(message, "text")
@@ -370,9 +370,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
 
             try:
                 r = requests.post(
-                    vmc.url, data=result,
+                    vmc['bcast']['url'], data=result,
                     headers={'User-Agent': "XVMX JabberBot",
-                             'X-SourceID': vmc.id, 'X-SharedKey': vmc.key}
+                             'X-SourceID': vmc['bcast']['id'], 'X-SharedKey': vmc['bcast']['key']}
                 )
                 return r.status_code
             except requests.exceptions.RequestException as e:
@@ -398,7 +398,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
         status = sendBcast(broadcast, "{} via VMBot".format(sender))
         if status == 200:
             return "{}, I have sent your broadcast to {}".format(self.get_sender_username(mess),
-                                                                 vmc.target)
+                                                                 vmc['bcast']['target'])
         elif isinstance(status, str):
             return "Error while connecting to Broadcast-API: {}".format(e)
         else:
@@ -451,8 +451,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
 
 if __name__ == "__main__":
     # Grabbing values from imported config file
-    morgooglie = VMBot(vmc.username, vmc.password, vmc.res, kmFeed=True, newsFeed=True)
-    morgooglie.muc_join_room(vmc.chatroom1, vmc.nickname)
-    morgooglie.muc_join_room(vmc.chatroom2, vmc.nickname)
-    morgooglie.muc_join_room(vmc.chatroom3, vmc.nickname)
+    jbc = vmc['jabber']
+    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], kmFeed=True, newsFeed=True)
+    morgooglie.muc_join_room(jbc['chatroom1'], jbc['nickname'])
+    morgooglie.muc_join_room(jbc['chatroom2'], jbc['nickname'])
+    morgooglie.muc_join_room(jbc['chatroom3'], jbc['nickname'])
     morgooglie.serve_forever()
