@@ -209,9 +209,10 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
                 self.kmFeedID = requests.get(
                     "https://zkillboard.com/api/losses/corporationID/2052404106/"
                     "limit/1/no-items/no-attackers/",
-                    headers={'User-Agent': "XVMX JabberBot"}
+                    headers={'User-Agent': "XVMX JabberBot"},
+                    timeout=5
                 ).json()[0]['killID']
-            except requests.exceptions.RequestException:
+            except (requests.exceptions.RequestException, ValueError):
                 self.kmFeedTrigger = None
 
         if self.newsFeedTrigger:
@@ -370,7 +371,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
                 r = requests.post(
                     vmc['bcast']['url'], data=result,
                     headers={'User-Agent': "XVMX JabberBot",
-                             'X-SourceID': vmc['bcast']['id'], 'X-SharedKey': vmc['bcast']['key']}
+                             'X-SourceID': vmc['bcast']['id'], 'X-SharedKey': vmc['bcast']['key']},
+                    timeout=10
                 )
                 return r.status_code
             except requests.exceptions.RequestException as e:

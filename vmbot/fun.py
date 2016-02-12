@@ -171,7 +171,7 @@ class Fun(object):
     def rtq(self, mess, args):
         """Like a box of chocolates, but without emotes this time"""
         try:
-            r = requests.get("http://bash.org/?random")
+            r = requests.get("http://bash.org/?random", timeout=5)
         except requests.exceptions.RequestException as e:
             return "Error while connecting to http://bash.org: {}".format(e)
         soup = BeautifulSoup(r.text, "html.parser")
@@ -180,13 +180,13 @@ class Fun(object):
                     in soup.find_all("a", title="Permanent link to this quote.")}
 
         if not validIDs:
-            return "Failed to load any quotes"
+            return "Failed to load any quotes from http://bash.org/?random"
 
         quoteID = random.choice(tuple(validIDs))
-        quoteLink = "http://bash.org/?{}".format(quoteID)
+        quoteURL = "http://bash.org/?{}".format(quoteID)
 
         try:
-            r = requests.get(quoteLink)
+            r = requests.get(quoteURL, timeout=3)
         except requests.exceptions.RequestException as e:
             return "Error while connecting to http://bash.org: {}".format(e)
         soup = BeautifulSoup(r.text, "html.parser")
@@ -194,26 +194,31 @@ class Fun(object):
         try:
             quote = soup.find("p", class_="qt").text.encode("ascii", "replace")
         except AttributeError:
-            return "Failed to load quote #{} from {}".format(quoteID, quoteLink)
+            return "Failed to load quote #{} from {}".format(quoteID, quoteURL)
 
-        return "{}\n{}".format(quote, quoteLink)
+        return "{}\n{}".format(quote, quoteURL)
 
     @botcmd
     def rtxkcd(self, mess, args):
         """Like a box of chocolates, but with xkcds"""
         try:
-            res = requests.get("https://xkcd.com/info.0.json").json()
+            res = requests.get("https://xkcd.com/info.0.json", timeout=3).json()
         except requests.exceptions.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
+        except ValueError:
+            return "Error while parsing response from https://xkcd.com"
 
         comicID = random.randint(1, res['num'])
+        comicURL = "https://xkcd.com/{}/".format(comicID)
 
         try:
-            comicData = requests.get("https://xkcd.com/{}/info.0.json".format(comicID)).json()
+            comicData = requests.get("{}info.0.json".format(comicURL), timeout=3).json()
         except requests.exceptions.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
+        except ValueError:
+            return "Failed to load xkcd #{} from {}".format(comicID, comicURL)
 
-        return "<b>{}</b>: https://xkcd.com/{}/".format(comicData['title'], comicID)
+        return "<b>{}</b>: {}".format(comicData['title'], comicURL)
 
 
 class Chains(object):
