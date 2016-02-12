@@ -2,7 +2,7 @@ from jabberbot import botcmd
 
 import time
 from datetime import datetime, timedelta
-import calendar
+from calendar import timegm
 import json
 import xml.etree.ElementTree as ET
 import sqlite3
@@ -192,10 +192,10 @@ class EveUtils(object):
             if r.status_code != 200:
                 raise APIError("XML-API returned error code {}".format(r.status_code))
 
-            xml = ET.fromstring(r.text)
+            xml = ET.fromstring(r.content)
             self.setCache(
-                url, doc=r.text,
-                expiry=int(calendar.timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S"))),
+                url, doc=r.content,
+                expiry=int(timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S"))),
                 params=data
             )
         else:
@@ -232,11 +232,11 @@ class EveUtils(object):
                     if r.status_code != 200:
                         raise APIError("XML-API returned error code {}".format(r.status_code))
 
-                    xml = ET.fromstring(r.text)
+                    xml = ET.fromstring(r.content)
                     self.AllianceList = xml
                     self.setCache(
-                        url, doc=r.text,
-                        expiry=int(calendar.timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S")))
+                        url, doc=r.content,
+                        expiry=int(timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S")))
                     )
                 elif not hasattr(self, 'AllianceList'):
                     self.AllianceList = ET.fromstring(cached)
@@ -547,7 +547,7 @@ class EveUtils(object):
             if r.status_code != 200:
                 raise APIError("Atom-Feed returned error code {}".format(r.status_code))
 
-            rss = ET.fromstring(r.text)
+            rss = ET.fromstring(r.content)
             ns = {'atom': "http://www.w3.org/2005/Atom", 'title': "http://ccp/custom",
                   'media': "http://search.yahoo.com/mrss/"}
 
