@@ -3,7 +3,6 @@ from jabberbot import botcmd
 import time
 from datetime import datetime, timedelta
 import calendar
-import re
 import json
 import xml.etree.ElementTree as ET
 import sqlite3
@@ -392,7 +391,7 @@ class EveUtils(object):
         """<zKB link> [compact] - Displays statistics of a killmail (as a oneliner with compact)"""
         args = args.strip().split(" ", 1)
 
-        regex = re.match("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", args[0])
+        regex = self.zBotRegex.match(args[0])
         if regex is None:
             return "Please provide a link to a zKB Killmail"
 

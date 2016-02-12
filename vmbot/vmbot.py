@@ -198,7 +198,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
         super(VMBot, self).__init__(*args, **kwargs)
 
         # Regex to check for zKillboard link
-        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/\d+\/?", re.IGNORECASE)
+        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
 
         # Regex to check for pubbie talk
         self.pubbieRegex = re.compile(
