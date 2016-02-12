@@ -18,7 +18,6 @@ from jabberbot import JabberBot, botcmd
 import logging
 import time
 from datetime import datetime
-import calendar
 import os
 import subprocess
 import errno
