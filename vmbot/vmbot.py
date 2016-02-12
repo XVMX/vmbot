@@ -182,7 +182,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
         "toon",
         "iskies",
         "thann(?:y|ies)",
-        "(?!:)murica(?!:)",
+        "(?!:)murica",
         "yolo",
         "swag",
         "wewlad",
@@ -200,9 +200,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
         self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
 
         # Regex to check for pubbie talk
-        self.pubbieRegex = re.compile(
-            "(?:^|\W)(?:{})(?:$|\W)".format('|'.join(self.pubbietalk)), re.IGNORECASE
-        )
+        self.pubbieRegex = re.compile("(?:^|\W)(?:{})(?:$|\W)".format('|'.join(self.pubbietalk)),
+                                      re.IGNORECASE)
 
         # Initialize asynchronous commands
         if self.kmFeedTrigger:
