@@ -616,6 +616,7 @@ class EveUtils(object):
 
     def getCache(self, path, params=dict()):
         conn = sqlite3.connect("data/api.cache")
+        conn.text_factory = str
 
         try:
             if not params:
@@ -644,6 +645,7 @@ class EveUtils(object):
 
     def setCache(self, path, doc, expiry, params=dict()):
         conn = sqlite3.connect("data/api.cache")
+        conn.text_factory = str
 
         conn.execute(
             """CREATE TABLE IF NOT EXISTS metadata (
