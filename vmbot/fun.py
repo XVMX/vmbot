@@ -82,6 +82,11 @@ class Say(object):
         "would you like to buy a rose?",
         "Israel has a right to defend itself."
     ]
+    jokerisms = [
+        "dont be a retard",
+        "dont ruin our zkb efficiency",
+        "urbad"
+    ]
 
     @botcmd
     def fishsay(self, mess, args):
@@ -139,6 +144,11 @@ class Say(object):
         """Like fishsay but more dead"""
         sender = args.strip() if args else self.get_sender_username(mess)
         return ":rip: {}".format(sender)
+
+    @botcmd
+    def jokersay(self, mess, args):
+        """Jokery wisdom"""
+        return random.choice(self.jokerisms)
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
