@@ -30,6 +30,11 @@ class Say(object):
         "Outlook not so good",
         "Very doubtful"
     ]
+        jokerisms = [
+        "dont be a retard",
+        "dont ruin our zkb efficiency",
+        "urbad"
+    ]
     fishisms = [
         "~The Python Way!~",
         "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!",
@@ -83,6 +88,11 @@ class Say(object):
         "Israel has a right to defend itself."
     ]
 
+    @botcmd
+    def jokersay(self, mess, args):
+        """Fishy wisdom"""
+        return random.choice(self.jokerisms)
+        
     @botcmd
     def fishsay(self, mess, args):
         """Fishy wisdom"""
