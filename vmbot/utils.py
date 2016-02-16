@@ -562,12 +562,12 @@ class EveUtils(object):
                          reverse=True)
 
             if self.newsFeedIDs[feedType] is None:
-                self.newsFeedIDs[feedType] = entries[0]
+                self.newsFeedIDs[feedType] = entries[0]['id']
                 return []
             else:
                 idx = next(idx for (idx, entry) in enumerate(entries)
                            if entry['id'] == self.newsFeedIDs[feedType])
-                self.newsFeedIDs[feedType] = entries[0]
+                self.newsFeedIDs[feedType] = entries[0]['id']
                 return entries[:idx]
 
         newsEntries = None
