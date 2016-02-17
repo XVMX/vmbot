@@ -266,7 +266,7 @@ class EveUtils(object):
 
         args = [item.strip() for item in args.split(',')]
         if len(args) > 10:
-            return "Please limit your search to up to 10 characters at once"
+            return "Please limit your search to 10 characters at most"
 
         try:
             xml = self.getEVEXMLEndpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx", 3,
@@ -441,7 +441,7 @@ class EveUtils(object):
                 self.formatTickers(corpTicker, None)
             )
         else:
-            reply += "<br />The structure is owned by corporation {} {}".format(
+            reply += "<br />The structure is owned by corporation <b>{} {}</b>".format(
                 victim['corporationName'], self.formatTickers(corpTicker, None)
             )
         if victim['allianceName']:

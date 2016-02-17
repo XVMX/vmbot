@@ -208,8 +208,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
                 self.kmFeedID = requests.get(
                     "https://zkillboard.com/api/losses/corporationID/2052404106/"
                     "limit/1/no-items/no-attackers/",
-                    headers={'User-Agent': "XVMX JabberBot"},
-                    timeout=5
+                    headers={'User-Agent': "XVMX JabberBot"}, timeout=5
                 ).json()[0]['killID']
             except (requests.exceptions.RequestException, ValueError):
                 self.kmFeedTrigger = None
@@ -406,7 +405,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
     @botcmd
     def pingall(self, mess, args):
         """Pings everyone in the current MUC room"""
-        if self.get_uname_from_mess(mess) not in (self.directors + self.admins):
+        if self.get_uname_from_mess(mess) not in self.directors:
             return ":getout:"
 
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
