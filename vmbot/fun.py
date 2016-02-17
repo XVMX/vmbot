@@ -148,7 +148,10 @@ class Say(object):
     @botcmd
     def jokersay(self, mess, args):
         """Jokery wisdom"""
-        return random.choice(self.jokerisms)
+        if args:
+            return "{} {}".format(args, random.choice(self.jokerisms))
+        else:
+            return random.choice(self.jokerisms)
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
