@@ -39,7 +39,6 @@ from vmbot_config import config as vmc
 
 from fun import Say, Fun, Chains
 from utils import Price, EveUtils
-from faq import FAQ
 from wh import Wormhole
 
 
@@ -149,7 +148,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
-class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, FAQ, Wormhole):
+class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
     # Access control lists
     directors = [
         "jack_haydn",
