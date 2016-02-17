@@ -1,5 +1,6 @@
 from jabberbot import botcmd
 
+from os import path
 import shlex
 import sqlite3
 
@@ -8,7 +9,7 @@ class Wormhole(object):
     wh_version = 1
 
     def __db_connection(self):
-        conn = sqlite3.connect("data/wh.sqlite")
+        conn = sqlite3.connect(path.join(path.dirname(__file__), "data", "wh.sqlite"))
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -156,7 +157,7 @@ stats - Shows a list of scanners and how many WHs they have scanned during the l
         if res:
             return res
 
-        conn = sqlite3.connect('data/staticdata.sqlite')
+        conn = sqlite3.connect(path.join(path.dirname(__file__), "data", "staticdata.sqlite"))
         cur = conn.cursor()
         cur.execute(
             '''SELECT solarSystemID, solarSystemName

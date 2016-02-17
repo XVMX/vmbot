@@ -1,5 +1,6 @@
 from jabberbot import botcmd
 
+from os import path
 import random
 
 import requests
@@ -172,7 +173,7 @@ class Fun(object):
     @botcmd
     def rtd(self, mess, args):
         """Like a box of chocolates, you never know what you're gonna get"""
-        with open("data/emotes.txt", 'r') as emotesFile:
+        with open(path.join(path.dirname(__file__), "data", "emotes.txt"), 'r') as emotesFile:
             emotes = emotesFile.read().split('\n')
 
         while not emotes.pop(0).startswith("[default]"):

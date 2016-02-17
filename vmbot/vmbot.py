@@ -32,9 +32,6 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
-# Change working directory to vmbot.py's directory to load submodules
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
 from vmbot_config import config as vmc
 
 from fun import Say, Fun, Chains
@@ -441,8 +438,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         if self.get_uname_from_mess(mess) not in self.admins:
             return "You are not allowed to git pull"
 
+        path = os.path
         p = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             cwd=os.path.abspath(os.pardir))
+                             cwd=path.abspath(path.join(path.dirname(__file__), os.pardir)))
         out, err = p.communicate()
         return "{}\n{}".format(out, err).strip()
 

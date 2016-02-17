@@ -1,8 +1,9 @@
+from os import path
 from ConfigParser import SafeConfigParser
 
 
 parser = SafeConfigParser()
-parser.read("data/vmbot.cfg")
+parser.read(path.join(path.dirname(__file__), "data", "vmbot.cfg"))
 
 config = {}
 

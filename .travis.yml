@@ -5,4 +5,4 @@ sudo: false
 install:
    - pip install pep8
 script:
-   - pep8 --max-line-length=100 --ignore=E402 --exclude=jabberbot.py vmbot/
+   - pep8 --max-line-length=100 --exclude=jabberbot.py vmbot/
