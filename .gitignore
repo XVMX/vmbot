@@ -1,4 +1,4 @@
 *.py[cod]
 nohup.out
-info.vmbot.log
+out.vmbot.log
 err.vmbot.log
