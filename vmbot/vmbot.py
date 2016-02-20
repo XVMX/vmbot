@@ -13,7 +13,7 @@
 # /usr/share/common-licenses/GPL-3
 
 
-from jabberbot import JabberBot, botcmd
+from .jabberbot import JabberBot, botcmd
 
 import logging
 import time
@@ -32,11 +32,11 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
-from vmbot_config import config as vmc
+from .vmbot_config import config as vmc
 
-from fun import Say, Fun, Chains
-from utils import Price, EveUtils
-from wh import Wormhole
+from .fun import Say, Fun, Chains
+from .utils import Price, EveUtils
+from .wh import Wormhole
 
 
 logger = logging.getLogger("jabberbot")

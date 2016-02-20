@@ -1,4 +1,4 @@
-from jabberbot import botcmd
+from .jabberbot import botcmd
 
 from os import path
 import random

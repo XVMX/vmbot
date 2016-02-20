@@ -1,4 +1,4 @@
-from jabberbot import botcmd
+from .jabberbot import botcmd
 
 import time
 from datetime import datetime, timedelta
@@ -10,7 +10,7 @@ import sqlite3
 
 import requests
 
-from vmbot_config import config as vmc
+from .vmbot_config import config as vmc
 
 
 STATICDATA = path.join(path.dirname(__file__), "data", "staticdata.sqlite")
