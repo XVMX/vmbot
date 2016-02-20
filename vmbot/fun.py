@@ -63,9 +63,6 @@ class Say(object):
         "Oh d{}d",
         "D{}d, never go full retart!"
     ]
-    chaseisms = [
-        "would you PLEASE"
-    ]
     kairkisms = [
         "thanks for filling this out.",
         "voting on your application to join VM is over, and you have passed.",
@@ -118,7 +115,7 @@ class Say(object):
         if args.startswith(self.chasesay._jabberbot_command_name):
             return "nope"
         sender = args.strip() if args else self.get_sender_username(mess)
-        return "{}, {}".format(sender, self.chaseisms[0])
+        return "{}, would you PLEASE".format(sender)
 
     @botcmd
     def kairksay(self, mess, args):
