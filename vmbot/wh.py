@@ -63,23 +63,23 @@ class Wormhole(object):
         +-> TTL: Approximate amount of hours left before the WH closes
         stats - Shows a list of scanners and how many WHs they have scanned during the last 30 days
         """
-        args = shlex.split(args.strip())
-        if args:
-            cmd = args.pop(0).upper()
+        argsList = shlex.split(args)
+        if argsList:
+            cmd = argsList.pop(0).upper()
         else:
             return "Requires one of list, filter, add or stats as an argument"
-        argc = len(args)
+        argc = len(argsList)
 
         if cmd == "LIST" and argc == 0:
             return self.wh_list(mess)
         elif cmd == "FILTER" and argc == 2:
-            return self.wh_filter(mess, args[0].upper(), args[1].upper())
+            return self.wh_filter(mess, *argsList)
         elif cmd == "ADD" and argc == 5:
-            return self.wh_add(mess, args[0], args[1], args[2], args[3], int(args[4]))
+            return self.wh_add(mess, *argsList)
         elif cmd == "STATS" and argc == 0:
             return self.wh_stats(mess)
         else:
-            return "wh {} is not an accepted command".format(' '.join(args))
+            return "wh {} is not an accepted command".format(args)
 
     def _getActiveConnections(self):
         return self.__db_connection().execute(
@@ -113,6 +113,13 @@ class Wormhole(object):
         return "No connections found"
 
     def wh_filter(self, mess, filterType, filterVal):
+        filterType, filterVal = filterType.upper(), filterVal.upper()
+        if filterType == "TTL":
+            try:
+                filterVal = float(filterVal)
+            except:
+                return "value must be a float when used in conjunction with TTL"
+
         try:
             data = self._getActiveConnections()
         except sqlite3.OperationalError:
@@ -136,17 +143,24 @@ class Wormhole(object):
             })
 
         if filterType == "TTL":
-            filteredConnections = [wh for wh in allConnections if wh['TTL'] >= float(filterVal)]
-        else:
+            filteredConnections = [wh for wh in allConnections if wh['TTL'] >= filterVal]
+        elif filterType == "SYSTEM":
             filteredConnections = [wh for wh in allConnections
                                    if filterVal in (wh['SRC-System'].upper(),
                                                     wh['SRC-Region'].upper(),
                                                     wh['DEST-System'].upper(),
                                                     wh['DEST-Region'].upper())]
+        else:
+            filteredConnections = allConnections
 
         return self.wh_list(mess, filteredConnections)
 
     def wh_add(self, mess, src, srcSIG, dest, destSIG, TTL):
+        try:
+            TTL = int(TTL)
+        except ValueError:
+            return "TTL must be an integer"
+
         res = self.__create_db_schema()
         if res:
             return res
@@ -203,6 +217,7 @@ class Wormhole(object):
         if not data:
             return "No connections were added during the last month"
 
-        stats = ["{}: {} WHs".format(scanner['author'], scanner['scannedWHs']) for scanner in data]
+        stats = ["{}: {} WH(s)".format(scanner['author'], scanner['scannedWHs'])
+                 for scanner in data]
 
         return "<br />".join(stats)
