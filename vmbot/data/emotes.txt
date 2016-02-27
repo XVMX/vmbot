@@ -1,5 +1,5 @@
 Name=SA-GF Pack, No-Smile Version
-Description=Last Updated: February 5th, 2016
+Description=Last Updated: February 21st, 2016
 Icon=smugjones.001.gif
 Author=Querns
 
@@ -1209,3 +1209,7 @@ shrek.001.gif :dota:
 ! deadmau5.001.gif :deadmau5:
 ! emot-caro.gif :caro:
 ! swanlake.001.gif :swanlake:
+! bernpop.001.gif :bernpop:
+! eonwe.001.gif :eonwe:
+! fuzzknot.001.gif :fuzzknot:
+! gethill.001.gif :gethill:
