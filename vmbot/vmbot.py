@@ -230,12 +230,13 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         reply = super(VMBot, self).callback_presence(conn, presence)
 
         jid = presence.getJid()
-        if jid is not None:
+        if jid is not None and presence.getType() == self.AVAILABLE:
             nick = presence.getFrom().getResource()
             room = presence.getFrom().getStripped()
             uname = jid.split('@')[0]
 
             if uname in self.pubbieKicked and room == vmc['jabber']['chatroom1']:
+                self.pubbieKicked.remove(uname)
                 self.send(vmc['jabber']['chatroom1'], "{}: Talk shit, get hit".format(nick),
                           message_type="groupchat")
 
