@@ -198,6 +198,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         # Regex to check for pubbie talk
         self.pubbieRegex = re.compile("(?:^|\W)(?:{})(?:$|\W)".format('|'.join(self.pubbietalk)),
                                       re.IGNORECASE)
+        self.pubbieKicked = []
 
         # Initialize asynchronous commands
         if self.kmFeedTrigger:
@@ -225,6 +226,21 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
 
         return super(VMBot, self).idle_proc()
 
+    def callback_presence(self, conn, presence):
+        reply = super(VMBot, self).callback_presence(conn, presence)
+
+        jid = presence.getJid()
+        if jid is not None:
+            nick = presence.getFrom().getResource()
+            room = presence.getFrom().getStripped()
+            uname = jid.split('@')[0]
+
+            if uname in self.pubbieKicked and room == vmc['jabber']['chatroom1']:
+                self.send(vmc['jabber']['chatroom1'], "{}: Talk shit, get hit".format(nick),
+                          message_type="groupchat")
+
+        return reply
+
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
 
@@ -232,10 +248,13 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         fromHist = "urn:xmpp:delay" in mess.getProperties()
 
         message = mess.getBody()
+        room = mess.getFrom().getStripped()
+
         if message and self.get_sender_username(mess) != vmc['jabber']['nickname'] and not fromHist:
-            if self.pubbieRegex.search(message) is not None:
-                self.muc_kick(mess.getFrom().getStripped(), self.get_sender_username(mess),
+            if self.pubbieRegex.search(message) is not None and room == vmc['jabber']['chatroom1']:
+                self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
+                self.pubbieKicked.append(self.get_uname_from_mess(mess))
 
             if not message.lower().startswith("zbot"):
                 uniqueMatches = {match.group(0) for match in self.zBotRegex.finditer(message)}
