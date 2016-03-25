@@ -363,7 +363,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
     def bcast(self, mess, args):
         """vm <message> - Sends a broadcast to XVMX members
 
-        Must be <=1kb including the tag line.
+        Must be <=10.24kb including the tag line.
         "vm" required to avoid accidental bcasts, only works in dir chat.
         Do not abuse this or Solo's wrath shall be upon you.
         """
