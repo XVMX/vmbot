@@ -172,18 +172,19 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         "o7",
         "o\/",
         "m8",
-        "u wot",
+        "wot",
         "retart",
-        "get rekt",
+        "rekt",
         "toon",
         "iskies",
         "thann(?:y|ies)",
-        "(?!:)murica",
+        "murica",
         "yolo",
         "swag",
         "wewlad",
         "fam",
-        "rofl"
+        "rofl",
+        "stronk"
     ]
 
     def __init__(self, *args, **kwargs):
@@ -197,7 +198,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
 
         # Regex to check for pubbie talk
-        self.pubbieRegex = re.compile("(?:^|\W)(?:{})(?:$|\W)".format('|'.join(self.pubbietalk)),
+        self.pubbieRegex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.pubbietalk)),
                                       re.IGNORECASE)
         self.pubbieKicked = set()
 
