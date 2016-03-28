@@ -199,7 +199,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         # Regex to check for pubbie talk
         self.pubbieRegex = re.compile("(?:^|\W)(?:{})(?:$|\W)".format('|'.join(self.pubbietalk)),
                                       re.IGNORECASE)
-        self.pubbieKicked = []
+        self.pubbieKicked = set()
 
         # Initialize asynchronous commands
         if self.kmFeedTrigger:
@@ -231,7 +231,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         reply = super(VMBot, self).callback_presence(conn, presence)
 
         jid = presence.getJid()
-        if jid is not None and presence.getType() == self.AVAILABLE:
+        type_ = presence.getType()
+        if jid is not None and type_ == self.AVAILABLE:
             nick = presence.getFrom().getResource()
             room = presence.getFrom().getStripped()
             uname = jid.split('@')[0]
@@ -240,6 +241,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
                 self.pubbieKicked.remove(uname)
                 self.send(vmc['jabber']['chatroom1'], "{}: Talk shit, get hit".format(nick),
                           message_type="groupchat")
+        elif type_ == self.OFFLINE and presence.getStatusCode() == "307":
+            self.pubbieKicked.add(jid.split('@')[0])
 
         return reply
 
@@ -256,7 +259,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
             if self.pubbieRegex.search(message) is not None and room == vmc['jabber']['chatroom1']:
                 self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
-                self.pubbieKicked.append(self.get_uname_from_mess(mess))
 
             if not message.lower().startswith("zbot"):
                 uniqueMatches = {match.group(0) for match in self.zBotRegex.finditer(message)}
