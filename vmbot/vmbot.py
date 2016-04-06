@@ -419,7 +419,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
             return "{}, I have sent your broadcast to {}".format(self.get_sender_username(mess),
                                                                  vmc['bcast']['target'])
         elif isinstance(status, str):
-            return "Error while connecting to Broadcast-API: {}".format(e)
+            return "Error while connecting to Broadcast-API: {}".format(status)
         else:
             return "Broadcast-API returned error code {}".format(status)
 
