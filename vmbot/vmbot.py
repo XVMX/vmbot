@@ -129,6 +129,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
         def _handle_timeout(signum, frame):
             raise TimeoutError(error_message)
 
+        @wraps(func)
         def wrapper(*args, **kwargs):
             signal.signal(signal.SIGALRM, _handle_timeout)
             signal.alarm(seconds)
@@ -140,7 +141,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
             return result
 
-        return wraps(func)(wrapper)
+        return wrapper
 
     return decorator
 
