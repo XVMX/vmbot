@@ -507,7 +507,8 @@ class EveUtils(object):
         if r.status_code != 200:
             return
 
-        losses = r.json()
+        minimumValue = 5000000
+        losses = filter(lambda x: x['zkb']['totalValue'] >= minimumValue, r.json())
         if not losses:
             return
 
