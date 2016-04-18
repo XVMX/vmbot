@@ -7,6 +7,10 @@ import sqlite3
 from .data import WH_DB, STATICDATA_DB
 
 
+class DBError(Exception):
+    pass
+
+
 class Wormhole(object):
     WH_VERSION = 2
 
@@ -31,7 +35,7 @@ class Wormhole(object):
                WHERE type = "version";"""
         ).fetchall()
         if res and int(res[0][0]) != self.WH_VERSION:
-            return "Tell {} to update the WH database!".format(", ".join(self.admins))
+            raise DBError("Tell {} to update the WH database!".format(", ".join(self.admins)))
 
         conn.execute(
             """INSERT OR REPLACE INTO metadata
@@ -163,9 +167,10 @@ class Wormhole(object):
         except ValueError:
             return "TTL must be a floating point number"
 
-        res = self.__create_db_schema()
-        if res:
-            return res
+        try:
+            self.__create_db_schema()
+        except DBError as e:
+            return str(e)
 
         conn = sqlite3.connect(STATICDATA_DB)
         srcSystems = conn.execute(
