@@ -32,7 +32,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
-from .vmbot_config import config as vmc
+from .config import config as vmc
 
 from .fun import Say, Fun, Chains
 from .utils import Price, EveUtils
@@ -449,7 +449,6 @@ if __name__ == "__main__":
     # Grabbing values from imported config file
     jbc = vmc['jabber']
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], kmFeed=True, newsFeed=True)
-    morgooglie.muc_join_room(jbc['chatroom1'], jbc['nickname'])
-    morgooglie.muc_join_room(jbc['chatroom2'], jbc['nickname'])
-    morgooglie.muc_join_room(jbc['chatroom3'], jbc['nickname'])
+    for room in jbc['chatrooms']:
+        morgooglie.muc_join_room(room, jbc['nickname'])
     morgooglie.serve_forever()

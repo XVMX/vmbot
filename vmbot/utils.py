@@ -10,7 +10,7 @@ import sqlite3
 
 import requests
 
-from .vmbot_config import config as vmc
+from .config import config as vmc
 
 
 STATICDATA = path.join(path.dirname(__file__), "data", "staticdata.sqlite")
@@ -529,7 +529,7 @@ class EveUtils(object):
                 "https://zkillboard.com/kill/{}/".format(loss['killID'])
             )
 
-        self.send(vmc['jabber']['chatroom1'], reply, message_type="groupchat")
+        self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
     def newsFeed(self):
         """Send a message to the first chatroom with the latest EVE news and devblogs."""
@@ -590,13 +590,13 @@ class EveUtils(object):
             reply = "{} new EVE news:".format(len(newsEntries))
             for entry in newsEntries:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(vmc['jabber']['chatroom1'], reply, message_type="groupchat")
+            self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
         if devblogEntries:
             reply = "{} new devblog(s):".format(len(devblogEntries))
             for entry in devblogEntries:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(vmc['jabber']['chatroom1'], reply, message_type="groupchat")
+            self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
     @botcmd
     def rcbl(self, mess, args):
