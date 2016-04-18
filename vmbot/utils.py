@@ -25,12 +25,12 @@ class ISK(float):
         return "{}t".format(format(self, format_spec))
 
 
-class PriceError(StandardError):
+class PriceError(Exception):
     pass
 
 
 class Price(object):
-    def getPriceVolume(self, orderType, region, system, item):
+    def _getPriceVolume(self, orderType, region, system, item):
         url = "https://public-crest.eveonline.com/market/{}/orders/{}/".format(region, orderType)
         url += "?type=https://public-crest.eveonline.com/types/{}/".format(item)
 
@@ -53,7 +53,7 @@ class Price(object):
 
         return (volume, price)
 
-    def disambiguate(self, given, like, category):
+    def _disambiguate(self, given, like, category):
         reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
         if len(like) > 3:
             reply += ", and {} others".format(len(like) - 3)
@@ -113,8 +113,8 @@ class Price(object):
         systemName = systemName.encode("ascii", "replace")
 
         try:
-            sellvolume, sellprice = self.getPriceVolume("sell", regionID, systemName, typeID)
-            buyvolume, buyprice = self.getPriceVolume("buy", regionID, systemName, typeID)
+            sellvolume, sellprice = self._getPriceVolume("sell", regionID, systemName, typeID)
+            buyvolume, buyprice = self._getPriceVolume("buy", regionID, systemName, typeID)
         except PriceError as e:
             return str(e)
 
@@ -128,14 +128,14 @@ class Price(object):
             reply += "Spread: NaNNaNNaNNaNNaNBatman!"
 
         if items:
-            reply += self.disambiguate(args[0], zip(*items)[1], "items")
+            reply += self._disambiguate(args[0], zip(*items)[1], "items")
         if len(args) > 1 and systems:
-            reply += self.disambiguate(args[1], zip(*systems)[1], "systems")
+            reply += self._disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply
 
 
-class APIError(StandardError):
+class APIError(Exception):
     pass
 
 

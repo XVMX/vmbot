@@ -8,7 +8,7 @@ from .data import WH_DB, STATICDATA_DB
 
 
 class Wormhole(object):
-    wh_version = 2
+    WH_VERSION = 2
 
     def __db_connection(self):
         conn = sqlite3.connect(WH_DB)
@@ -21,7 +21,7 @@ class Wormhole(object):
         conn.execute(
             """CREATE TABLE IF NOT EXISTS metadata (
                  type TEXT NOT NULL UNIQUE,
-                 value INTEGER NOT NULL
+                 value TEXT NOT NULL
                );"""
         )
 
@@ -30,13 +30,13 @@ class Wormhole(object):
                FROM metadata
                WHERE type = "version";"""
         ).fetchall()
-        if res and res[0][0] != self.wh_version:
+        if res and int(res[0][0]) != self.WH_VERSION:
             return "Tell {} to update the WH database!".format(", ".join(self.admins))
 
         conn.execute(
             """INSERT OR REPLACE INTO metadata
                VALUES ("version", :version);""",
-            {'version': self.wh_version}
+            {'version': self.WH_VERSION}
         )
         conn.execute(
             """CREATE TABLE IF NOT EXISTS connections (
@@ -54,7 +54,7 @@ class Wormhole(object):
 
     @botcmd
     def wh(self, mess, args):
-        """list - Shows all WH connections
+        """list - Shows all WH connections (equivalent to filter TTL 0)
 
         filter "<type>" "<value>" - Filters the list of available WH connections
         |-> type: Either "system" or "TTL"
@@ -62,7 +62,7 @@ class Wormhole(object):
         add "<src>" "<src-sig>" "<dest>" "<dest-sig>" "<TTL>" - Adds a new connection
         |-> src/dest: Source/destination systems the WH connects
         |-> src-sig/dest-sig: Signature-IDs in the source/destination systems (eg WQG-828)
-        +-> TTL: Approximate amount of hours left before the WH closes
+        +-> TTL: Approximate number of hours left before the WH closes
         stats - Shows a list of scanners and how many WHs they have scanned during the last 30 days
         """
         argsList = shlex.split(args)
@@ -120,7 +120,7 @@ class Wormhole(object):
             try:
                 filterVal = float(filterVal)
             except:
-                return "value must be a float when used in conjunction with TTL"
+                return "value must be a floating point number when used with TTL"
 
         try:
             data = self._getActiveConnections()
@@ -159,9 +159,9 @@ class Wormhole(object):
 
     def wh_add(self, mess, src, srcSIG, dest, destSIG, TTL):
         try:
-            TTL = int(TTL)
+            TTL = float(TTL)
         except ValueError:
-            return "TTL must be an integer"
+            return "TTL must be a floating point number"
 
         res = self.__create_db_schema()
         if res:
@@ -193,7 +193,7 @@ class Wormhole(object):
         conn.execute(
             """INSERT INTO `connections` (SRC, `SRC-SIG`, DEST, `DEST-SIG`, expiry, author)
                VALUES (:srcID, :srcSIG, :destID, :destSIG,
-                       DATETIME("now", "+{} hours"), :author);""".format(TTL),
+                       DATETIME("now", "{:+} hours"), :author);""".format(TTL),
             {'srcID': srcSystems[0][0], 'srcSIG': srcSIG,
              'destID': destSystems[0][0], 'destSIG': destSIG,
              'author': self.get_uname_from_mess(mess)}
