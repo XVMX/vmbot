@@ -11,10 +11,7 @@ import sqlite3
 import requests
 
 from .config import config as vmc
-
-
-STATICDATA = path.join(path.dirname(__file__), "data", "staticdata.sqlite")
-APICACHE = path.join(path.dirname(__file__), "data", "api.cache")
+from .data import STATICDATA_DB, CACHE_DB
 
 
 class ISK(float):
@@ -81,7 +78,7 @@ class Price(object):
                             "pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
-        conn = sqlite3.connect(STATICDATA)
+        conn = sqlite3.connect(STATICDATA_DB)
         conn.text_factory = lambda t: unicode(t, "utf-8", "replace")
 
         systems = conn.execute(
@@ -147,7 +144,7 @@ class EveUtils(object):
 
     def getTypeName(self, typeID):
         """Resolve a typeID to its name."""
-        conn = sqlite3.connect(STATICDATA)
+        conn = sqlite3.connect(STATICDATA_DB)
         items = conn.execute(
             """SELECT typeID, typeName
                FROM invTypes
@@ -162,7 +159,7 @@ class EveUtils(object):
 
     def getSolarSystemData(self, solarSystemID):
         """Resolve a solarSystemID to its data."""
-        conn = sqlite3.connect(STATICDATA)
+        conn = sqlite3.connect(STATICDATA_DB)
         systems = conn.execute(
             """SELECT solarSystemID, solarSystemName,
                       mapSolarSystems.constellationID, constellationName,
@@ -620,7 +617,7 @@ class EveUtils(object):
         return "<br />".join(results)
 
     def getCache(self, path, params=dict()):
-        conn = sqlite3.connect(APICACHE)
+        conn = sqlite3.connect(CACHE_DB)
         conn.text_factory = str
 
         try:
@@ -649,7 +646,7 @@ class EveUtils(object):
         return res[0][0] if len(res) == 1 else None
 
     def setCache(self, path, doc, expiry, params=dict()):
-        conn = sqlite3.connect(APICACHE)
+        conn = sqlite3.connect(CACHE_DB)
         conn.text_factory = str
 
         conn.execute(

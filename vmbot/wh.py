@@ -4,12 +4,14 @@ from os import path
 import shlex
 import sqlite3
 
+from .data import WH_DB, STATICDATA_DB
+
 
 class Wormhole(object):
     wh_version = 2
 
     def __db_connection(self):
-        conn = sqlite3.connect(path.join(path.dirname(__file__), "data", "wh.sqlite"))
+        conn = sqlite3.connect(WH_DB)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -165,7 +167,7 @@ class Wormhole(object):
         if res:
             return res
 
-        conn = sqlite3.connect(path.join(path.dirname(__file__), "data", "staticdata.sqlite"))
+        conn = sqlite3.connect(STATICDATA_DB)
         srcSystems = conn.execute(
             """SELECT solarSystemID, solarSystemName
                FROM mapSolarSystems

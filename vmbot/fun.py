@@ -6,6 +6,8 @@ import random
 import requests
 from bs4 import BeautifulSoup
 
+from .data import EMOTES
+
 
 class Say(object):
     # 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
@@ -170,7 +172,7 @@ class Fun(object):
     @botcmd
     def rtd(self, mess, args):
         """Like a box of chocolates, you never know what you're gonna get"""
-        with open(path.join(path.dirname(__file__), "data", "emotes.txt"), 'r') as emotesFile:
+        with open(EMOTES, 'r') as emotesFile:
             emotes = emotesFile.read().split('\n')
 
         while not emotes.pop(0).startswith("[default]"):

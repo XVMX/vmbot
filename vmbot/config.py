@@ -1,9 +1,11 @@
 from os import path
 from ConfigParser import SafeConfigParser
 
+from .data import CONFIG
+
 
 _parser = SafeConfigParser()
-_parser.read(path.join(path.dirname(__file__), "data", "vmbot.cfg"))
+_parser.read(CONFIG)
 
 config = {
     # Log level
