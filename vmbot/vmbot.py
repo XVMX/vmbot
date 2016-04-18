@@ -302,7 +302,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
     def convert(self, mess, args):
         """<amount> <source> to <destination> - Converts amount from source to destination"""
         src, dst = args.split(" to ", 1)
-        ureg = pint.UnitRegistry()
+        ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 
         try:
             return str(ureg(src).to(dst))
