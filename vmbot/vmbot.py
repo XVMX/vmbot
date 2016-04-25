@@ -258,10 +258,10 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
 
         message = mess.getBody()
         room = mess.getFrom().getStripped()
+        primaryRoom = room == vmc['jabber']['chatrooms'][0]
 
         if message and self.get_sender_username(mess) != vmc['jabber']['nickname']:
-            if (self.pubbieRegex.search(message) is not None and
-                    room == vmc['jabber']['chatrooms'][0]):
+            if self.pubbieRegex.search(message) is not None and primaryRoom:
                 self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
 
