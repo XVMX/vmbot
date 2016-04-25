@@ -1,4 +1,4 @@
-from jabberbot import botcmd
+from .jabberbot import botcmd
 
 import time
 from datetime import datetime, timedelta
@@ -10,11 +10,8 @@ import sqlite3
 
 import requests
 
-from vmbot_config import config as vmc
-
-
-STATICDATA = path.join(path.dirname(__file__), "data", "staticdata.sqlite")
-APICACHE = path.join(path.dirname(__file__), "data", "api.cache")
+from .config import config as vmc
+from .data import STATICDATA_DB, CACHE_DB
 
 
 class ISK(float):
@@ -28,12 +25,12 @@ class ISK(float):
         return "{}t".format(format(self, format_spec))
 
 
-class PriceError(StandardError):
+class PriceError(Exception):
     pass
 
 
 class Price(object):
-    def getPriceVolume(self, orderType, region, system, item):
+    def _getPriceVolume(self, orderType, region, system, item):
         url = "https://public-crest.eveonline.com/market/{}/orders/{}/".format(region, orderType)
         url += "?type=https://public-crest.eveonline.com/types/{}/".format(item)
 
@@ -56,7 +53,7 @@ class Price(object):
 
         return (volume, price)
 
-    def disambiguate(self, given, like, category):
+    def _disambiguate(self, given, like, category):
         reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
         if len(like) > 3:
             reply += ", and {} others".format(len(like) - 3)
@@ -81,7 +78,7 @@ class Price(object):
                             "pilot's license extension"):
             item = "30 Day Pilot's License Extension (PLEX)"
 
-        conn = sqlite3.connect(STATICDATA)
+        conn = sqlite3.connect(STATICDATA_DB)
         conn.text_factory = lambda t: unicode(t, "utf-8", "replace")
 
         systems = conn.execute(
@@ -116,8 +113,8 @@ class Price(object):
         systemName = systemName.encode("ascii", "replace")
 
         try:
-            sellvolume, sellprice = self.getPriceVolume("sell", regionID, systemName, typeID)
-            buyvolume, buyprice = self.getPriceVolume("buy", regionID, systemName, typeID)
+            sellvolume, sellprice = self._getPriceVolume("sell", regionID, systemName, typeID)
+            buyvolume, buyprice = self._getPriceVolume("buy", regionID, systemName, typeID)
         except PriceError as e:
             return str(e)
 
@@ -131,14 +128,14 @@ class Price(object):
             reply += "Spread: NaNNaNNaNNaNNaNBatman!"
 
         if items:
-            reply += self.disambiguate(args[0], zip(*items)[1], "items")
+            reply += self._disambiguate(args[0], zip(*items)[1], "items")
         if len(args) > 1 and systems:
-            reply += self.disambiguate(args[1], zip(*systems)[1], "systems")
+            reply += self._disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply
 
 
-class APIError(StandardError):
+class APIError(Exception):
     pass
 
 
@@ -147,7 +144,7 @@ class EveUtils(object):
 
     def getTypeName(self, typeID):
         """Resolve a typeID to its name."""
-        conn = sqlite3.connect(STATICDATA)
+        conn = sqlite3.connect(STATICDATA_DB)
         items = conn.execute(
             """SELECT typeID, typeName
                FROM invTypes
@@ -162,7 +159,7 @@ class EveUtils(object):
 
     def getSolarSystemData(self, solarSystemID):
         """Resolve a solarSystemID to its data."""
-        conn = sqlite3.connect(STATICDATA)
+        conn = sqlite3.connect(STATICDATA_DB)
         systems = conn.execute(
             """SELECT solarSystemID, solarSystemName,
                       mapSolarSystems.constellationID, constellationName,
@@ -530,7 +527,7 @@ class EveUtils(object):
                 "https://zkillboard.com/kill/{}/".format(loss['killID'])
             )
 
-        self.send(vmc['jabber']['chatroom1'], reply, message_type="groupchat")
+        self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
     def newsFeed(self):
         """Send a message to the first chatroom with the latest EVE news and devblogs."""
@@ -591,13 +588,13 @@ class EveUtils(object):
             reply = "{} new EVE news:".format(len(newsEntries))
             for entry in newsEntries:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(vmc['jabber']['chatroom1'], reply, message_type="groupchat")
+            self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
         if devblogEntries:
             reply = "{} new devblog(s):".format(len(devblogEntries))
             for entry in devblogEntries:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(vmc['jabber']['chatroom1'], reply, message_type="groupchat")
+            self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
     @botcmd
     def rcbl(self, mess, args):
@@ -621,7 +618,7 @@ class EveUtils(object):
         return "<br />".join(results)
 
     def getCache(self, path, params=dict()):
-        conn = sqlite3.connect(APICACHE)
+        conn = sqlite3.connect(CACHE_DB)
         conn.text_factory = str
 
         try:
@@ -650,7 +647,7 @@ class EveUtils(object):
         return res[0][0] if len(res) == 1 else None
 
     def setCache(self, path, doc, expiry, params=dict()):
-        conn = sqlite3.connect(APICACHE)
+        conn = sqlite3.connect(CACHE_DB)
         conn.text_factory = str
 
         conn.execute(

@@ -13,7 +13,7 @@
 # /usr/share/common-licenses/GPL-3
 
 
-from jabberbot import JabberBot, botcmd
+from .jabberbot import JabberBot, botcmd
 
 import logging
 import time
@@ -32,23 +32,23 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
-from vmbot_config import config as vmc
+from .config import config as vmc
 
-from fun import Say, Fun, Chains
-from utils import Price, EveUtils
-from wh import Wormhole
+from .fun import Say, Fun, Chains
+from .utils import Price, EveUtils
+from .wh import Wormhole
 
 
-logger = logging.getLogger("jabberbot")
-logger.setLevel(logging.getLevelName(vmc['loglevel']))
-logger.addHandler(logging.StreamHandler())
+_logger = logging.getLogger("jabberbot")
+_logger.setLevel(logging.getLevelName(vmc['loglevel']))
+_logger.addHandler(logging.StreamHandler())
 
 
 class MUCJabberBot(JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
-    max_chat_chars = 2000
+    MAX_CHAT_CHARS = 2000
     PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
@@ -86,19 +86,20 @@ class MUCJabberBot(JabberBot):
         if mess.getType() != "groupchat":
             return
 
+        # Ignore messages from myself in group chats
         if self.get_sender_username(mess) == vmc['jabber']['nickname']:
             return
 
         return super(MUCJabberBot, self).callback_message(conn, mess)
 
-    def longreply(self, mess, text, forcePM=False, receiver=None):
+    def longreply(self, mess, text, forcePM=False, username=None):
         # FIXME: this should be integrated into the default send,
         # forcepm should be part of botcmd
         server = vmc['jabber']['username'].split('@')[1]
-        receiver = receiver or self.get_uname_from_mess(mess)
+        username = username or self.get_uname_from_mess(mess)
 
-        if len(text) > self.max_chat_chars or forcePM:
-            self.send("{}@{}".format(receiver, server), text)
+        if len(text) > self.MAX_CHAT_CHARS or forcePM:
+            self.send("{}@{}".format(username, server), text)
             return True
         else:
             return False
@@ -107,17 +108,16 @@ class MUCJabberBot(JabberBot):
     def help(self, mess, args):
         reply = super(MUCJabberBot, self).help(mess, args)
 
+        # Fix multiline docstring indentation (not compliant to PEP 257)
+        reply = '\n'.join([line.lstrip() for line in reply.splitlines()])
+
         if not args:
             self.longreply(mess, reply, forcePM=True)
             return "Private message sent"
+        elif self.longreply(mess, reply):
+            return "Private message sent"
         else:
-            # Fix multiline docstring indentation (not compliant to PEP 257)
-            reply = '\n'.join([line.lstrip() for line in reply.splitlines()])
-
-            if self.longreply(mess, reply):
-                return "Private message sent"
-            else:
-                return reply
+            return reply
 
 
 class TimeoutError(Exception):
@@ -253,13 +253,15 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
         reply = super(VMBot, self).callback_message(conn, mess)
 
         # See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
-        fromHist = "urn:xmpp:delay" in mess.getProperties()
+        if "urn:xmpp:delay" in mess.getProperties():
+            return reply
 
         message = mess.getBody()
         room = mess.getFrom().getStripped()
 
-        if message and self.get_sender_username(mess) != vmc['jabber']['nickname'] and not fromHist:
-            if self.pubbieRegex.search(message) is not None and room == vmc['jabber']['chatroom1']:
+        if message and self.get_sender_username(mess) != vmc['jabber']['nickname']:
+            if (self.pubbieRegex.search(message) is not None and
+                    room == vmc['jabber']['chatrooms'][0]):
                 self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
 
@@ -293,10 +295,10 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
             reply.replace('\n', '</font><br/><font face="monospace">')
         )
 
-        if len(reply) > self.max_chat_chars:
-            return "I've evaluated your expression but it's too long to send in a groupchat"
-
-        return reply
+        if self.longreply(mess, reply):
+            return "Private message sent"
+        else:
+            return reply
 
     @botcmd
     def convert(self, mess, args):
@@ -475,7 +477,6 @@ if __name__ == "__main__":
     # Grabbing values from imported config file
     jbc = vmc['jabber']
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], kmFeed=True, newsFeed=True)
-    morgooglie.muc_join_room(jbc['chatroom1'], jbc['nickname'])
-    morgooglie.muc_join_room(jbc['chatroom2'], jbc['nickname'])
-    morgooglie.muc_join_room(jbc['chatroom3'], jbc['nickname'])
+    for room in jbc['chatrooms']:
+        morgooglie.muc_join_room(room, jbc['nickname'])
     morgooglie.serve_forever()

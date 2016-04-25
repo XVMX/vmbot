@@ -1,10 +1,12 @@
-from jabberbot import botcmd
+from .jabberbot import botcmd
 
 from os import path
 import random
 
 import requests
 from bs4 import BeautifulSoup
+
+from .data import EMOTES
 
 
 class Say(object):
@@ -63,9 +65,6 @@ class Say(object):
         "Oh d{}d",
         "D{}d, never go full retart!"
     ]
-    chaseisms = [
-        "would you PLEASE"
-    ]
     kairkisms = [
         "thanks for filling this out.",
         "voting on your application to join VM is over, and you have passed.",
@@ -118,7 +117,7 @@ class Say(object):
         if args.startswith(self.chasesay._jabberbot_command_name):
             return "nope"
         sender = args.strip() if args else self.get_sender_username(mess)
-        return "{}, {}".format(sender, self.chaseisms[0])
+        return "{}, would you PLEASE".format(sender)
 
     @botcmd
     def kairksay(self, mess, args):
@@ -173,7 +172,7 @@ class Fun(object):
     @botcmd
     def rtd(self, mess, args):
         """Like a box of chocolates, you never know what you're gonna get"""
-        with open(path.join(path.dirname(__file__), "data", "emotes.txt"), 'r') as emotesFile:
+        with open(EMOTES, 'r') as emotesFile:
             emotes = emotesFile.read().split('\n')
 
         while not emotes.pop(0).startswith("[default]"):

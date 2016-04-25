@@ -1,15 +1,21 @@
-from jabberbot import botcmd
+from .jabberbot import botcmd
 
 from os import path
 import shlex
 import sqlite3
 
+from .data import WH_DB, STATICDATA_DB
+
+
+class DBError(Exception):
+    pass
+
 
 class Wormhole(object):
-    wh_version = 2
+    WH_VERSION = 2
 
     def __db_connection(self):
-        conn = sqlite3.connect(path.join(path.dirname(__file__), "data", "wh.sqlite"))
+        conn = sqlite3.connect(WH_DB)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -19,7 +25,7 @@ class Wormhole(object):
         conn.execute(
             """CREATE TABLE IF NOT EXISTS metadata (
                  type TEXT NOT NULL UNIQUE,
-                 value INTEGER NOT NULL
+                 value TEXT NOT NULL
                );"""
         )
 
@@ -28,13 +34,13 @@ class Wormhole(object):
                FROM metadata
                WHERE type = "version";"""
         ).fetchall()
-        if res and res[0][0] != self.wh_version:
-            return "Tell {} to update the WH database!".format(", ".join(self.admins))
+        if res and int(res[0][0]) != self.WH_VERSION:
+            raise DBError("Tell {} to update the WH database!".format(", ".join(self.admins)))
 
         conn.execute(
             """INSERT OR REPLACE INTO metadata
                VALUES ("version", :version);""",
-            {'version': self.wh_version}
+            {'version': self.WH_VERSION}
         )
         conn.execute(
             """CREATE TABLE IF NOT EXISTS connections (
@@ -52,7 +58,7 @@ class Wormhole(object):
 
     @botcmd
     def wh(self, mess, args):
-        """list - Shows all WH connections
+        """list - Shows all WH connections (equivalent to filter TTL 0)
 
         filter "<type>" "<value>" - Filters the list of available WH connections
         |-> type: Either "system" or "TTL"
@@ -60,26 +66,26 @@ class Wormhole(object):
         add "<src>" "<src-sig>" "<dest>" "<dest-sig>" "<TTL>" - Adds a new connection
         |-> src/dest: Source/destination systems the WH connects
         |-> src-sig/dest-sig: Signature-IDs in the source/destination systems (eg WQG-828)
-        +-> TTL: Approximate amount of hours left before the WH closes
+        +-> TTL: Approximate number of hours left before the WH closes
         stats - Shows a list of scanners and how many WHs they have scanned during the last 30 days
         """
-        args = shlex.split(args.strip())
-        if args:
-            cmd = args.pop(0).upper()
+        argsList = shlex.split(args)
+        if argsList:
+            cmd = argsList.pop(0).upper()
         else:
             return "Requires one of list, filter, add or stats as an argument"
-        argc = len(args)
+        argc = len(argsList)
 
         if cmd == "LIST" and argc == 0:
             return self.wh_list(mess)
         elif cmd == "FILTER" and argc == 2:
-            return self.wh_filter(mess, args[0].upper(), args[1].upper())
+            return self.wh_filter(mess, *argsList)
         elif cmd == "ADD" and argc == 5:
-            return self.wh_add(mess, args[0], args[1], args[2], args[3], int(args[4]))
+            return self.wh_add(mess, *argsList)
         elif cmd == "STATS" and argc == 0:
             return self.wh_stats(mess)
         else:
-            return "wh {} is not an accepted command".format(' '.join(args))
+            return "wh {} is not an accepted command".format(args)
 
     def _getActiveConnections(self):
         return self.__db_connection().execute(
@@ -113,6 +119,13 @@ class Wormhole(object):
         return "No connections found"
 
     def wh_filter(self, mess, filterType, filterVal):
+        filterType, filterVal = filterType.upper(), filterVal.upper()
+        if filterType == "TTL":
+            try:
+                filterVal = float(filterVal)
+            except:
+                return "value must be a floating point number when used with TTL"
+
         try:
             data = self._getActiveConnections()
         except sqlite3.OperationalError:
@@ -136,22 +149,30 @@ class Wormhole(object):
             })
 
         if filterType == "TTL":
-            filteredConnections = [wh for wh in allConnections if wh['TTL'] >= float(filterVal)]
-        else:
+            filteredConnections = [wh for wh in allConnections if wh['TTL'] >= filterVal]
+        elif filterType == "SYSTEM":
             filteredConnections = [wh for wh in allConnections
                                    if filterVal in (wh['SRC-System'].upper(),
                                                     wh['SRC-Region'].upper(),
                                                     wh['DEST-System'].upper(),
                                                     wh['DEST-Region'].upper())]
+        else:
+            filteredConnections = allConnections
 
         return self.wh_list(mess, filteredConnections)
 
     def wh_add(self, mess, src, srcSIG, dest, destSIG, TTL):
-        res = self.__create_db_schema()
-        if res:
-            return res
+        try:
+            TTL = float(TTL)
+        except ValueError:
+            return "TTL must be a floating point number"
 
-        conn = sqlite3.connect(path.join(path.dirname(__file__), "data", "staticdata.sqlite"))
+        try:
+            self.__create_db_schema()
+        except DBError as e:
+            return str(e)
+
+        conn = sqlite3.connect(STATICDATA_DB)
         srcSystems = conn.execute(
             """SELECT solarSystemID, solarSystemName
                FROM mapSolarSystems
@@ -177,7 +198,7 @@ class Wormhole(object):
         conn.execute(
             """INSERT INTO `connections` (SRC, `SRC-SIG`, DEST, `DEST-SIG`, expiry, author)
                VALUES (:srcID, :srcSIG, :destID, :destSIG,
-                       DATETIME("now", "+{} hours"), :author);""".format(TTL),
+                       DATETIME("now", "{:+} hours"), :author);""".format(TTL),
             {'srcID': srcSystems[0][0], 'srcSIG': srcSIG,
              'destID': destSystems[0][0], 'destSIG': destSIG,
              'author': self.get_uname_from_mess(mess)}
@@ -203,6 +224,7 @@ class Wormhole(object):
         if not data:
             return "No connections were added during the last month"
 
-        stats = ["{}: {} WHs".format(scanner['author'], scanner['scannedWHs']) for scanner in data]
+        stats = ["{}: {} WH(s)".format(scanner['author'], scanner['scannedWHs'])
+                 for scanner in data]
 
         return "<br />".join(stats)
