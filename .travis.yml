@@ -13,6 +13,7 @@ script:
    - pep8 --max-line-length=100 --exclude=jabberbot.py ./vmbot/
    - pep8 --max-line-length=100 ./test/
    - coverage run --source=vmbot --omit=vmbot/jabberbot.py -m unittest discover
-   - coverage report -m
 after_success:
    - coveralls
+after_script:
+   - coverage report -m
