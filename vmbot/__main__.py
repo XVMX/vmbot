@@ -14,6 +14,7 @@
 
 
 import logging
+from datetime import datetime
 
 from .config import config as vmc
 
@@ -21,9 +22,10 @@ from .vmbot import VMBot
 
 
 if __name__ == "__main__":
+    logfile = "{:%Y-%m-%d_%H%M}.vmbot.log".format(datetime.now())
     logger = logging.getLogger(".jabberbot")
     logger.setLevel(logging.getLevelName(vmc['loglevel']))
-    logger.addHandler(logging.StreamHandler())
+    logger.addHandler(logging.FileHandler(logfile, encoding="utf-8"))
 
     # Grabbing values from imported config file
     jbc = vmc['jabber']
