@@ -3,7 +3,7 @@ import mock
 
 import os
 
-from vmbot.data import WH_DB
+from vmbot.helpers.files import WH_DB
 
 from vmbot.wh import Wormhole
 from vmbot.utils import EveUtils

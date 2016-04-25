@@ -1,7 +1,7 @@
 from os import path
 from ConfigParser import SafeConfigParser
 
-from .data import CONFIG
+from .helpers.files import CONFIG
 
 
 _parser = SafeConfigParser()

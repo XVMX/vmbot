@@ -6,7 +6,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 
-from .data import EMOTES
+from .helpers.files import EMOTES
 
 
 class Say(object):

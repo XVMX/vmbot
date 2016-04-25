@@ -4,7 +4,7 @@ from os import path
 import shlex
 import sqlite3
 
-from .data import WH_DB, STATICDATA_DB
+from .helpers.files import WH_DB, STATICDATA_DB
 
 
 class DBError(Exception):

@@ -7,7 +7,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from vmbot.data import EMOTES
+from vmbot.helpers.files import EMOTES
 
 from vmbot.fun import Fun
 

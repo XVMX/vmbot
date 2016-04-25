@@ -11,7 +11,7 @@ import sqlite3
 import requests
 
 from .config import config as vmc
-from .data import STATICDATA_DB, CACHE_DB
+from .helpers.files import STATICDATA_DB, CACHE_DB
 
 
 class ISK(float):
