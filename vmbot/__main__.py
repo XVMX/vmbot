@@ -23,7 +23,7 @@ from .vmbot import VMBot
 
 if __name__ == "__main__":
     logfile = "{:%Y-%m-%d_%H%M}.vmbot.log".format(datetime.now())
-    logger = logging.getLogger(".jabberbot")
+    logger = logging.getLogger("vmbot.jabberbot")
     logger.setLevel(logging.getLevelName(vmc['loglevel']))
     logger.addHandler(logging.FileHandler(logfile, encoding="utf-8"))
 
