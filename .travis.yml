@@ -4,5 +4,15 @@ python:
 sudo: false
 install:
    - pip install pep8
+   - pip install -r ./requirements.txt
+   - pip install -r ./test/requirements.txt
+   - pip install coveralls
+before_script:
+   - cp ./vmbot/data/vmbot_example.cfg ./vmbot/data/vmbot.cfg
 script:
-   - pep8 --max-line-length=100 --exclude=jabberbot.py vmbot/
+   - pep8 --max-line-length=100 --exclude=jabberbot.py ./vmbot/
+   - pep8 --max-line-length=100 ./test/
+   - coverage run --source=vmbot --omit=vmbot/jabberbot.py -m unittest discover
+   - coverage report -m
+after_success:
+   - coveralls

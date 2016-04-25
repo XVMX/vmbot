@@ -1,4 +1,5 @@
 *.py[cod]
+.coverage
 nohup.out
 info.vmbot.log
 err.vmbot.log
