@@ -66,7 +66,7 @@ class Wormhole(object):
         add "<src>" "<src-sig>" "<dest>" "<dest-sig>" "<TTL>" - Adds a new connection
         |-> src/dest: Source/destination systems the WH connects
         |-> src-sig/dest-sig: Signature-IDs in the source/destination systems (eg WQG-828)
-        +-> TTL: Approximate number of hours left before the WH closes
+        +-> TTL: Minimum number of hours left before the WH closes
         stats - Shows a list of scanners and how many WHs they have scanned during the last 30 days
         """
         argsList = shlex.split(args)
