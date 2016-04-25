@@ -1,3 +1,3 @@
 vmbot.cfg
-wh.sqlite
-api.cache
+wh.db
+cache.db
