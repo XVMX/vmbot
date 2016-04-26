@@ -49,10 +49,6 @@ class TestSay(unittest.TestCase):
         self.assertEqual(self.say.chasesay(self.defaultMess, testArg),
                          "{}, would you PLEASE".format(testArg))
 
-    def test_chasesay_self(self):
-        testArg = "chasesay"
-        self.assertEqual(self.say.chasesay(self.defaultMess, testArg), "nope")
-
     def test_kairksay_noargs(self):
         self.assertIn(self.say.kairksay(self.defaultMess, self.defaultArgs),
                       ["{}, {} -Kairk".format(self.defaultMess, line) for line in Say.kairkisms])

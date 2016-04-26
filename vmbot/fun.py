@@ -113,8 +113,6 @@ class Say(object):
     @botcmd
     def chasesay(self, mess, args):
         """Please"""
-        if args.startswith(self.chasesay._jabberbot_command_name):
-            return "nope"
         sender = args.strip() if args else self.get_sender_username(mess)
         return "{}, would you PLEASE".format(sender)
 
