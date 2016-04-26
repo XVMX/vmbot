@@ -40,10 +40,6 @@ class TestUtils(unittest.TestCase):
              'regionID': 0, 'regionName': "{Failed to load}"}
         )
 
-    def test_formatTickers(self):
-        self.assertEqual(self.utils.formatTickers("CORP", "ALLIANCE"),
-                         "[CORP] <span>&lt;ALLIANCE&gt;</span>")
-
 
 if __name__ == "__main__":
     unittest.main()
