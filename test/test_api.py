@@ -26,6 +26,22 @@ class TestAPI(unittest.TestCase):
              'regionID': 0, 'regionName': "{Failed to load}"}
         )
 
+    def test_getTickers(self):
+        # corporationID: 2052404106 [XVMX]
+        # allianceID: 1354830081 <CONDI>
+        self.assertTupleEqual(api.getTickers(2052404106, 1354830081), ("XVMX", "CONDI"))
+
+    def test_getTickers_corponly(self):
+        # corporationID: 2052404106 [XVMX] (member of <CONDI>)
+        self.assertTupleEqual(api.getTickers(2052404106, None), ("XVMX", "CONDI"))
+
+    def test_getTickers_allianceonly(self):
+        # allianceID: 1354830081 <CONDI>
+        self.assertTupleEqual(api.getTickers(None, 1354830081), (None, "CONDI"))
+
+    def test_getTickers_invalidid(self):
+        self.assertTupleEqual(api.getTickers(-1, -1), ("{Failed to load}", "{Failed to load}"))
+
 
 if __name__ == "__main__":
     unittest.main()
