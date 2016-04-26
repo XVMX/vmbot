@@ -139,8 +139,8 @@ class TestPrice(unittest.TestCase):
     def test_getPriceVolume_noorders(self, mockCRESTEndpoint):
         # The Forge
         regionID = 10000002
-        # Tritanium
-        itemTypeID = 34
+        # Pyerite
+        itemTypeID = 35
 
         res = self.price._getPriceVolume("buy", regionID, "Jita", itemTypeID)
         self.assertEqual(res[0], 0)
@@ -150,8 +150,8 @@ class TestPrice(unittest.TestCase):
     def test_getPriceVolume_RequestException(self, mockRequests):
         # The Forge
         regionID = 10000002
-        # Tritanium
-        itemTypeID = 34
+        # Mexallon
+        itemTypeID = 36
 
         self.assertRaisesRegexp(APIError, "Error while connecting to CREST: TestException",
                                 self.price._getPriceVolume, "sell", regionID, "Jita", itemTypeID)
@@ -159,8 +159,8 @@ class TestPrice(unittest.TestCase):
     def test_getPriceVolume_flawedResponse(self):
         # The Forge
         regionID = 10000002
-        # Tritanium
-        itemTypeID = 34
+        # Isogen
+        itemTypeID = 37
 
         def flawed_response(*args, **kwargs):
             class Object(object):
