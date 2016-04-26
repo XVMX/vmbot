@@ -521,7 +521,7 @@ class EveUtils(object):
 
     def newsFeed(self):
         """Send a message to the first chatroom with the latest EVE news and devblogs."""
-        def getCCPFeed(feedType):
+        def getFeed(feedType):
             """Find all new Atom entries available at feedType.
 
             feedType must be either "news" or "devblog".
@@ -566,11 +566,11 @@ class EveUtils(object):
         newsEntries = None
         devblogEntries = None
         try:
-            newsEntries = getCCPFeed("news")
+            newsEntries = getFeed("news")
         except:
             pass
         try:
-            devblogEntries = getCCPFeed("devblog")
+            devblogEntries = getFeed("devblog")
         except:
             pass
 
