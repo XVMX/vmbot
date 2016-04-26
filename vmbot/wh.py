@@ -18,12 +18,10 @@ class Wormhole(object):
         conn.row_factory = sqlite3.Row
         return conn
 
-    def __create_db_schema(self):
-        conn = self.__db_connection()
-
+    def __db_schema(self, conn):
         conn.execute(
             """CREATE TABLE IF NOT EXISTS metadata (
-                 type TEXT NOT NULL UNIQUE,
+                 key TEXT NOT NULL PRIMARY KEY,
                  value TEXT NOT NULL
                );"""
         )
@@ -31,10 +29,11 @@ class Wormhole(object):
         res = conn.execute(
             """SELECT value
                FROM metadata
-               WHERE type = "version";"""
+               WHERE key = "version";"""
         ).fetchall()
         if res and int(res[0][0]) != self.WH_VERSION:
             raise DBError("Tell {} to update the WH database!".format(", ".join(self.admins)))
+        conn.commit()
 
         conn.execute(
             """INSERT OR REPLACE INTO metadata
@@ -166,25 +165,26 @@ class Wormhole(object):
         except ValueError:
             return "TTL must be a floating point number"
 
+        conn = self.__db_connection()
         try:
-            self.__create_db_schema()
+            self.__db_schema(conn)
         except DBError as e:
             return str(e)
 
-        conn = sqlite3.connect(STATICDATA_DB)
-        srcSystems = conn.execute(
+        staticdata = sqlite3.connect(STATICDATA_DB)
+        srcSystems = staticdata.execute(
             """SELECT solarSystemID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name;""",
             {'name': "%{}%".format(src)}
         ).fetchall()
-        destSystems = conn.execute(
+        destSystems = staticdata.execute(
             """SELECT solarSystemID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name;""",
             {'name': "%{}%".format(dest)}
         ).fetchall()
-        conn.close()
+        staticdata.close()
 
         if not srcSystems or not destSystems:
             return "Can't find matching systems!"
@@ -193,7 +193,6 @@ class Wormhole(object):
         srcSystems.sort(cmp=lambda x, y: cmp(len(x), len(y)), key=lambda x: x[1])
         destSystems.sort(cmp=lambda x, y: cmp(len(x), len(y)), key=lambda x: x[1])
 
-        conn = self.__db_connection()
         conn.execute(
             """INSERT INTO `connections` (SRC, `SRC-SIG`, DEST, `DEST-SIG`, expiry, author)
                VALUES (:srcID, :srcSIG, :destID, :destSIG,
