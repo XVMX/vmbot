@@ -6,7 +6,6 @@ import os
 from vmbot.helpers.files import WH_DB
 
 from vmbot.wh import Wormhole
-from vmbot.utils import EveUtils
 
 
 class TestWormhole(unittest.TestCase):
@@ -20,8 +19,6 @@ class TestWormhole(unittest.TestCase):
                                                            side_effect=lambda arg: arg)
         # Mock self.admins
         self.wormhole.admins = ["Admin"]
-        # Dependency hack
-        self.wormhole.getSolarSystemData = EveUtils().getSolarSystemData
 
     def tearDown(self):
         del self.wormhole

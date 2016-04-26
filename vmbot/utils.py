@@ -2,8 +2,7 @@ from .jabberbot import botcmd
 
 import time
 from datetime import datetime, timedelta
-from calendar import timegm
-from os import path
+import re
 import json
 import xml.etree.ElementTree as ET
 import sqlite3
@@ -11,26 +10,21 @@ import sqlite3
 import requests
 
 from .config import config as vmc
-from .helpers.files import STATICDATA_DB, CACHE_DB
+from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
 from .helpers.types import ISK
 
+from .helpers import api
 from .helpers.format import formatTickers
+from .helpers import cache
 
 
 class Price(object):
     def _getPriceVolume(self, orderType, region, system, item):
         url = "https://public-crest.eveonline.com/market/{}/orders/{}/".format(region, orderType)
-        url += "?type=https://public-crest.eveonline.com/types/{}/".format(item)
+        type_ = "https://public-crest.eveonline.com/types/{}/".format(item)
 
-        try:
-            r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
-        except requests.exceptions.RequestException as e:
-            raise APIError("Error while connecting to CREST: {}".format(e))
-        if r.status_code != 200:
-            raise APIError("CREST returned error code {}".format(r.status_code))
-
-        res = r.json()
+        res = api.getCRESTEndpoint(url, params={'type': type_}, timeout=5)
 
         orders = [order for order in res['items'] if order['location']['name'].startswith(system)]
         volume = sum([order['volume'] for order in orders])
@@ -125,126 +119,6 @@ class Price(object):
 
 
 class EveUtils(object):
-    cache_version = 3
-
-    def getTypeName(self, typeID):
-        """Resolve a typeID to its name."""
-        conn = sqlite3.connect(STATICDATA_DB)
-        items = conn.execute(
-            """SELECT typeID, typeName
-               FROM invTypes
-               WHERE typeID = :id;""",
-            {'id': typeID}
-        ).fetchall()
-        conn.close()
-
-        if not items:
-            return "{Failed to load}"
-        return items[0][1]
-
-    def getSolarSystemData(self, solarSystemID):
-        """Resolve a solarSystemID to its data."""
-        conn = sqlite3.connect(STATICDATA_DB)
-        systems = conn.execute(
-            """SELECT solarSystemID, solarSystemName,
-                      mapSolarSystems.constellationID, constellationName,
-                      mapSolarSystems.regionID, regionName
-               FROM mapSolarSystems
-               INNER JOIN mapConstellations
-                 ON mapConstellations.constellationID = mapSolarSystems.constellationID
-               INNER JOIN mapRegions
-                 ON mapRegions.regionID = mapSolarSystems.regionID
-               WHERE solarSystemID = :id;""",
-            {'id': solarSystemID}
-        ).fetchall()
-        conn.close()
-
-        if not systems:
-            return {'solarSystemID': 0, 'solarSystemName': "{Failed to load}",
-                    'constellationID': 0, 'constellationName': "{Failed to load}",
-                    'regionID': 0, 'regionName': "{Failed to load}"}
-        return {'solarSystemID': systems[0][0], 'solarSystemName': systems[0][1],
-                'constellationID': systems[0][2], 'constellationName': systems[0][3],
-                'regionID': systems[0][4], 'regionName': systems[0][5]}
-
-    def getEVEXMLEndpoint(self, url, timeout, data=dict()):
-        """Parse XML document associated with EVE XML-API url."""
-        cached = self.getCache(url, params=data)
-        if not cached:
-            try:
-                r = requests.post(url, data=data, headers={'User-Agent': "XVMX JabberBot"},
-                                  timeout=timeout)
-            except requests.exceptions.RequestException as e:
-                raise APIError("Error while connecting to XML-API: {}".format(e))
-            if r.status_code != 200:
-                raise APIError("XML-API returned error code {}".format(r.status_code))
-
-            xml = ET.fromstring(r.content)
-            self.setCache(
-                url, doc=r.content,
-                expiry=int(timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S"))),
-                params=data
-            )
-        else:
-            xml = ET.fromstring(cached)
-
-        return xml
-
-    def getTickers(self, corporationID, allianceID):
-        """Resolve corpID/allianceID to their respective ticker(s)."""
-        # Corp ticker
-        corpTicker = None
-        if corporationID:
-            corpTicker = "{Failed to load}"
-            try:
-                xml = self.getEVEXMLEndpoint(
-                    "https://api.eveonline.com/corp/CorporationSheet.xml.aspx", 3,
-                    {'corporationID': corporationID}
-                )
-
-                corpTicker = str(xml[1].find("ticker").text)
-                allianceID = allianceID or int(xml[1].find("allianceID").text) or None
-            except:
-                pass
-
-        # Alliance ticker
-        allianceTicker = None
-        if allianceID:
-            allianceTicker = "{Failed to load}"
-            try:
-                url = "https://api.eveonline.com/eve/AllianceList.xml.aspx"
-                cached = self.getCache(url)
-                if not cached:
-                    r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
-                    if r.status_code != 200:
-                        raise APIError("XML-API returned error code {}".format(r.status_code))
-
-                    xml = ET.fromstring(r.content)
-                    self.AllianceList = xml
-                    self.setCache(
-                        url, doc=r.content,
-                        expiry=int(timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S")))
-                    )
-                elif not hasattr(self, 'AllianceList'):
-                    self.AllianceList = ET.fromstring(cached)
-
-                node = self.AllianceList[1][0].find("*[@allianceID='{}']".format(allianceID))
-                allianceTicker = node.attrib['shortName']
-            except:
-                pass
-
-        return (corpTicker, allianceTicker)
-
-    def formatTickers(self, corporationTicker, allianceTicker):
-        "Format ticker(s) like the EVE client does."
-        ticker = ""
-        if corporationTicker:
-            ticker += "[{}] ".format(corporationTicker)
-        if allianceTicker:
-            # Wrapped in <span></span> to force XHTML parsing
-            ticker += "<span>&lt;{}&gt;</span> ".format(allianceTicker)
-        return ticker[:-1]
-
     @botcmd
     def character(self, mess, args):
         """<character name>[, ...] - Displays employment information of character(s)"""
@@ -256,8 +130,8 @@ class EveUtils(object):
             return "Please limit your search to 10 characters at most"
 
         try:
-            xml = self.getEVEXMLEndpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx", 3,
-                                         {'names': ','.join(args)})
+            xml = api.postXMLEndpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx",
+                                      data={'names': ','.join(args)})
         except APIError as e:
             return str(e)
 
@@ -268,9 +142,9 @@ class EveUtils(object):
             return "None of these character(s) exist"
 
         try:
-            xml = self.getEVEXMLEndpoint(
-                "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx", 5,
-                {'ids': ','.join(map(str, charIDs))}
+            xml = api.postXMLEndpoint(
+                "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
+                data={'ids': ','.join(map(str, charIDs))}, timeout=5
             )
         except APIError as e:
             return str(e)
@@ -282,7 +156,7 @@ class EveUtils(object):
             corpName = row.attrib['corporationName']
             allianceName = row.attrib['allianceName']
             factionName = row.attrib['factionName']
-            corpTicker, allianceTicker = self.getTickers(int(row.attrib['corporationID']), None)
+            corpTicker, allianceTicker = api.getTickers(int(row.attrib['corporationID']), None)
 
             charDescription = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
                 charName, corpName, formatTickers(corpTicker, None)
@@ -319,9 +193,9 @@ class EveUtils(object):
 
         corpIDs = list({int(corp['corporation_id']) for corp in res['history'][-10:]})
         try:
-            xml = self.getEVEXMLEndpoint(
+            xml = api.postXMLEndpoint(
                 "https://api.eveonline.com/eve/CharacterName.xml.aspx",
-                3, {'ids': ','.join(map(str, corpIDs))}
+                data={'ids': ','.join(map(str, corpIDs))}
             )
         except APIError as e:
             return "{}<br/>Error while loading corp history: {}".format(reply, e)
@@ -329,7 +203,7 @@ class EveUtils(object):
         corps = {}
         for row in xml[1][0]:
             corpID = row.attrib['characterID']
-            corpTicker, allianceTicker = self.getTickers(corpID, None)
+            corpTicker, allianceTicker = api.getTickers(corpID, None)
             corps[corpID] = {'corpName': row.attrib['name'], 'corpTicker': corpTicker}
 
         for corpRecord in res['history'][-10:]:
@@ -362,8 +236,7 @@ class EveUtils(object):
             pass
 
         try:
-            xml = self.getEVEXMLEndpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx",
-                                         3)
+            xml = api.postXMLEndpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx")
             if xml[1][0].text == "True":
                 reply += "\nThe server is online and {} players are playing".format(xml[1][1].text)
             else:
@@ -386,7 +259,7 @@ class EveUtils(object):
         compact = len(args) == 2
 
         url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
-        cached = self.getCache(url)
+        cached = cache.getHTTP(url)
         if not cached:
             try:
                 r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
@@ -396,7 +269,9 @@ class EveUtils(object):
                 return "zKB-API returned error code {}".format(r.status_code)
 
             killdata = r.json()
-            self.setCache(url, doc=r.text, expiry=int(time.time() + 24 * 60 * 60))
+            cacheSec = int(re.search("(?:public|private).+max-age=(\d+)",
+                                     r.headers['Cache-Control']).group(1))
+            cache.setHTTP(url, doc=r.text, expiry=int(time.time() + cacheSec))
         else:
             killdata = json.loads(cached)
 
@@ -404,14 +279,14 @@ class EveUtils(object):
             return "Failed to find a killmail for {}".format(regex.group(0))
 
         victim = killdata[0]['victim']
-        solarSystemData = self.getSolarSystemData(killdata[0]['solarSystemID'])
+        solarSystemData = api.getSolarSystemData(killdata[0]['solarSystemID'])
         attackers = killdata[0]['attackers']
-        corpTicker, allianceTicker = self.getTickers(victim['corporationID'], victim['allianceID'])
+        corpTicker, allianceTicker = api.getTickers(victim['corporationID'], victim['allianceID'])
 
         reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] or victim['corporationName'],
             formatTickers(corpTicker, allianceTicker),
-            self.getTypeName(victim['shipTypeID']),
+            api.getTypeName(victim['shipTypeID']),
             ISK(killdata[0]['zkb']['totalValue']),
             solarSystemData['solarSystemName'],
             solarSystemData['regionName'],
@@ -445,7 +320,7 @@ class EveUtils(object):
                             'corporationID': char['corporationID'],
                             'corporationName': char['corporationName'],
                             'damageDone': char['damageDone'],
-                            'shipTypeName': self.getTypeName(char['shipTypeID']),
+                            'shipTypeName': api.getTypeName(char['shipTypeID']),
                             'finalBlow': bool(char['finalBlow'])} for char in attackers]
         # Sort after inflicted damage
         attackerDetails.sort(key=lambda x: x['damageDone'], reverse=True)
@@ -454,7 +329,7 @@ class EveUtils(object):
         detailedInfo = "<b>{}</b> {} (<b>{}</b>) inflicted <b>{:,} damage</b> "
         detailedInfo += "(<i>{:,.2%} of total damage</i>)"
         for char in attackerDetails[:5]:
-            corpTicker, allianceTicker = self.getTickers(char['corporationID'], None)
+            corpTicker, allianceTicker = api.getTickers(char['corporationID'], None)
 
             reply += "<br />"
             reply += detailedInfo.format(char['characterName'] or char['corporationName'],
@@ -466,7 +341,7 @@ class EveUtils(object):
         # Add final blow if not already included
         if "final blow" not in reply:
             char = [char for char in attackerDetails if char['finalBlow']][0]
-            corpTicker, allianceTicker = self.getTickers(char['corporationID'], None)
+            corpTicker, allianceTicker = api.getTickers(char['corporationID'], None)
 
             reply += "<br />"
             reply += detailedInfo.format(char['characterName'] or char['corporationName'],
@@ -499,12 +374,12 @@ class EveUtils(object):
         reply = "{} new loss(es):".format(len(losses))
         for loss in reversed(losses):
             victim = loss['victim']
-            solarSystemData = self.getSolarSystemData(loss['solarSystemID'])
+            solarSystemData = api.getSolarSystemData(loss['solarSystemID'])
 
             reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
                 victim['characterName'] or victim['corporationName'],
                 formatTickers("XVMX", "CONDI"),
-                self.getTypeName(victim['shipTypeID']),
+                api.getTypeName(victim['shipTypeID']),
                 ISK(loss['zkb']['totalValue']),
                 solarSystemData['solarSystemName'],
                 solarSystemData['regionName'],
@@ -601,90 +476,3 @@ class EveUtils(object):
                 pass
 
         return "<br />".join(results)
-
-    def getCache(self, path, params=dict()):
-        conn = sqlite3.connect(CACHE_DB)
-        conn.text_factory = str
-
-        try:
-            if not params:
-                res = conn.execute(
-                    """SELECT response
-                       FROM cache
-                       WHERE path = :path
-                         AND expiry > :expiry;""",
-                    {'path': path, 'expiry': time.time()}
-                ).fetchall()
-            else:
-                res = conn.execute(
-                    """SELECT response
-                       FROM cache
-                       WHERE path = :path
-                         AND params = :params
-                         AND expiry > :expiry;""",
-                    {'path': path, 'params': json.dumps(params), 'expiry': int(time.time())}
-                ).fetchall()
-        except:
-            conn.close()
-            return None
-
-        conn.close()
-        return res[0][0] if len(res) == 1 else None
-
-    def setCache(self, path, doc, expiry, params=dict()):
-        conn = sqlite3.connect(CACHE_DB)
-        conn.text_factory = str
-
-        conn.execute(
-            """CREATE TABLE IF NOT EXISTS metadata (
-                 type TEXT NOT NULL UNIQUE,
-                 value INTEGER NOT NULL
-               );"""
-        )
-
-        res = conn.execute(
-            """SELECT value
-               FROM metadata
-               WHERE type = "version";"""
-        ).fetchall()
-        if res and res[0][0] < self.cache_version:
-            conn.execute("DROP TABLE cache;")
-        conn.commit()
-
-        conn.execute(
-            """INSERT OR REPLACE INTO metadata
-               VALUES ("version", :version);""",
-            {'version': self.cache_version}
-        )
-        conn.execute(
-            """CREATE TABLE IF NOT EXISTS cache (
-                 path TEXT NOT NULL,
-                 params TEXT,
-                 response TEXT NOT NULL,
-                 expiry INTEGER NOT NULL,
-                 CONSTRAINT Query UNIQUE (path, params)
-               );"""
-        )
-        conn.execute(
-            """DELETE FROM cache
-               WHERE expiry <= :expiry;""",
-            {'expiry': int(time.time())}
-        )
-        conn.commit()
-
-        if not params:
-            conn.execute(
-                """INSERT INTO cache
-                   VALUES (:path, "", :response, :expiry);""",
-                {'path': path, 'response': doc, 'expiry': expiry}
-            )
-        else:
-            conn.execute(
-                """INSERT INTO cache
-                   VALUES (:path, :params, :response, :expiry);""",
-                {'path': path, 'params': json.dumps(params), 'response': doc, 'expiry': expiry}
-            )
-
-        conn.commit()
-        conn.close()
-        return True

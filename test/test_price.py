@@ -135,8 +135,8 @@ class TestPrice(unittest.TestCase):
         self.assertIsInstance(res[0], int)
         self.assertIsInstance(res[1], float)
 
-    @mock.patch("requests.Response.json", return_value={'items': []})
-    def test_getPriceVolume_noorders(self, mockResponseJson):
+    @mock.patch("vmbot.helpers.api.getCRESTEndpoint", return_value={'items': []})
+    def test_getPriceVolume_noorders(self, mockCRESTEndpoint):
         # The Forge
         regionID = 10000002
         # Tritanium
@@ -147,7 +147,7 @@ class TestPrice(unittest.TestCase):
         self.assertEqual(res[1], 0)
 
     @mock.patch("requests.get", side_effect=requests.exceptions.RequestException("TestException"))
-    def test_getPriceVolume_RequestException(self, mockGet):
+    def test_getPriceVolume_RequestException(self, mockRequests):
         # The Forge
         regionID = 10000002
         # Tritanium

@@ -7,6 +7,7 @@ import sqlite3
 from .helpers.files import WH_DB, STATICDATA_DB
 from .helpers.exceptions import DBError
 
+from .helpers import api
 
 
 class Wormhole(object):
@@ -103,8 +104,8 @@ class Wormhole(object):
         connections = []
         connectionDetails = "{} ({} | {}) <-> {} ({} | {}) | About {:.0f}h left | Scanned by {}"
         for connection in data:
-            src = self.getSolarSystemData(connection['SRC'])
-            dest = self.getSolarSystemData(connection['DEST'])
+            src = api.getSolarSystemData(connection['SRC'])
+            dest = api.getSolarSystemData(connection['DEST'])
             connections.append(connectionDetails.format(
                 src['solarSystemName'], connection['SRC-SIG'], src['regionName'],
                 dest['solarSystemName'], connection['DEST-SIG'], dest['regionName'],
@@ -131,8 +132,8 @@ class Wormhole(object):
 
         allConnections = []
         for connection in data:
-            src = self.getSolarSystemData(connection['SRC'])
-            dest = self.getSolarSystemData(connection['DEST'])
+            src = api.getSolarSystemData(connection['SRC'])
+            dest = api.getSolarSystemData(connection['DEST'])
             allConnections.append({
                 'SRC': connection['SRC'],
                 'SRC-System': src['solarSystemName'],
