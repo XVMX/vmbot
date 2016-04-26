@@ -5,10 +5,8 @@ import shlex
 import sqlite3
 
 from .helpers.files import WH_DB, STATICDATA_DB
+from .helpers.exceptions import DBError
 
-
-class DBError(Exception):
-    pass
 
 
 class Wormhole(object):

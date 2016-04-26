@@ -5,7 +5,9 @@ import os
 
 import requests
 
-from vmbot.utils import Price, PriceError
+from vmbot.helpers.exceptions import APIError
+
+from vmbot.utils import Price
 
 
 class TestPrice(unittest.TestCase):
@@ -87,8 +89,8 @@ class TestPrice(unittest.TestCase):
             "Can't find a matching system"
         )
 
-    @mock.patch("vmbot.utils.Price._getPriceVolume", side_effect=PriceError("TestException"))
-    def test_price_PriceError(self, mockPriceVolume):
+    @mock.patch("vmbot.utils.Price._getPriceVolume", side_effect=APIError("TestException"))
+    def test_price_APIError(self, mockPriceVolume):
         self.assertEqual(
             self.price.price(self.defaultMess, "Pyerite"),
             "TestException"
@@ -151,7 +153,7 @@ class TestPrice(unittest.TestCase):
         # Tritanium
         itemTypeID = 34
 
-        self.assertRaisesRegexp(PriceError, "Error while connecting to CREST: TestException",
+        self.assertRaisesRegexp(APIError, "Error while connecting to CREST: TestException",
                                 self.price._getPriceVolume, "sell", regionID, "Jita", itemTypeID)
 
     def test_getPriceVolume_flawedResponse(self):
@@ -173,7 +175,7 @@ class TestPrice(unittest.TestCase):
         requestsPatcher = mock.patch("requests.get", side_effect=flawed_response)
         mockRequests = requestsPatcher.start()
 
-        self.assertRaisesRegexp(PriceError, "CREST returned error code 404",
+        self.assertRaisesRegexp(APIError, "CREST returned error code 404",
                                 self.price._getPriceVolume, "sell", regionID, "Jita", itemTypeID)
 
         requestsPatcher.stop()

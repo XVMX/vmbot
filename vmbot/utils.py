@@ -12,11 +12,8 @@ import requests
 
 from .config import config as vmc
 from .helpers.files import STATICDATA_DB, CACHE_DB
+from .helpers.exceptions import APIError
 from .helpers.types import ISK
-
-
-class PriceError(Exception):
-    pass
 
 
 class Price(object):
@@ -27,9 +24,9 @@ class Price(object):
         try:
             r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
         except requests.exceptions.RequestException as e:
-            raise PriceError("Error while connecting to CREST: {}".format(e))
+            raise APIError("Error while connecting to CREST: {}".format(e))
         if r.status_code != 200:
-            raise PriceError("CREST returned error code {}".format(r.status_code))
+            raise APIError("CREST returned error code {}".format(r.status_code))
 
         res = r.json()
 
@@ -105,7 +102,7 @@ class Price(object):
         try:
             sellvolume, sellprice = self._getPriceVolume("sell", regionID, systemName, typeID)
             buyvolume, buyprice = self._getPriceVolume("buy", regionID, systemName, typeID)
-        except PriceError as e:
+        except APIError as e:
             return str(e)
 
         reply = "<b>{}</b> in <b>{}</b>:<br />".format(typeName, systemName)
@@ -123,10 +120,6 @@ class Price(object):
             reply += self._disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply
-
-
-class APIError(Exception):
-    pass
 
 
 class EveUtils(object):

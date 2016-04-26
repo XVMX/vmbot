@@ -18,6 +18,8 @@ import pint
 
 from .config import config as vmc
 
+from .helpers.exceptions import TimeoutError
+
 from .fun import Say, Fun, Chains
 from .utils import Price, EveUtils
 from .wh import Wormhole
@@ -97,10 +99,6 @@ class MUCJabberBot(JabberBot):
             return "Private message sent"
         else:
             return reply
-
-
-class TimeoutError(Exception):
-    pass
 
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
