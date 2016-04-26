@@ -1,4 +1,3 @@
-from os import path
 from ConfigParser import SafeConfigParser
 
 from .helpers.files import CONFIG
