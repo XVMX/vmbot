@@ -1,6 +1,6 @@
 import unittest
 
-from vmbot.utils import ISK
+from vmbot.helpers.types import ISK
 
 
 class TestConfig(unittest.TestCase):
