@@ -146,40 +146,6 @@ class TestPrice(unittest.TestCase):
         self.assertEqual(res[0], 0)
         self.assertEqual(res[1], 0)
 
-    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException("TestException"))
-    def test_getPriceVolume_RequestException(self, mockRequests):
-        # The Forge
-        regionID = 10000002
-        # Mexallon
-        itemTypeID = 36
-
-        self.assertRaisesRegexp(APIError, "Error while connecting to CREST: TestException",
-                                self.price._getPriceVolume, "sell", regionID, "Jita", itemTypeID)
-
-    def test_getPriceVolume_flawedResponse(self):
-        # The Forge
-        regionID = 10000002
-        # Isogen
-        itemTypeID = 37
-
-        def flawed_response(*args, **kwargs):
-            class Object(object):
-                pass
-
-            obj = Object()
-            obj.text = "This is not a valid HTML document"
-            obj.status_code = 404
-            return obj
-
-        # Non-200 status
-        requestsPatcher = mock.patch("requests.get", side_effect=flawed_response)
-        mockRequests = requestsPatcher.start()
-
-        self.assertRaisesRegexp(APIError, "CREST returned error code 404",
-                                self.price._getPriceVolume, "sell", regionID, "Jita", itemTypeID)
-
-        requestsPatcher.stop()
-
 
 if __name__ == "__main__":
     unittest.main()
