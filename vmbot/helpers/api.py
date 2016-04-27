@@ -69,8 +69,7 @@ def getCRESTEndpoint(url, params=None, timeout=3):
 
         res = r.json()
         try:
-            cacheSec = int(re.search("(?:public|private).+max-age=(\d+)",
-                                     r.headers['Cache-Control']).group(1))
+            cacheSec = int(re.search("max-age=(\d+)", r.headers['Cache-Control']).group(1))
         except:
             pass
         else:
