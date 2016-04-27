@@ -28,7 +28,7 @@ def __schema(conn):
            FROM metadata
            WHERE key = "version";"""
     ).fetchall()
-    if res and int(res[0][0]) < _cache_version:
+    if res and int(res[0][0]) != _cache_version:
         conn.execute("DROP TABLE cache;")
     conn.commit()
 
