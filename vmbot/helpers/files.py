@@ -1,7 +1,7 @@
 from os import path, pardir
 
 
-_DATADIR = path.join(path.dirname(__file__), pardir, "data")
+_DATADIR = path.abspath(path.join(path.dirname(__file__), pardir, "data"))
 
 CONFIG = path.join(_DATADIR, "vmbot.cfg")
 STATICDATA_DB = path.join(_DATADIR, "staticdata.sqlite")
