@@ -16,7 +16,7 @@
 import logging
 from datetime import datetime
 
-from .config import config as vmc
+from .config import config
 
 from .vmbot import VMBot
 
@@ -24,11 +24,11 @@ from .vmbot import VMBot
 if __name__ == "__main__":
     logfile = "{:%Y-%m-%d_%H%M}.vmbot.log".format(datetime.now())
     logger = logging.getLogger("vmbot.jabberbot")
-    logger.setLevel(logging.getLevelName(vmc['loglevel']))
+    logger.setLevel(logging.getLevelName(config['loglevel']))
     logger.addHandler(logging.FileHandler(logfile, encoding="utf-8"))
 
     # Grabbing values from imported config file
-    jbc = vmc['jabber']
+    jbc = config['jabber']
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], kmFeed=True, newsFeed=True)
     for room in jbc['chatrooms']:
         morgooglie.muc_join_room(room, jbc['nickname'])
