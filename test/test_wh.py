@@ -22,7 +22,7 @@ class TestWormhole(unittest.TestCase):
 
     def tearDown(self):
         del self.wormhole
-        # Delete wh.sqlite after every test case
+        # Delete wh.db after every test case
         try:
             os.remove(WH_DB)
         except:
