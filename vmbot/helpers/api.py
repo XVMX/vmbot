@@ -128,7 +128,7 @@ def getTickers(corporationID, allianceID):
         allianceTicker = "{Failed to load}"
         try:
             allianceTicker = getCRESTEndpoint(
-                "https://public-crest.eveonline.com/alliances/{}/".format(allianceID)
+                "https://crest-tq.eveonline.com/alliances/{}/".format(allianceID)
             )['shortName']
         except:
             pass

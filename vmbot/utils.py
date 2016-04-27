@@ -21,8 +21,8 @@ from .helpers import cache
 
 class Price(object):
     def _getPriceVolume(self, orderType, region, system, item):
-        url = "https://public-crest.eveonline.com/market/{}/orders/{}/".format(region, orderType)
-        type_ = "https://public-crest.eveonline.com/types/{}/".format(item)
+        url = "https://crest-tq.eveonline.com/market/{}/orders/{}/".format(region, orderType)
+        type_ = "https://crest-tq.eveonline.com/types/{}/".format(item)
 
         res = api.getCRESTEndpoint(url, params={'type': type_}, timeout=5)
 
