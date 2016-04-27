@@ -1,16 +1,26 @@
 import unittest
 import mock
 
+import os
 import xml.etree.ElementTree as ET
 
 import requests
 
+from vmbot.helpers.files import CACHE_DB
 from vmbot.helpers.exceptions import APIError
 
 from vmbot.helpers import api
 
 
 class TestAPI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Delete cache.db before testing
+        try:
+            os.remove(CACHE_DB)
+        except:
+            pass
+
     def test_getTypeName(self):
         # typeID: 34 Tritanium
         self.assertEqual(api.getTypeName(34), "Tritanium")

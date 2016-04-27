@@ -23,6 +23,11 @@ class TestWormhole(unittest.TestCase):
     def tearDown(self):
         del self.wormhole
         # Delete wh.db after every test case
+        self.setUpClass()
+
+    @classmethod
+    def setUpClass(cls):
+        # Delete wh.db before testing
         try:
             os.remove(WH_DB)
         except:

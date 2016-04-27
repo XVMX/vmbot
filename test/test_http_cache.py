@@ -9,7 +9,12 @@ from vmbot.helpers import cache
 
 class TestHTTPCache(unittest.TestCase):
     def tearDown(self):
-        # Delete cache.db after every test case
+        # Delete cache.db after every test
+        self.setUpClass()
+
+    @classmethod
+    def setUpClass(cls):
+        # Delete cache.db before testing
         try:
             os.remove(CACHE_DB)
         except:

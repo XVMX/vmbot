@@ -7,7 +7,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from vmbot.helpers.files import EMOTES
+from vmbot.helpers.files import CACHE_DB, EMOTES
 
 from vmbot.fun import Fun
 
@@ -21,6 +21,13 @@ class TestFun(unittest.TestCase):
 
     def tearDown(self):
         del self.fun
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            os.remove(CACHE_DB)
+        except:
+            pass
 
     def test_rtd(self):
         with open(EMOTES, 'r') as emotesFile:

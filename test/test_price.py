@@ -3,8 +3,7 @@ import mock
 
 import os
 
-import requests
-
+from vmbot.helpers.files import CACHE_DB
 from vmbot.helpers.exceptions import APIError
 
 from vmbot.utils import Price
@@ -31,6 +30,14 @@ class TestPrice(unittest.TestCase):
 
     def tearDown(self):
         del self.price
+
+    @classmethod
+    def setUpClass(cls):
+        # Delete cache.db before testing
+        try:
+            os.remove(CACHE_DB)
+        except:
+            pass
 
     def test_price_noargs(self):
         self.assertEqual(
