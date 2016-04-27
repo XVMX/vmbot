@@ -1,16 +1,25 @@
 import unittest
+import mock
+
+import xml.etree.ElementTree as ET
+
+import requests
+
+from vmbot.helpers.exceptions import APIError
 
 from vmbot.helpers import api
 
 
 class TestAPI(unittest.TestCase):
     def test_getTypeName(self):
+        # typeID: 34 Tritanium
         self.assertEqual(api.getTypeName(34), "Tritanium")
 
     def test_getTypeName_invaliditem(self):
         self.assertEqual(api.getTypeName(-1), "{Failed to load}")
 
     def test_getSolarSystemData(self):
+        # solarSystemID: 30000142 Jita
         self.assertDictEqual(
             api.getSolarSystemData(30000142),
             {'solarSystemID': 30000142, 'solarSystemName': "Jita",
@@ -41,6 +50,108 @@ class TestAPI(unittest.TestCase):
 
     def test_getTickers_invalidid(self):
         self.assertTupleEqual(api.getTickers(-1, -1), ("{Failed to load}", "{Failed to load}"))
+
+    def test_getTickers_noids(self):
+        self.assertTupleEqual(api.getTickers(None, None), (None, None))
+
+    def test_getCRESTEndpoint(self):
+        testURL = "https://crest-tq.eveonline.com/incursions/"
+        try:
+            r = requests.get(testURL, headers={'User-Agent': "XVMX JabberBot"}, timeout=3)
+        except requests.exceptions.RequestException as e:
+            self.skipTest("Error while connecting to CREST: {}".format(e))
+        if r.status_code != 200:
+            self.skipTest("CREST returned error code {}".format(r.status_code))
+
+        res = r.json()
+
+        requestsPatcher = mock.patch("requests.get")
+
+        # Returns requests.Response without Cache-Control header
+        def del_cache(*args, **kwargs):
+            requestsPatcher.stop()
+            r = requests.get(*args, **kwargs)
+            mockRequests = requestsPatcher.start()
+            mockRequests.side_effect = del_cache
+
+            if "Cache-Control" in r.headers:
+                del r.headers['Cache-Control']
+            return r
+
+        mockRequests = requestsPatcher.start()
+        mockRequests.side_effect = del_cache
+
+        # Test without cache
+        self.assertDictEqual(api.getCRESTEndpoint(testURL), res)
+        requestsPatcher.stop()
+
+        # Test with cache
+        self.assertDictEqual(api.getCRESTEndpoint(testURL), res)
+        # Test cached response
+        self.assertDictEqual(api.getCRESTEndpoint(testURL), res)
+
+    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException("TestException"))
+    def test_getCRESTEndpoint_RequestException(self, mockRequests):
+        self.assertRaisesRegexp(APIError, "Error while connecting to CREST: TestException",
+                                api.getCRESTEndpoint, "TestURL")
+
+    def test_getCRESTEndpoint_flawedResponse(self):
+        def flawed_response(*args, **kwargs):
+            class Object(object):
+                pass
+
+            obj = Object()
+            obj.text = "This is not a valid HTML document"
+            obj.status_code = 404
+            return obj
+
+        # Returns non-200 status
+        requestsPatcher = mock.patch("requests.get", side_effect=flawed_response)
+        mockRequests = requestsPatcher.start()
+
+        self.assertRaisesRegexp(APIError, "CREST returned error code 404",
+                                api.getCRESTEndpoint, "TestURL")
+
+        requestsPatcher.stop()
+
+    def test_postXMLEndpoint(self):
+        testURL = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
+        try:
+            r = requests.post(testURL, headers={'User-Agent': "XVMX JabberBot"}, timeout=3)
+        except requests.exceptions.RequestException as e:
+            self.skipTest("Error while connecting to XML-API: {}".format(e))
+        if r.status_code != 200:
+            self.skipTest("XML-API returned error code {}".format(r.status_code))
+
+        res = ET.fromstring(r.content)
+
+        self.assertEqual(api.postXMLEndpoint(testURL), res)
+        # Test cached response
+        self.assertEqual(api.postXMLEndpoint(testURL), res)
+
+    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException("TestException"))
+    def test_postXMLEndpoint_RequestException(self, mockRequests):
+        self.assertRaisesRegexp(APIError, "Error while connecting to XML-API: TestException",
+                                api.postXMLEndpoint, "TestURL")
+
+    def test_postXMLEndpoint_flawedResponse(self):
+        def flawed_response(*args, **kwargs):
+            class Object(object):
+                pass
+
+            obj = Object()
+            obj.text = "This is not a valid HTML document"
+            obj.status_code = 404
+            return obj
+
+        # Returns non-200 status
+        requestsPatcher = mock.patch("requests.get", side_effect=flawed_response)
+        mockRequests = requestsPatcher.start()
+
+        self.assertRaisesRegexp(APIError, "XML-API returned error code 404",
+                                api.postXMLEndpoint, "TestURL")
+
+        requestsPatcher.stop()
 
 
 if __name__ == "__main__":
