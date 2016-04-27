@@ -20,21 +20,28 @@ from .helpers import cache
 
 
 class Price(object):
-    def _getPriceVolume(self, orderType, region, system, item):
-        url = "https://crest-tq.eveonline.com/market/{}/orders/{}/".format(region, orderType)
+    def _getMarketOrders(self, region, system, item):
+        url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/types/{}/".format(item)
 
         res = api.getCRESTEndpoint(url, params={'type': type_}, timeout=5)
 
-        orders = [order for order in res['items'] if order['location']['name'].startswith(system)]
-        volume = sum([order['volume'] for order in orders])
-        direction = min if orderType == "sell" else max
-        try:
-            price = direction([order['price'] for order in orders])
-        except ValueError:
-            price = 0
+        allOrders = []
+        for orderType in ["sell", "buy"]:
+            # order['buy'] = True for buy, False for sell
+            orders = [order for order in res['items'] if order['buy'] == (orderType == "buy") and
+                      order['location']['name'].startswith(system)]
 
-        return (volume, price)
+            volume = sum([order['volume'] for order in orders])
+            direction = min if orderType == "sell" else max
+            try:
+                price = direction([order['price'] for order in orders])
+            except ValueError:
+                price = 0
+
+            allOrders.append((volume, price))
+
+        return allOrders
 
     def _disambiguate(self, given, like, category):
         reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
@@ -96,8 +103,9 @@ class Price(object):
         systemName = systemName.encode("ascii", "replace")
 
         try:
-            sellvolume, sellprice = self._getPriceVolume("sell", regionID, systemName, typeID)
-            buyvolume, buyprice = self._getPriceVolume("buy", regionID, systemName, typeID)
+            orders = self._getMarketOrders(regionID, systemName, typeID)
+            sellvolume, sellprice = orders.pop(0)
+            buyvolume, buyprice = orders.pop(0)
         except APIError as e:
             return str(e)
 
