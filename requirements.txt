@@ -1,0 +1,7 @@
+dnspython
+# Fixed xmpppy version
+git+https://github.com/ArchipelProject/xmpppy
+requests
+sympy
+pint
+beautifulsoup4>=4.0.0

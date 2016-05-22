@@ -1,4 +1,4 @@
-vmbot.cfg
-faq.sqlite
-api.cache
 *.py[cod]
+.coverage
+nohup.out
+*.vmbot.log

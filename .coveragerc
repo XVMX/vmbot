@@ -1,0 +1,8 @@
+[run]
+source = vmbot
+omit =
+    vmbot/jabberbot.py
+    vmbot/__main__.py
+
+[report]
+show_missing = True
