@@ -417,7 +417,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
     @botcmd
     def uptime(self, mess, args):
         """Displays for how long the bot is running already"""
-        return "arc_codie has a server, but it hasn't been up as long as {}".format(
+        return "arc_codie has servers, but they haven't been up as long as {}".format(
             datetime.now() - self.startupTime
         )
 
