@@ -23,7 +23,7 @@ from .vmbot import VMBot
 
 if __name__ == "__main__":
     logfile = "{:%Y-%m-%d_%H%M}.vmbot.log".format(datetime.now())
-    logger = logging.getLogger("vmbot.jabberbot")
+    logger = logging.getLogger("vmbot")
     logger.setLevel(logging.getLevelName(config['loglevel']))
     logger.addHandler(logging.FileHandler(logfile, encoding="utf-8"))
 
@@ -32,4 +32,9 @@ if __name__ == "__main__":
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], kmFeed=True, newsFeed=True)
     for room in jbc['chatrooms']:
         morgooglie.muc_join_room(room, jbc['nickname'])
-    morgooglie.serve_forever()
+
+    try:
+        morgooglie.serve_forever()
+    except Exception as e:
+        logger.exception("An error happened in the main loop:")
+        morgooglie.shutdown()
