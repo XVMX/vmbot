@@ -1,4 +1,4 @@
-from .jabberbot import JabberBot, botcmd
+from . import jabberbot
 
 import time
 from datetime import datetime
@@ -25,11 +25,22 @@ from .utils import Price, EveUtils
 from .wh import Wormhole
 
 
-class MUCJabberBot(JabberBot):
+def botcmd(*args, **kwargs):
+    def decorate(func, forcePM=False, **kwargs):
+        setattr(func, "_vmbot_forcepm", forcePM)
+        return jabberbot.botcmd(func, **kwargs)
+
+    if args:
+        return decorate(args[0], **kwargs)
+    else:
+        return lambda func: decorate(func, **kwargs)
+
+
+class MUCJabberBot(jabberbot.JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
-    MAX_CHAT_CHARS = 2000
+    MAX_CHAT_CHARS = 800
     PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
@@ -43,6 +54,18 @@ class MUCJabberBot(JabberBot):
         jid = self.nick_dict[node][nick]
 
         return jid if full_jid else jid.split('@')[0]
+
+    def send_simple_reply(self, mess, text, private=False):
+        cmd = mess.getBody()
+        cmd = cmd.split(' ', 1)[0] if ' ' in cmd else cmd
+        cmd = cmd.lower()
+        cmd = self.commands.get(cmd, None)
+
+        if len(text) > self.MAX_CHAT_CHARS or getattr(cmd, "_vmbot_forcepm", False):
+            self.send(self.get_uname_from_mess(mess, full_jid=True), text)
+            text = "Private message sent"
+
+        return super(MUCJabberBot, self).send_simple_reply(mess, text, private)
 
     def callback_presence(self, conn, presence):
         nick = presence.getFrom().getResource()
