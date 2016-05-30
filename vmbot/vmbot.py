@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 import os
 import subprocess
-import errno
 import signal
 from functools import wraps
 import random
@@ -103,7 +102,7 @@ class MUCJabberBot(jabberbot.JabberBot):
         return '\n'.join([line.lstrip() for line in reply.splitlines()])
 
 
-def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+def timeout(seconds=10, error_message="Timer expired"):
     def decorator(func):
         def _handle_timeout(signum, frame):
             raise TimeoutError(error_message)
