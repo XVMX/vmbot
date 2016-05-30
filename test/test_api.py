@@ -46,17 +46,17 @@ class TestAPI(unittest.TestCase):
         )
 
     def test_getTickers(self):
-        # corporationID: 2052404106 [XVMX]
-        # allianceID: 1354830081 <CONDI>
-        self.assertTupleEqual(api.getTickers(2052404106, 1354830081), ("XVMX", "CONDI"))
+        # corporationID: 1164409536 [OTHER]
+        # allianceID: 159826257 <OTHER>
+        self.assertTupleEqual(api.getTickers(1164409536, 159826257), ("OTHER", "OTHER"))
 
     def test_getTickers_corponly(self):
-        # corporationID: 2052404106 [XVMX] (member of <CONDI>)
-        self.assertTupleEqual(api.getTickers(2052404106, None), ("XVMX", "CONDI"))
+        # corporationID: 1164409536 [OTHER] (member of <OTHER>)
+        self.assertTupleEqual(api.getTickers(1164409536, None), ("OTHER", "OTHER"))
 
     def test_getTickers_allianceonly(self):
-        # allianceID: 1354830081 <CONDI>
-        self.assertTupleEqual(api.getTickers(None, 1354830081), (None, "CONDI"))
+        # allianceID: 159826257 <OTHER>
+        self.assertTupleEqual(api.getTickers(None, 159826257), (None, "OTHER"))
 
     def test_getTickers_invalidid(self):
         self.assertTupleEqual(api.getTickers(-1, -1), ("{Failed to load}", "{Failed to load}"))
