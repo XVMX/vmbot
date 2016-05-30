@@ -219,9 +219,9 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
             room = presence.getFrom().getStripped()
             uname = jid.split('@')[0]
 
-            if uname in self.pubbieKicked and room == vmc['jabber']['chatroom1']:
+            if uname in self.pubbieKicked and room == vmc['jabber']['chatrooms'][0]:
                 self.pubbieKicked.remove(uname)
-                self.send(vmc['jabber']['chatroom1'], "{}: Talk shit, get hit".format(nick),
+                self.send(vmc['jabber']['chatrooms'][0], "{}: Talk shit, get hit".format(nick),
                           message_type="groupchat")
         elif type_ == self.OFFLINE and presence.getStatusCode() == "307":
             self.pubbieKicked.add(jid.split('@')[0])
