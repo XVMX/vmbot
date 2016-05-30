@@ -37,12 +37,12 @@ class MUCJabberBot(JabberBot):
         self.nick_dict = {}
         super(MUCJabberBot, self).__init__(*args, **kwargs)
 
-    def get_uname_from_mess(self, mess):
+    def get_uname_from_mess(self, mess, full_jid=False):
         nick = self.get_sender_username(mess)
         node = mess.getFrom().getNode()
         jid = self.nick_dict[node][nick]
 
-        return jid.split('@')[0]
+        return jid if full_jid else jid.split('@')[0]
 
     def callback_presence(self, conn, presence):
         nick = presence.getFrom().getResource()
