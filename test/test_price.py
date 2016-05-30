@@ -127,9 +127,9 @@ class TestPrice(unittest.TestCase):
         itemTypeID = 34
 
         res = self.price._getMarketOrders(regionID, "Jita", itemTypeID)
-        self.assertIsInstance(res[0][0], int)
+        self.assertIsInstance(res[0][0], (int, long))
         self.assertIsInstance(res[0][1], float)
-        self.assertIsInstance(res[1][0], int)
+        self.assertIsInstance(res[1][0], (int, long))
         self.assertIsInstance(res[1][1], float)
 
     @mock.patch("vmbot.helpers.api.getCRESTEndpoint", return_value={'items': []})
