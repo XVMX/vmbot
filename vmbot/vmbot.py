@@ -96,32 +96,11 @@ class MUCJabberBot(jabberbot.JabberBot):
 
         return super(MUCJabberBot, self).callback_message(conn, mess)
 
-    def longreply(self, mess, text, forcePM=False, username=None):
-        # FIXME: this should be integrated into the default send,
-        # forcepm should be part of botcmd
-        server = vmc['jabber']['username'].split('@')[1]
-        username = username or self.get_uname_from_mess(mess)
-
-        if len(text) > self.MAX_CHAT_CHARS or forcePM:
-            self.send("{}@{}".format(username, server), text)
-            return True
-        else:
-            return False
-
     @botcmd
     def help(self, mess, args):
-        reply = super(MUCJabberBot, self).help(mess, args)
-
         # Fix multiline docstring indentation (not compliant to PEP 257)
-        reply = '\n'.join([line.lstrip() for line in reply.splitlines()])
-
-        if not args:
-            self.longreply(mess, reply, forcePM=True)
-            return "Private message sent"
-        elif self.longreply(mess, reply):
-            return "Private message sent"
-        else:
-            return reply
+        reply = super(MUCJabberBot, self).help(mess, args)
+        return '\n'.join([line.lstrip() for line in reply.splitlines()])
 
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
@@ -295,10 +274,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
             reply.replace('\n', '</font><br/><font face="monospace">')
         )
 
-        if self.longreply(mess, reply):
-            return "Private message sent"
-        else:
-            return reply
+        return reply
 
     @botcmd
     def convert(self, mess, args):
