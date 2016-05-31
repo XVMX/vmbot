@@ -7,7 +7,7 @@ from vmbot.helpers.files import CONFIG
 from vmbot.config import config
 
 
-@unittest.skipUnless(os.path.isfile(CONFIG), "Config file not found")
+@unittest.skipUnless(os.path.isfile(CONFIG), "Config file not copied")
 class TestConfig(unittest.TestCase):
     def test_loglevel(self):
         self.assertEqual(config['loglevel'], "INFO")
