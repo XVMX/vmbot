@@ -7,45 +7,45 @@ from vmbot.helpers.files import CONFIG
 from vmbot.config import config
 
 
-@unittest.skipUnless(os.path.isfile(CONFIG), "Config file not copied")
+@unittest.skipUnless(os.path.isfile(CONFIG), "Config file not found")
 class TestConfig(unittest.TestCase):
     def test_loglevel(self):
-        self.assertEqual(config['loglevel'], "INFO")
+        self.assertIsInstance(config['loglevel'], str)
 
     def test_username(self):
-        self.assertEqual(config['jabber']['username'], "username@domain.tld")
+        self.assertIsInstance(config['jabber']['username'], str)
 
     def test_password(self):
-        self.assertEqual(config['jabber']['password'], "yourpassword")
+        self.assertIsInstance(config['jabber']['password'], str)
 
     def test_resource(self):
-        self.assertEqual(config['jabber']['res'], "VMBot")
+        self.assertIsInstance(config['jabber']['res'], str)
 
     def test_nickname(self):
-        self.assertEqual(config['jabber']['nickname'], "BotNickname")
+        self.assertIsInstance(config['jabber']['nickname'], str)
 
     def test_chatrooms(self):
-        self.assertEqual(config['jabber']['chatrooms'][0], "room1@conference.domain.tld")
-        self.assertEqual(config['jabber']['chatrooms'][1], "room2@conference.domain.tld")
-        self.assertEqual(config['jabber']['chatrooms'][2], "room3@conference.domain.tld")
+        self.assertIsInstance(config['jabber']['chatrooms'], list)
+        for room in config['jabber']['chatrooms']:
+            self.assertIsInstance(room, str)
 
     def test_bcast_url(self):
-        self.assertEqual(config['bcast']['url'], "")
+        self.assertIsInstance(config['bcast']['url'], str)
 
     def test_bcast_id(self):
-        self.assertEqual(config['bcast']['id'], "")
+        self.assertIsInstance(config['bcast']['id'], str)
 
     def test_bcast_key(self):
-        self.assertEqual(config['bcast']['key'], "")
+        self.assertIsInstance(config['bcast']['key'], str)
 
     def test_bcast_target(self):
-        self.assertEqual(config['bcast']['target'], "")
+        self.assertIsInstance(config['bcast']['target'], str)
 
     def test_blacklist_url(self):
-        self.assertEqual(config['blacklist']['url'], "")
+        self.assertIsInstance(config['blacklist']['url'], str)
 
     def test_blacklist_key(self):
-        self.assertEqual(config['blacklist']['key'], "")
+        self.assertIsInstance(config['blacklist']['key'], str)
 
 
 if __name__ == "__main__":
