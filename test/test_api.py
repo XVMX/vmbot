@@ -12,14 +12,26 @@ from vmbot.helpers.exceptions import APIError
 from vmbot.helpers import api
 
 
+def flawed_response(*args, **kwargs):
+    """Return a requests.Response with 404 status code"""
+    res = requests.Response()
+    res.status_code = 404
+    res._content = b"ASCII text"
+    res.encoding = "ascii"
+    return res
+
+
 class TestAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Delete cache.db before testing
         try:
             os.remove(CACHE_DB)
-        except:
+        except OSError:
             pass
+
+    @classmethod
+    def tearDownClass(cls):
+        return cls.setUpClass()
 
     def test_getTypeName(self):
         # typeID: 34 Tritanium
@@ -51,104 +63,76 @@ class TestAPI(unittest.TestCase):
         self.assertTupleEqual(api.getTickers(1164409536, 159826257), ("OTHER", "OTHER"))
 
     def test_getTickers_corponly(self):
-        # corporationID: 1164409536 [OTHER] (member of <OTHER>)
-        self.assertTupleEqual(api.getTickers(1164409536, None), ("OTHER", "OTHER"))
+        # corporationID: 98007161 [FCFTW] (member of <SSC>)
+        self.assertTupleEqual(api.getTickers(98007161, None), ("FCFTW", "SSC"))
 
     def test_getTickers_allianceonly(self):
-        # allianceID: 159826257 <OTHER>
-        self.assertTupleEqual(api.getTickers(None, 159826257), (None, "OTHER"))
+        # allianceID: 99005065 <HKRAB>
+        self.assertTupleEqual(api.getTickers(None, 99005065), (None, "HKRAB"))
 
     def test_getTickers_invalidid(self):
         self.assertTupleEqual(api.getTickers(-1, -1), ("{Failed to load}", "{Failed to load}"))
 
-    def test_getTickers_noids(self):
+    def test_getTickers_none(self):
         self.assertTupleEqual(api.getTickers(None, None), (None, None))
 
     def test_getCRESTEndpoint(self):
-        testURL = "https://crest-tq.eveonline.com/"
+        test_url = "https://crest-tq.eveonline.com/"
 
-        requestsPatcher = mock.patch("requests.get")
-
-        # Returns requests.Response without Cache-Control header
         def del_cache(*args, **kwargs):
-            requestsPatcher.stop()
+            """Delete Cache-Control header from requests.Response"""
+            requests_patcher.stop()
             r = requests.get(*args, **kwargs)
-            mockRequests = requestsPatcher.start()
-            mockRequests.side_effect = del_cache
+            requests_patcher.start()
 
-            if "Cache-Control" in r.headers:
-                del r.headers['Cache-Control']
+            r.headers.pop('Cache-Control', None)
             return r
 
-        mockRequests = requestsPatcher.start()
-        mockRequests.side_effect = del_cache
+        # Test without Cache-Control header
+        requests_patcher = mock.patch("requests.get", side_effect=del_cache)
+        requests_patcher.start()
 
-        # Test without cache
-        res_nocache = api.getCRESTEndpoint(testURL)
+        res_nocache = api.getCRESTEndpoint(test_url)
         self.assertIsInstance(res_nocache, dict)
-        requestsPatcher.stop()
+
+        requests_patcher.stop()
 
         # Test with cache
-        res_cache = api.getCRESTEndpoint(testURL)
+        res_cache = api.getCRESTEndpoint(test_url)
         self.assertIsInstance(res_cache, dict)
+
         # Test cached response
-        self.assertDictEqual(api.getCRESTEndpoint(testURL), res_cache)
+        self.assertDictEqual(api.getCRESTEndpoint(test_url), res_cache)
 
     @mock.patch("requests.get", side_effect=requests.exceptions.RequestException("TestException"))
-    def test_getCRESTEndpoint_RequestException(self, mockRequests):
+    def test_getCRESTEndpoint_RequestException(self, mock_requests):
         self.assertRaisesRegexp(APIError, "Error while connecting to CREST: TestException",
                                 api.getCRESTEndpoint, "TestURL")
 
-    def test_getCRESTEndpoint_flawedResponse(self):
-        def flawed_response(*args, **kwargs):
-            class Object(object):
-                pass
-
-            obj = Object()
-            obj.text = "This is not a valid HTML document"
-            obj.status_code = 404
-            return obj
-
-        # Returns non-200 status
-        requestsPatcher = mock.patch("requests.get", side_effect=flawed_response)
-        mockRequests = requestsPatcher.start()
-
+    @mock.patch("requests.get", side_effect=flawed_response)
+    def test_getCRESTEndpoint_flawedresponse(self, mock_requests):
         self.assertRaisesRegexp(APIError, "CREST returned error code 404",
                                 api.getCRESTEndpoint, "TestURL")
 
-        requestsPatcher.stop()
-
     def test_postXMLEndpoint(self):
-        testURL = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
+        test_url = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
 
-        res_cache = api.postXMLEndpoint(testURL)
+        # Test with cache
+        res_cache = api.postXMLEndpoint(test_url)
         self.assertIsInstance(res_cache, ET.Element)
+
         # Test cached response
-        self.assertEqual(ET.tostring(api.postXMLEndpoint(testURL)), ET.tostring(res_cache))
+        self.assertEqual(ET.tostring(api.postXMLEndpoint(test_url)), ET.tostring(res_cache))
 
     @mock.patch("requests.post", side_effect=requests.exceptions.RequestException("TestException"))
-    def test_postXMLEndpoint_RequestException(self, mockRequests):
+    def test_postXMLEndpoint_RequestException(self, mock_requests):
         self.assertRaisesRegexp(APIError, "Error while connecting to XML-API: TestException",
                                 api.postXMLEndpoint, "TestURL")
 
-    def test_postXMLEndpoint_flawedResponse(self):
-        def flawed_response(*args, **kwargs):
-            class Object(object):
-                pass
-
-            obj = Object()
-            obj.text = "This is not a valid HTML document"
-            obj.status_code = 404
-            return obj
-
-        # Returns non-200 status
-        requestsPatcher = mock.patch("requests.post", side_effect=flawed_response)
-        mockRequests = requestsPatcher.start()
-
+    @mock.patch("requests.post", side_effect=flawed_response)
+    def test_postXMLEndpoint_flawedresponse(self, mock_requests):
         self.assertRaisesRegexp(APIError, "XML-API returned error code 404",
                                 api.postXMLEndpoint, "TestURL")
-
-        requestsPatcher.stop()
 
 
 if __name__ == "__main__":
