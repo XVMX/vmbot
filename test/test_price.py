@@ -10,20 +10,20 @@ from vmbot.utils import Price
 
 
 class TestPrice(unittest.TestCase):
-    defaultMess = "SenderName"
-    defaultArgs = ""
+    default_mess = ""
+    default_args = ""
 
-    priceTemplate = ("<b>{}</b> in <b>{}</b>:<br />"
-                     "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                     "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                     "Spread: {:,.2%}")
-    noSpreadTemplate = ("<b>{}</b> in <b>{}</b>:<br />"
-                        "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                        "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                        "Spread: NaNNaNNaNNaNNaNBatman!")
+    price_template = ("<b>{}</b> in <b>{}</b>:<br />"
+                      "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                      "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                      "Spread: {:,.2%}")
+    no_spread_template = ("<b>{}</b> in <b>{}</b>:<br />"
+                          "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                          "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                          "Spread: NaNNaNNaNNaNNaNBatman!")
 
-    simpleDisambiguateTemplate = "<br />Other {} like \"{}\": {}"
-    extendedDisambiguateTemplate = simpleDisambiguateTemplate + ", and {} others"
+    simple_disambiguate_template = "<br />Other {} like \"{}\": {}"
+    extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
 
     def setUp(self):
         self.price = Price()
@@ -33,113 +33,117 @@ class TestPrice(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Delete cache.db before testing
         try:
             os.remove(CACHE_DB)
-        except:
+        except OSError:
             pass
+
+    @classmethod
+    def tearDownClass(cls):
+        return cls.setUpClass()
 
     def test_price_noargs(self):
         self.assertEqual(
-            self.price.price(self.defaultMess, self.defaultArgs),
+            self.price.price(self.default_mess, self.default_args),
             "Please provide an item name and optionally a system name: <item>@[system]"
         )
 
     def test_price_excessargs(self):
         self.assertEqual(
-            self.price.price(self.defaultMess, "item@system@excess"),
+            self.price.price(self.default_mess, "item@system@excess"),
             "Please provide an item name and optionally a system name: <item>@[system]"
         )
 
     @mock.patch("vmbot.utils.Price._getMarketOrders", return_value=[(1000, 45.99), (1000, 45.99)])
-    def test_price_nosystem(self, mockPriceVolume):
+    def test_price_nosystem(self, mock_price_volume):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Pyerite"),
-            self.priceTemplate.format("Pyerite", "Jita", 45.99, 1000, 45.99, 1000, 0)
+            self.price.price(self.default_mess, "Pyerite"),
+            self.price_template.format("Pyerite", "Jita", 45.99, 1000, 45.99, 1000, 0)
         )
 
     @mock.patch("vmbot.utils.Price._getMarketOrders", return_value=[(1000, 45.99), (1000, 45.99)])
-    def test_price_plex_nosystem(self, mockPriceVolume):
+    def test_price_plex_nosystem(self, mock_price_volume):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Plex"),
-            self.priceTemplate.format("30 Day Pilot's License Extension (PLEX)",
-                                      "Jita", 45.99, 1000, 45.99, 1000, 0)
+            self.price.price(self.default_mess, "Plex"),
+            self.price_template.format("30 Day Pilot's License Extension (PLEX)",
+                                       "Jita", 45.99, 1000, 45.99, 1000, 0)
         )
 
     @mock.patch("vmbot.utils.Price._getMarketOrders", return_value=[(1000, 45.99), (1000, 45.99)])
-    def test_price_system(self, mockPriceVolume):
+    def test_price_system(self, mock_price_volume):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Pyerite@Amarr"),
-            self.priceTemplate.format("Pyerite", "Amarr", 45.99, 1000, 45.99, 1000, 0)
+            self.price.price(self.default_mess, "Pyerite@Amarr"),
+            self.price_template.format("Pyerite", "Amarr", 45.99, 1000, 45.99, 1000, 0)
         )
 
     @mock.patch("vmbot.utils.Price._getMarketOrders", return_value=[(1000, 45.99), (1000, 45.99)])
-    def test_price_disambiguate(self, mockPriceVolume):
+    def test_price_disambiguate(self, mock_price_volume):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Tritanium@Hek"),
-            (self.priceTemplate.format("Tritanium", "Hek", 45.99, 1000, 45.99, 1000, 0) +
-             self.simpleDisambiguateTemplate.format("items", "Tritanium", "Alloyed Tritanium Bar") +
-             self.simpleDisambiguateTemplate.format("systems", "Hek", "Ghekon"))
+            self.price.price(self.default_mess, "Tritanium@Hek"),
+            (self.price_template.format("Tritanium", "Hek", 45.99, 1000, 45.99, 1000, 0) +
+             self.simple_disambiguate_template.format("items", "Tritanium",
+                                                      "Alloyed Tritanium Bar") +
+             self.simple_disambiguate_template.format("systems", "Hek", "Ghekon"))
         )
 
     def test_price_invaliditem(self):
         self.assertEqual(
-            self.price.price(self.defaultMess, "InvalidItem"),
+            self.price.price(self.default_mess, "InvalidItem"),
             "Can't find a matching item"
         )
 
     def test_price_invalidsystem(self):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Pyerite@InvalidSystem"),
+            self.price.price(self.default_mess, "Pyerite@InvalidSystem"),
             "Can't find a matching system"
         )
 
     @mock.patch("vmbot.utils.Price._getMarketOrders", side_effect=APIError("TestException"))
-    def test_price_APIError(self, mockPriceVolume):
+    def test_price_APIError(self, mock_price_volume):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Pyerite"),
+            self.price.price(self.default_mess, "Pyerite"),
             "TestException"
         )
 
     @mock.patch("vmbot.utils.Price._getMarketOrders", return_value=[(0, 0), (0, 0)])
-    def test_price_noorders(self, mockPriceVolume):
+    def test_price_noorders(self, mock_price_volume):
         self.assertEqual(
-            self.price.price(self.defaultMess, "Pyerite"),
-            self.noSpreadTemplate.format("Pyerite", "Jita", 0, 0, 0, 0)
+            self.price.price(self.default_mess, "Pyerite"),
+            self.no_spread_template.format("Pyerite", "Jita", 0, 0, 0, 0)
         )
 
     def test_disambiguate_simple(self):
         self.assertEqual(
             self.price._disambiguate("Default", ["Test1", "Test2"], "Cat"),
-            self.simpleDisambiguateTemplate.format("Cat", "Default", "Test1, Test2")
+            self.simple_disambiguate_template.format("Cat", "Default", "Test1, Test2")
         )
 
     def test_disambiguate_extended(self):
         self.assertEqual(
             self.price._disambiguate("Default", ["Test1", "Test2", "Test3", "Test4"], "Cat"),
-            self.extendedDisambiguateTemplate.format("Cat", "Default", "Test1, Test2, Test3", 1)
+            self.extended_disambiguate_template.format("Cat", "Default", "Test1, Test2, Test3", 1)
         )
 
     def test_getMarketOrders(self):
         # The Forge
         regionID = 10000002
         # Tritanium
-        itemTypeID = 34
+        item_typeID = 34
 
-        res = self.price._getMarketOrders(regionID, "Jita", itemTypeID)
+        res = self.price._getMarketOrders(regionID, "Jita", item_typeID)
         self.assertIsInstance(res[0][0], (int, long))
         self.assertIsInstance(res[0][1], float)
         self.assertIsInstance(res[1][0], (int, long))
         self.assertIsInstance(res[1][1], float)
 
     @mock.patch("vmbot.helpers.api.getCRESTEndpoint", return_value={'items': []})
-    def test_getPriceVolume_noorders(self, mockCRESTEndpoint):
+    def test_getPriceVolume_noorders(self, mock_crest):
         # The Forge
         regionID = 10000002
         # Pyerite
-        itemTypeID = 35
+        item_typeID = 35
 
-        res = self.price._getMarketOrders(regionID, "Jita", itemTypeID)
+        res = self.price._getMarketOrders(regionID, "Jita", item_typeID)
         self.assertEqual(res[0][0], 0)
         self.assertEqual(res[0][1], 0)
         self.assertEqual(res[1][0], 0)
