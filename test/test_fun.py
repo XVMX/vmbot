@@ -12,7 +12,7 @@ from vmbot.fun import Fun
 
 
 def flawed_response(*args, **kwargs):
-    """Return a requests.Response with 404 status code"""
+    """Return a requests.Response with 404 status code."""
     res = requests.Response()
     res.status_code = 404
     res._content = b"ASCII text"
@@ -62,7 +62,7 @@ class TestFun(unittest.TestCase):
         exception_text = "Error while connecting to http://bash.org: {}".format(desc)
 
         def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request"""
+            """Emulate call and restart patcher to use default side_effect for second request."""
             requests_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
@@ -89,7 +89,7 @@ class TestFun(unittest.TestCase):
 
     def test_rtq_flawedresponse(self):
         def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request"""
+            """Emulate call and restart patcher to use default side_effect for second request."""
             requests_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
@@ -137,7 +137,7 @@ class TestFun(unittest.TestCase):
         exception_text = "Error while connecting to https://xkcd.com: {}".format(desc)
 
         def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request"""
+            """Emulate call and restart patcher to use default side_effect for second request."""
             requests_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
@@ -164,7 +164,7 @@ class TestFun(unittest.TestCase):
 
     def test_rtxkcd_flawedresponse(self):
         def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request"""
+            """Emulate call and restart patcher to use default side_effect for second request."""
             requests_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)

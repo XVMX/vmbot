@@ -13,7 +13,7 @@ from vmbot.helpers import api
 
 
 def flawed_response(*args, **kwargs):
-    """Return a requests.Response with 404 status code"""
+    """Return a requests.Response with 404 status code."""
     res = requests.Response()
     res.status_code = 404
     res._content = b"ASCII text"
@@ -80,7 +80,7 @@ class TestAPI(unittest.TestCase):
         test_url = "https://crest-tq.eveonline.com/"
 
         def del_cache(*args, **kwargs):
-            """Delete Cache-Control header from requests.Response"""
+            """Delete Cache-Control header from requests.Response."""
             requests_patcher.stop()
             r = requests.get(*args, **kwargs)
             requests_patcher.start()
