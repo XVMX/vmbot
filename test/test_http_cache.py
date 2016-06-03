@@ -9,15 +9,13 @@ from vmbot.helpers import cache
 
 class TestHTTPCache(unittest.TestCase):
     def tearDown(self):
-        # Delete cache.db after every test
         self.setUpClass()
 
     @classmethod
     def setUpClass(cls):
-        # Delete cache.db before testing
         try:
             os.remove(CACHE_DB)
-        except:
+        except OSError:
             pass
 
     def test_setHTTP(self):
@@ -43,7 +41,7 @@ class TestHTTPCache(unittest.TestCase):
     def test_getHTTP_nodb(self):
         self.assertIsNone(cache.getHTTP("other key"))
 
-    def test_cacheUpdate(self):
+    def test_update(self):
         self.assertTrue(cache.setHTTP("key", doc="value"))
         cache._cache_version += 1
         self.assertTrue(cache.setHTTP("key", doc="other value"))

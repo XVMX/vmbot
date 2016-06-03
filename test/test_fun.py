@@ -1,20 +1,28 @@
 import unittest
 import mock
 
-import os
 import re
 
 import requests
 from bs4 import BeautifulSoup
 
-from vmbot.helpers.files import CACHE_DB, EMOTES
+from vmbot.helpers.files import EMOTES
 
 from vmbot.fun import Fun
 
 
+def flawed_response(*args, **kwargs):
+    """Return a requests.Response with 404 status code."""
+    res = requests.Response()
+    res.status_code = 404
+    res._content = b"ASCII text"
+    res.encoding = "ascii"
+    return res
+
+
 class TestFun(unittest.TestCase):
-    defaultMess = "SenderName"
-    defaultArgs = ""
+    default_mess = ""
+    default_args = ""
 
     def setUp(self):
         self.fun = Fun()
@@ -22,153 +30,165 @@ class TestFun(unittest.TestCase):
     def tearDown(self):
         del self.fun
 
-    @classmethod
-    def setUpClass(cls):
-        try:
-            os.remove(CACHE_DB)
-        except:
-            pass
-
     def test_rtd(self):
-        with open(EMOTES, 'r') as emotesFile:
-            emotes = [emote.split()[-1] for emote in emotesFile.read().split('\n')if emote.split()]
+        with open(EMOTES, 'r') as emotes_file:
+            emotes = emotes_file.read()
 
-        self.assertIn(self.fun.rtd(self.defaultMess, self.defaultArgs), emotes)
+        self.assertIn(self.fun.rtd(self.default_mess, self.default_args), emotes)
 
     def test_rtq(self):
-        res = self.fun.rtq(self.defaultMess, self.defaultArgs)
+        res = self.fun.rtq(self.default_mess, self.default_args)
 
         try:
-            quoteURL = re.search("http://bash\.org/\?\d+", res).group(0)
+            quote_url = re.search("http://bash\.org/\?\d+", res).group(0)
         except AttributeError:
-            self.skipTest("rtq didn't return an http://bash.org link in test_rtq")
+            self.fail("rtq didn't return an http://bash.org link in test_rtq")
 
         try:
-            r = requests.get(quoteURL, timeout=5)
+            r = requests.get(quote_url, timeout=5)
         except requests.exceptions.RequestException as e:
-            self.skipTest("Error while connecting to http://bash.org: {} in test_rtq".format(e))
+            self.skipTest("Error while connecting to http://bash.org in test_rtq: {}".format(e))
         soup = BeautifulSoup(r.text, "html.parser")
 
         try:
             quote = soup.find("p", class_="qt").text.encode("ascii", "replace")
         except AttributeError:
-            self.skipTest("Failed to load quote from {} in test_rtq".format(quoteURL))
+            self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
 
-        self.assertEqual(res, "{}\n{}".format(quote, quoteURL))
+        self.assertEqual(res, "{}\n{}".format(quote, quote_url))
 
     def test_rtq_RequestException(self):
         desc = "TestException"
-        exceptionText = "Error while connecting to http://bash.org: {}".format(desc)
+        exception_text = "Error while connecting to http://bash.org: {}".format(desc)
+
+        def side_effect(*args, **kwargs):
+            """Emulate call and restart patcher to use default side_effect for second request."""
+            requests_patcher.stop()
+            try:
+                r = requests.get(*args, **kwargs)
+            except requests.exceptions.RequestException as e:
+                self.skipTest(
+                    "Error while emulating request in test_rtq_RequestException: {}".format(e)
+                )
+            mock_requests = requests_patcher.start()
+            return r
 
         # Exception at first request
-        requestsPatcher = mock.patch("requests.get",
-                                     side_effect=requests.exceptions.RequestException(desc))
-        mockRequests = requestsPatcher.start()
-        self.assertEqual(self.fun.rtq(self.defaultMess, self.defaultArgs), exceptionText)
+        requests_patcher = mock.patch("requests.get",
+                                      side_effect=requests.exceptions.RequestException(desc))
+        mock_requests = requests_patcher.start()
+
+        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args), exception_text)
 
         # Exception at second request
+        mock_requests.side_effect = side_effect
+
+        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args), exception_text)
+
+        requests_patcher.stop()
+
+    def test_rtq_flawedresponse(self):
         def side_effect(*args, **kwargs):
-            requestsPatcher.stop()
-            r = requests.get(*args, **kwargs)
-            mockRequests = requestsPatcher.start()
+            """Emulate call and restart patcher to use default side_effect for second request."""
+            requests_patcher.stop()
+            try:
+                r = requests.get(*args, **kwargs)
+            except requests.exceptions.RequestException as e:
+                self.skipTest(
+                    "Error while emulating request in test_rtq_flawedresponse: {}".format(e)
+                )
+            mock_requests = requests_patcher.start()
             return r
 
-        mockRequests.side_effect = side_effect
-        self.assertEqual(self.fun.rtq(self.defaultMess, self.defaultArgs), exceptionText)
+        # 404 response after first request
+        requests_patcher = mock.patch("requests.get", side_effect=flawed_response)
+        mock_requests = requests_patcher.start()
 
-        requestsPatcher.stop()
-
-    def test_rtq_flawedResponse(self):
-        def flawed_response(*args, **kwargs):
-            class Object(object):
-                pass
-
-            obj = Object()
-            obj.text = "This is not a valid HTML document"
-            obj.status_code = 404
-            return obj
-
-        # No quotes after first request
-        requestsPatcher = mock.patch("requests.get", side_effect=flawed_response)
-        mockRequests = requestsPatcher.start()
-        self.assertEqual(self.fun.rtq(self.defaultMess, self.defaultArgs),
+        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args),
                          "Failed to load any quotes from http://bash.org/?random")
 
-        # No quote after second request
-        def side_effect(*args, **kwargs):
-            requestsPatcher.stop()
-            r = requests.get(*args, **kwargs)
-            mockRequests = requestsPatcher.start()
-            return r
+        # 404 response after second request
+        mock_requests.side_effect = side_effect
 
-        mockRequests.side_effect = side_effect
-        self.assertRegexpMatches(self.fun.rtq(self.defaultMess, self.defaultArgs),
+        self.assertRegexpMatches(self.fun.rtq(self.default_mess, self.default_args),
                                  "Failed to load quote #\d+ from http://bash\.org/\?\d+")
 
-        requestsPatcher.stop()
+        requests_patcher.stop()
 
     def test_rtxkcd(self):
-        res = self.fun.rtxkcd(self.defaultMess, self.defaultArgs)
+        res = self.fun.rtxkcd(self.default_mess, self.default_args)
 
         try:
-            comicURL = re.search("https://xkcd\.com/\d+/", res).group(0)
+            comic_url = re.search("https://xkcd\.com/\d+/", res).group(0)
         except AttributeError:
-            self.skipTest("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
+            self.fail("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
 
         try:
-            comicData = requests.get("{}info.0.json".format(comicURL), timeout=5).json()
+            comic_data = requests.get("{}info.0.json".format(comic_url), timeout=5).json()
         except requests.exceptions.RequestException as e:
-            self.skipTest("Error while connecting to https://xkcd.com: {} in test_rtxkcd".format(e))
+            self.skipTest("Error while connecting to https://xkcd.com in test_rtxkcd: {}".format(e))
         except ValueError:
-            self.skipTest("Failed to load xkcd from {} in test_rtxkcd".format(comicURL))
+            self.skipTest("Failed to load xkcd from {} in test_rtxkcd".format(comic_url))
 
-        self.assertEqual(res, "<b>{}</b>: {}".format(comicData['title'], comicURL))
+        self.assertEqual(res, "<b>{}</b>: {}".format(comic_data['title'], comic_url))
 
     def test_rtxkcd_RequestException(self):
         desc = "TestException"
-        exceptionText = "Error while connecting to https://xkcd.com: {}".format(desc)
+        exception_text = "Error while connecting to https://xkcd.com: {}".format(desc)
 
-        # Exception at first request
-        requestsPatcher = mock.patch("requests.get",
-                                     side_effect=requests.exceptions.RequestException(desc))
-        mockRequests = requestsPatcher.start()
-        self.assertEqual(self.fun.rtxkcd(self.defaultMess, self.defaultArgs), exceptionText)
-
-        # Exception at second request
         def side_effect(*args, **kwargs):
-            requestsPatcher.stop()
-            r = requests.get(*args, **kwargs)
-            mockRequests = requestsPatcher.start()
+            """Emulate call and restart patcher to use default side_effect for second request."""
+            requests_patcher.stop()
+            try:
+                r = requests.get(*args, **kwargs)
+            except requests.exceptions.RequestException as e:
+                self.skipTest(
+                    "Error while emulating request in test_rtxkcd_RequestException: {}".format(e)
+                )
+            mock_requests = requests_patcher.start()
             return r
 
-        mockRequests.side_effect = side_effect
-        self.assertEqual(self.fun.rtxkcd(self.defaultMess, self.defaultArgs), exceptionText)
+        # Exception at first request
+        requests_patcher = mock.patch("requests.get",
+                                      side_effect=requests.exceptions.RequestException(desc))
+        mock_requests = requests_patcher.start()
 
-        requestsPatcher.stop()
+        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), exception_text)
 
-    def test_rtxkcd_flawedResponse(self):
-        # Exception after first JSON parsing
-        requestsPatcher = mock.patch("requests.Response.json",
-                                     side_effect=ValueError("No JSON object could be decoded"))
-        mockRequests = requestsPatcher.start()
-        self.assertEqual(self.fun.rtxkcd(self.defaultMess, self.defaultArgs),
+        # Exception at second request
+        mock_requests.side_effect = side_effect
+
+        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), exception_text)
+
+        requests_patcher.stop()
+
+    def test_rtxkcd_flawedresponse(self):
+        def side_effect(*args, **kwargs):
+            """Emulate call and restart patcher to use default side_effect for second request."""
+            requests_patcher.stop()
+            try:
+                r = requests.get(*args, **kwargs)
+            except requests.exceptions.RequestException as e:
+                self.skipTest(
+                    "Error while emulating request in test_rtxkcd_flawedresponse: {}".format(e)
+                )
+            mock_requests = requests_patcher.start()
+            return r
+
+        # 404 response after first request
+        requests_patcher = mock.patch("requests.get", side_effect=flawed_response)
+        mock_requests = requests_patcher.start()
+
+        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args),
                          "Error while parsing response from https://xkcd.com")
 
-        # Exception after second JSON parsing
-        def side_effect(*args, **kwargs):
-            requestsPatcher.stop()
-            try:
-                res = requests.get("https://xkcd.com/info.0.json", timeout=3).json()
-            except requests.exceptions.RequestException, ValueError:
-                self.skipTest("Failed to pass patched JSON in test_rtxkcd_flawedResponse")
-            mockRequests = requestsPatcher.start()
-            return res
+        # 404 response after second request
+        mock_requests.side_effect = side_effect
 
-        mockRequests.side_effect = side_effect
-        self.assertRegexpMatches(self.fun.rtxkcd(self.defaultMess, self.defaultArgs),
+        self.assertRegexpMatches(self.fun.rtxkcd(self.default_mess, self.default_args),
                                  "Failed to load xkcd #\d+ from https://xkcd\.com/\d+/")
 
-        requestsPatcher.stop()
+        requests_patcher.stop()
 
 
 if __name__ == "__main__":
