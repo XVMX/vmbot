@@ -42,7 +42,7 @@ class TestFun(unittest.TestCase):
         try:
             quote_url = re.search("http://bash\.org/\?\d+", res).group(0)
         except AttributeError:
-            self.skipTest("rtq didn't return an http://bash.org link in test_rtq")
+            self.fail("rtq didn't return an http://bash.org link in test_rtq")
 
         try:
             r = requests.get(quote_url, timeout=5)
@@ -121,7 +121,7 @@ class TestFun(unittest.TestCase):
         try:
             comic_url = re.search("https://xkcd\.com/\d+/", res).group(0)
         except AttributeError:
-            self.skipTest("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
+            self.fail("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
 
         try:
             comic_data = requests.get("{}info.0.json".format(comic_url), timeout=5).json()
