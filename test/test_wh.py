@@ -22,7 +22,7 @@ class TestWormhole(unittest.TestCase):
 
     def tearDown(self):
         del self.wormhole
-        self.tearDownClass()
+        self.setUpClass()
 
     @classmethod
     def setUpClass(cls):
@@ -30,10 +30,6 @@ class TestWormhole(unittest.TestCase):
             os.remove(WH_DB)
         except OSError:
             pass
-
-    @classmethod
-    def tearDownClass(cls):
-        return cls.setUpClass()
 
     def test_invalid_parameters(self, use_db=True):
         # Create database
