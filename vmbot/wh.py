@@ -103,8 +103,8 @@ class Wormhole(object):
         connections = []
         connectionDetails = "{} ({} | {}) <-> {} ({} | {}) | About {:.0f}h left | Scanned by {}"
         for connection in data:
-            src = api.getSolarSystemData(connection['SRC'])
-            dest = api.getSolarSystemData(connection['DEST'])
+            src = api.get_solarSystemData(connection['SRC'])
+            dest = api.get_solarSystemData(connection['DEST'])
             connections.append(connectionDetails.format(
                 src['solarSystemName'], connection['SRC-SIG'], src['regionName'],
                 dest['solarSystemName'], connection['DEST-SIG'], dest['regionName'],
@@ -131,8 +131,8 @@ class Wormhole(object):
 
         allConnections = []
         for connection in data:
-            src = api.getSolarSystemData(connection['SRC'])
-            dest = api.getSolarSystemData(connection['DEST'])
+            src = api.get_solarSystemData(connection['SRC'])
+            dest = api.get_solarSystemData(connection['DEST'])
             allConnections.append({
                 'SRC': connection['SRC'],
                 'SRC-System': src['solarSystemName'],

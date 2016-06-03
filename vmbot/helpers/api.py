@@ -7,13 +7,12 @@ import sqlite3
 
 import requests
 
+from . import cache
 from .files import STATICDATA_DB
 from .exceptions import APIError
 
-from . import cache
 
-
-def getTypeName(typeID):
+def get_typeName(typeID):
     """Resolve a typeID to its name."""
     conn = sqlite3.connect(STATICDATA_DB)
     items = conn.execute(
@@ -29,7 +28,7 @@ def getTypeName(typeID):
     return items[0][1]
 
 
-def getSolarSystemData(solarSystemID):
+def get_solarSystemData(solarSystemID):
     """Resolve a solarSystemID to its data."""
     conn = sqlite3.connect(STATICDATA_DB)
     systems = conn.execute(
@@ -55,7 +54,7 @@ def getSolarSystemData(solarSystemID):
             'regionID': systems[0][4], 'regionName': systems[0][5]}
 
 
-def getCRESTEndpoint(url, params=None, timeout=3):
+def get_crest_endpoint(url, params=None, timeout=3):
     """Parse JSON document associated with CREST url."""
     cached = cache.get_http(url, params=params)
     if not cached:
@@ -69,18 +68,20 @@ def getCRESTEndpoint(url, params=None, timeout=3):
 
         res = r.json()
         try:
-            cacheSec = int(re.search("max-age=(\d+)", r.headers['Cache-Control']).group(1))
-        except:
+            expires_in = int(
+                re.search("max-age=(\d+)", r.headers['Cache-Control'], re.IGNORECASE).group(1)
+            )
+        except (KeyError, AttributeError):
             pass
         else:
-            cache.set_http(url, doc=r.content, expiry=int(time.time() + cacheSec), params=params)
+            cache.set_http(url, doc=r.content, expiry=int(time.time() + expires_in), params=params)
     else:
         res = json.loads(cached)
 
     return res
 
 
-def postXMLEndpoint(url, data=None, timeout=3):
+def post_xml_endpoint(url, data=None, timeout=3):
     """Parse XML document associated with EVE API url."""
     cached = cache.get_http(url, params=data)
     if not cached:
@@ -104,32 +105,30 @@ def postXMLEndpoint(url, data=None, timeout=3):
     return xml
 
 
-def getTickers(corporationID, allianceID):
+def get_tickers(corporationID, allianceID):
     """Resolve corpID/allianceID to their respective ticker(s)."""
-    # Corp ticker
-    corpTicker = None
+    corp_ticker = None
     if corporationID:
-        corpTicker = "{Failed to load}"
+        corp_ticker = "{Failed to load}"
         try:
-            xml = postXMLEndpoint(
+            xml = post_xml_endpoint(
                 "https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
                 data={'corporationID': corporationID}
             )
 
-            corpTicker = str(xml[1].find("ticker").text)
+            corp_ticker = str(xml[1].find("ticker").text)
             allianceID = allianceID or int(xml[1].find("allianceID").text) or None
         except:
             pass
 
-    # Alliance ticker
-    allianceTicker = None
+    alliance_ticker = None
     if allianceID:
-        allianceTicker = "{Failed to load}"
+        alliance_ticker = "{Failed to load}"
         try:
-            allianceTicker = getCRESTEndpoint(
+            alliance_ticker = get_crest_endpoint(
                 "https://crest-tq.eveonline.com/alliances/{}/".format(allianceID)
             )['shortName']
         except:
             pass
 
-    return (corpTicker, allianceTicker)
+    return corp_ticker, alliance_ticker

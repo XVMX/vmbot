@@ -24,7 +24,7 @@ class Price(object):
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/types/{}/".format(item)
 
-        res = api.getCRESTEndpoint(url, params={'type': type_}, timeout=5)
+        res = api.get_crest_endpoint(url, params={'type': type_}, timeout=5)
 
         allOrders = []
         for orderType in ["sell", "buy"]:
@@ -138,8 +138,8 @@ class EveUtils(object):
             return "Please limit your search to 10 characters at most"
 
         try:
-            xml = api.postXMLEndpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx",
-                                      data={'names': ','.join(args)})
+            xml = api.post_xml_endpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx",
+                                        data={'names': ','.join(args)})
         except APIError as e:
             return str(e)
 
@@ -150,7 +150,7 @@ class EveUtils(object):
             return "None of these character(s) exist"
 
         try:
-            xml = api.postXMLEndpoint(
+            xml = api.post_xml_endpoint(
                 "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
                 data={'ids': ','.join(map(str, charIDs))}, timeout=5
             )
@@ -164,7 +164,7 @@ class EveUtils(object):
             corpName = row.attrib['corporationName']
             allianceName = row.attrib['allianceName']
             factionName = row.attrib['factionName']
-            corpTicker, allianceTicker = api.getTickers(int(row.attrib['corporationID']), None)
+            corpTicker, allianceTicker = api.get_tickers(int(row.attrib['corporationID']), None)
 
             charDescription = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
                 charName, corpName, format_tickers(corpTicker, None)
@@ -201,7 +201,7 @@ class EveUtils(object):
 
         corpIDs = list({int(corp['corporation_id']) for corp in res['history'][-10:]})
         try:
-            xml = api.postXMLEndpoint(
+            xml = api.post_xml_endpoint(
                 "https://api.eveonline.com/eve/CharacterName.xml.aspx",
                 data={'ids': ','.join(map(str, corpIDs))}
             )
@@ -211,7 +211,7 @@ class EveUtils(object):
         corps = {}
         for row in xml[1][0]:
             corpID = row.attrib['characterID']
-            corpTicker, allianceTicker = api.getTickers(corpID, None)
+            corpTicker, allianceTicker = api.get_tickers(corpID, None)
             corps[corpID] = {'corpName': row.attrib['name'], 'corpTicker': corpTicker}
 
         for corpRecord in res['history'][-10:]:
@@ -244,7 +244,7 @@ class EveUtils(object):
             pass
 
         try:
-            xml = api.postXMLEndpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx")
+            xml = api.post_xml_endpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx")
             if xml[1][0].text == "True":
                 reply += "\nThe server is online and {} players are playing".format(xml[1][1].text)
             else:
@@ -287,14 +287,14 @@ class EveUtils(object):
             return "Failed to find a killmail for {}".format(regex.group(0))
 
         victim = killdata[0]['victim']
-        solarSystemData = api.getSolarSystemData(killdata[0]['solarSystemID'])
+        solarSystemData = api.get_solarSystemData(killdata[0]['solarSystemID'])
         attackers = killdata[0]['attackers']
-        corpTicker, allianceTicker = api.getTickers(victim['corporationID'], victim['allianceID'])
+        corpTicker, allianceTicker = api.get_tickers(victim['corporationID'], victim['allianceID'])
 
         reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] or victim['corporationName'],
             format_tickers(corpTicker, allianceTicker),
-            api.getTypeName(victim['shipTypeID']),
+            api.get_typeName(victim['shipTypeID']),
             ISK(killdata[0]['zkb']['totalValue']),
             solarSystemData['solarSystemName'],
             solarSystemData['regionName'],
@@ -328,7 +328,7 @@ class EveUtils(object):
                             'corporationID': char['corporationID'],
                             'corporationName': char['corporationName'],
                             'damageDone': char['damageDone'],
-                            'shipTypeName': api.getTypeName(char['shipTypeID']),
+                            'shipTypeName': api.get_typeName(char['shipTypeID']),
                             'finalBlow': bool(char['finalBlow'])} for char in attackers]
         # Sort after inflicted damage
         attackerDetails.sort(key=lambda x: x['damageDone'], reverse=True)
@@ -337,7 +337,7 @@ class EveUtils(object):
         detailedInfo = "<b>{}</b> {} (<b>{}</b>) inflicted <b>{:,} damage</b> "
         detailedInfo += "(<i>{:,.2%} of total damage</i>)"
         for char in attackerDetails[:5]:
-            corpTicker, allianceTicker = api.getTickers(char['corporationID'], None)
+            corpTicker, allianceTicker = api.get_tickers(char['corporationID'], None)
 
             reply += "<br />"
             reply += detailedInfo.format(char['characterName'] or char['corporationName'],
@@ -349,7 +349,7 @@ class EveUtils(object):
         # Add final blow if not already included
         if "final blow" not in reply:
             char = [char for char in attackerDetails if char['finalBlow']][0]
-            corpTicker, allianceTicker = api.getTickers(char['corporationID'], None)
+            corpTicker, allianceTicker = api.get_tickers(char['corporationID'], None)
 
             reply += "<br />"
             reply += detailedInfo.format(char['characterName'] or char['corporationName'],
@@ -382,12 +382,12 @@ class EveUtils(object):
         reply = "{} new loss(es):".format(len(losses))
         for loss in reversed(losses):
             victim = loss['victim']
-            solarSystemData = api.getSolarSystemData(loss['solarSystemID'])
+            solarSystemData = api.get_solarSystemData(loss['solarSystemID'])
 
             reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
                 victim['characterName'] or victim['corporationName'],
                 format_tickers("XVMX", "CONDI"),
-                api.getTypeName(victim['shipTypeID']),
+                api.get_typeName(victim['shipTypeID']),
                 ISK(loss['zkb']['totalValue']),
                 solarSystemData['solarSystemName'],
                 solarSystemData['regionName'],

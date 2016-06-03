@@ -136,7 +136,7 @@ class TestPrice(unittest.TestCase):
         self.assertIsInstance(res[1][0], (int, long))
         self.assertIsInstance(res[1][1], float)
 
-    @mock.patch("vmbot.helpers.api.getCRESTEndpoint", return_value={'items': []})
+    @mock.patch("vmbot.helpers.api.get_crest_endpoint", return_value={'items': []})
     def test_getPriceVolume_noorders(self, mock_crest):
         # The Forge
         regionID = 10000002
