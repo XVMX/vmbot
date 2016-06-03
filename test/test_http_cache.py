@@ -18,34 +18,34 @@ class TestHTTPCache(unittest.TestCase):
         except OSError:
             pass
 
-    def test_setHTTP(self):
-        self.assertTrue(cache.setHTTP("key", doc="value"))
+    def test_set_http(self):
+        self.assertTrue(cache.set_http("key", doc="value"))
 
-    def test_setHTTP_overwrite(self):
-        self.assertTrue(cache.setHTTP("key", doc="value"))
-        self.assertTrue(cache.setHTTP("key", doc="other value"))
-        self.assertEqual(cache.getHTTP("key"), "other value")
+    def test_set_http_overwrite(self):
+        self.assertTrue(cache.set_http("key", doc="value"))
+        self.assertTrue(cache.set_http("key", doc="other value"))
+        self.assertEqual(cache.get_http("key"), "other value")
 
-    def test_getHTTP(self):
-        cache.setHTTP("key", doc="value")
-        self.assertEqual(cache.getHTTP("key"), "value")
+    def test_get_http(self):
+        cache.set_http("key", doc="value")
+        self.assertEqual(cache.get_http("key"), "value")
 
-    def test_getHTTP_expired(self):
-        cache.setHTTP("key", doc="value", expiry=1)
-        self.assertIsNone(cache.getHTTP("key"))
+    def test_get_http_expired(self):
+        cache.set_http("key", doc="value", expiry=1)
+        self.assertIsNone(cache.get_http("key"))
 
-    def test_getHTTP_notfound(self):
-        cache.setHTTP("key", doc="value")
-        self.assertIsNone(cache.getHTTP("other key"))
+    def test_get_http_notfound(self):
+        cache.set_http("key", doc="value")
+        self.assertIsNone(cache.get_http("other key"))
 
-    def test_getHTTP_nodb(self):
-        self.assertIsNone(cache.getHTTP("other key"))
+    def test_get_http_nodb(self):
+        self.assertIsNone(cache.get_http("other key"))
 
     def test_update(self):
-        self.assertTrue(cache.setHTTP("key", doc="value"))
-        cache._cache_version += 1
-        self.assertTrue(cache.setHTTP("key", doc="other value"))
-        self.assertEqual(cache.getHTTP("key"), "other value")
+        self.assertTrue(cache.set_http("key", doc="value"))
+        cache._CACHE_VERSION += 1
+        self.assertTrue(cache.set_http("key", doc="other value"))
+        self.assertEqual(cache.get_http("key"), "other value")
 
 
 if __name__ == "__main__":

@@ -267,7 +267,7 @@ class EveUtils(object):
         compact = len(args) == 2
 
         url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
-        cached = cache.getHTTP(url)
+        cached = cache.get_http(url)
         if not cached:
             try:
                 r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
@@ -279,7 +279,7 @@ class EveUtils(object):
             killdata = r.json()
             cacheSec = int(re.search("(?:public|private).+max-age=(\d+)",
                                      r.headers['Cache-Control']).group(1))
-            cache.setHTTP(url, doc=r.text, expiry=int(time.time() + cacheSec))
+            cache.set_http(url, doc=r.text, expiry=int(time.time() + cacheSec))
         else:
             killdata = json.loads(cached)
 

@@ -4,14 +4,12 @@ import sqlite3
 
 from .files import CACHE_DB
 
-
-_cache_version = 4
+_CACHE_VERSION = 4
 
 
 def __connect():
     """Connect to the cache database."""
-    conn = sqlite3.connect(CACHE_DB)
-    return conn
+    return sqlite3.connect(CACHE_DB)
 
 
 def __schema(conn):
@@ -28,14 +26,14 @@ def __schema(conn):
            FROM metadata
            WHERE key = "version";"""
     ).fetchall()
-    if res and int(res[0][0]) != _cache_version:
+    if res and int(res[0][0]) != _CACHE_VERSION:
         conn.execute("DROP TABLE cache;")
     conn.commit()
 
     conn.execute(
         """INSERT OR REPLACE INTO metadata
            VALUES ("version", :version);""",
-        {'version': _cache_version}
+        {'version': _CACHE_VERSION}
     )
     conn.execute(
         """CREATE TABLE IF NOT EXISTS cache (
@@ -59,7 +57,7 @@ def _get(key):
                  AND expiry > :expiry;""",
             {'key': key, 'expiry': int(time.time())}
         ).fetchall()
-    except:
+    except sqlite3.OperationalError:
         res = []
 
     conn.close()
@@ -89,14 +87,14 @@ def _set(key, value, expiry=None):
     return True
 
 
-def getHTTP(path, params=None):
+def get_http(url, params=None):
     """Retrieve a cached HTTP request."""
-    key = path + (json.dumps(params) if params else "")
+    key = url + (json.dumps(params) if params else "")
     res = _get(key)
     return str(res) if res else res
 
 
-def setHTTP(path, doc, expiry=None, params=None):
+def set_http(url, doc, expiry=None, params=None):
     """Add a HTTP request to the cache."""
-    key = path + (json.dumps(params) if params else "")
+    key = url + (json.dumps(params) if params else "")
     return _set(key, sqlite3.Binary(doc), expiry)

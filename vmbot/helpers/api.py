@@ -57,7 +57,7 @@ def getSolarSystemData(solarSystemID):
 
 def getCRESTEndpoint(url, params=None, timeout=3):
     """Parse JSON document associated with CREST url."""
-    cached = cache.getHTTP(url, params=params)
+    cached = cache.get_http(url, params=params)
     if not cached:
         try:
             r = requests.get(url, params=params, headers={'User-Agent': "XVMX JabberBot"},
@@ -73,7 +73,7 @@ def getCRESTEndpoint(url, params=None, timeout=3):
         except:
             pass
         else:
-            cache.setHTTP(url, doc=r.content, expiry=int(time.time() + cacheSec), params=params)
+            cache.set_http(url, doc=r.content, expiry=int(time.time() + cacheSec), params=params)
     else:
         res = json.loads(cached)
 
@@ -82,7 +82,7 @@ def getCRESTEndpoint(url, params=None, timeout=3):
 
 def postXMLEndpoint(url, data=None, timeout=3):
     """Parse XML document associated with EVE API url."""
-    cached = cache.getHTTP(url, params=data)
+    cached = cache.get_http(url, params=data)
     if not cached:
         try:
             r = requests.post(url, data=data, headers={'User-Agent': "XVMX JabberBot"},
@@ -93,7 +93,7 @@ def postXMLEndpoint(url, data=None, timeout=3):
             raise APIError("XML-API returned error code {}".format(r.status_code))
 
         xml = ET.fromstring(r.content)
-        cache.setHTTP(
+        cache.set_http(
             url, doc=r.content,
             expiry=int(timegm(time.strptime(xml[2].text, "%Y-%m-%d %H:%M:%S"))),
             params=data
