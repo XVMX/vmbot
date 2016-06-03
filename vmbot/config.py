@@ -2,7 +2,6 @@ from ConfigParser import SafeConfigParser
 
 from .helpers.files import CONFIG
 
-
 _parser = SafeConfigParser()
 _parser.read(CONFIG)
 
@@ -15,11 +14,11 @@ config = {
         'password': _parser.get('Jabber', 'password'),
         'res': _parser.get('Jabber', 'resource'),
         'nickname': _parser.get('Jabber', 'nickname'),
-        'chatrooms': [
+        'chatrooms': (
             _parser.get('Jabber', 'chatroom1'),
             _parser.get('Jabber', 'chatroom2'),
             _parser.get('Jabber', 'chatroom3')
-        ]
+        )
     },
     # GSF broadcast API
     'bcast': {

@@ -25,7 +25,7 @@ class TestConfig(unittest.TestCase):
         self.assertIsInstance(config['jabber']['nickname'], str)
 
     def test_chatrooms(self):
-        self.assertIsInstance(config['jabber']['chatrooms'], list)
+        self.assertIsInstance(config['jabber']['chatrooms'], tuple)
         for room in config['jabber']['chatrooms']:
             self.assertIsInstance(room, str)
 
