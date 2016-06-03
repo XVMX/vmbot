@@ -1,11 +1,11 @@
 import unittest
 
-from vmbot.helpers.format import formatTickers
+from vmbot.helpers.format import format_tickers
 
 
 class TestFormat(unittest.TestCase):
-    def test_formatTickers(self):
-        self.assertEqual(formatTickers("CORP", "ALLIANCE"), "[CORP] <span>&lt;ALLIANCE&gt;</span>")
+    def test_format_tickers(self):
+        self.assertEqual(format_tickers("CORP", "ALLIANCE"), "[CORP] <span>&lt;ALLIANCE&gt;</span>")
 
 
 if __name__ == "__main__":

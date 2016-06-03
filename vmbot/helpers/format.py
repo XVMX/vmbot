@@ -1,9 +1,9 @@
-def formatTickers(corporationTicker, allianceTicker):
-    "Format ticker(s) like the EVE client does."
-    ticker = ""
-    if corporationTicker:
-        ticker += "[{}] ".format(corporationTicker)
-    if allianceTicker:
+def format_tickers(corporation_ticker, alliance_ticker):
+    """Format ticker(s) like the EVE client does."""
+    tickers = []
+    if corporation_ticker:
+        tickers.append("[{}]".format(corporation_ticker))
+    if alliance_ticker:
         # Wrapped in <span></span> to force XHTML parsing
-        ticker += "<span>&lt;{}&gt;</span> ".format(allianceTicker)
-    return ticker[:-1]
+        tickers.append("<span>&lt;{}&gt;</span>".format(alliance_ticker))
+    return ' '.join(tickers)

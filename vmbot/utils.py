@@ -15,7 +15,7 @@ from .helpers.exceptions import APIError
 from .helpers.types import ISK
 
 from .helpers import api
-from .helpers.format import formatTickers
+from .helpers.format import format_tickers
 from .helpers import cache
 
 
@@ -167,11 +167,11 @@ class EveUtils(object):
             corpTicker, allianceTicker = api.getTickers(int(row.attrib['corporationID']), None)
 
             charDescription = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
-                charName, corpName, formatTickers(corpTicker, None)
+                charName, corpName, format_tickers(corpTicker, None)
             )
             if allianceName:
                 charDescription += " in <b>{} {}</b>".format(
-                    allianceName, formatTickers(None, allianceTicker)
+                    allianceName, format_tickers(None, allianceTicker)
                 )
             if factionName:
                 charDescription += " which is part of <b>{}</b>".format(factionName)
@@ -220,7 +220,7 @@ class EveUtils(object):
                 corpRecord['start_date'],
                 corpRecord['end_date'] or "now",
                 corpData['corpName'],
-                formatTickers(corpData['corpTicker'], None)
+                format_tickers(corpData['corpTicker'], None)
             )
 
         if len(res['history']) > 10:
@@ -293,7 +293,7 @@ class EveUtils(object):
 
         reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] or victim['corporationName'],
-            formatTickers(corpTicker, allianceTicker),
+            format_tickers(corpTicker, allianceTicker),
             api.getTypeName(victim['shipTypeID']),
             ISK(killdata[0]['zkb']['totalValue']),
             solarSystemData['solarSystemName'],
@@ -308,15 +308,15 @@ class EveUtils(object):
         if victim['characterName']:
             reply += "<br /><b>{}</b> is part of corporation <b>{} {}</b>".format(
                 victim['characterName'], victim['corporationName'],
-                formatTickers(corpTicker, None)
+                format_tickers(corpTicker, None)
             )
         else:
             reply += "<br />The structure is owned by corporation <b>{} {}</b>".format(
-                victim['corporationName'], formatTickers(corpTicker, None)
+                victim['corporationName'], format_tickers(corpTicker, None)
             )
         if victim['allianceName']:
             reply += " in <b>{} {}</b>".format(victim['allianceName'],
-                                               formatTickers(None, allianceTicker))
+                                               format_tickers(None, allianceTicker))
         if victim['factionName']:
             reply += " which is part of <b>{}</b>".format(victim['factionName'])
 
@@ -341,7 +341,7 @@ class EveUtils(object):
 
             reply += "<br />"
             reply += detailedInfo.format(char['characterName'] or char['corporationName'],
-                                         formatTickers(corpTicker, allianceTicker),
+                                         format_tickers(corpTicker, allianceTicker),
                                          char['shipTypeName'], char['damageDone'],
                                          char['damageDone'] / float(victim['damageTaken']))
             reply += " and scored the <b>final blow</b>" if char['finalBlow'] else ""
@@ -353,7 +353,7 @@ class EveUtils(object):
 
             reply += "<br />"
             reply += detailedInfo.format(char['characterName'] or char['corporationName'],
-                                         formatTickers(corpTicker, allianceTicker),
+                                         format_tickers(corpTicker, allianceTicker),
                                          char['shipTypeName'], char['damageDone'],
                                          char['damageDone'] / float(victim['damageTaken']))
             reply += " and scored the <b>final blow</b>"
@@ -386,7 +386,7 @@ class EveUtils(object):
 
             reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
                 victim['characterName'] or victim['corporationName'],
-                formatTickers("XVMX", "CONDI"),
+                format_tickers("XVMX", "CONDI"),
                 api.getTypeName(victim['shipTypeID']),
                 ISK(loss['zkb']['totalValue']),
                 solarSystemData['solarSystemName'],
