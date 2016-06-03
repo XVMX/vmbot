@@ -37,7 +37,7 @@ class TestSay(unittest.TestCase):
     def test_nicksay(self):
         res = self.say.nicksay(self.default_mess, self.default_args)
 
-        if not any([re.match(line.format("0{2,}"), res) for line in Say.nickisms]):
+        if not any(re.match(line.format("0{2,}"), res) for line in Say.nickisms):
             self.fail("nicksay didn't return a valid nickism")
 
     def test_chasesay_noargs(self):
