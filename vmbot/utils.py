@@ -1,5 +1,3 @@
-from .jabberbot import botcmd
-
 import time
 from datetime import datetime, timedelta
 import re
@@ -9,6 +7,7 @@ import sqlite3
 
 import requests
 
+from .vmbot import botcmd
 from .config import config as vmc
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
