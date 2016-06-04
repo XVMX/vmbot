@@ -3,7 +3,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 
-from .vmbot import botcmd
+from .botcmd import botcmd
 from .helpers.files import EMOTES
 
 

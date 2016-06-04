@@ -7,7 +7,7 @@ import sqlite3
 
 import requests
 
-from .vmbot import botcmd
+from .botcmd import botcmd
 from .config import config as vmc
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError

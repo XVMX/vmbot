@@ -1,4 +1,4 @@
-from . import jabberbot
+from .jabberbot import JabberBot
 
 import time
 from datetime import datetime
@@ -15,6 +15,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
+from .botcmd import botcmd
 from .config import config as vmc
 
 from .helpers.exceptions import TimeoutError
@@ -24,18 +25,7 @@ from .utils import Price, EveUtils
 from .wh import Wormhole
 
 
-def botcmd(*args, **kwargs):
-    def decorate(func, forcePM=False, **kwargs):
-        setattr(func, "_vmbot_forcepm", forcePM)
-        return jabberbot.botcmd(func, **kwargs)
-
-    if args:
-        return decorate(args[0], **kwargs)
-    else:
-        return lambda func: decorate(func, **kwargs)
-
-
-class MUCJabberBot(jabberbot.JabberBot):
+class MUCJabberBot(JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
