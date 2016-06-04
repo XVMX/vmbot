@@ -12,14 +12,11 @@
 # On Debian systems, you can find the full text of the license in
 # /usr/share/common-licenses/GPL-3
 
-
 import logging
 from datetime import datetime
 
 from .config import config
-
 from .vmbot import VMBot
-
 
 if __name__ == "__main__":
     logfile = "{:%Y-%m-%d_%H%M}.vmbot.log".format(datetime.now())
@@ -35,6 +32,6 @@ if __name__ == "__main__":
 
     try:
         morgooglie.serve_forever()
-    except Exception as e:
+    except Exception:
         logger.exception("An error happened in the main loop:")
         morgooglie.shutdown()
