@@ -1,10 +1,9 @@
-from .jabberbot import botcmd
-
 import random
 
 import requests
 from bs4 import BeautifulSoup
 
+from .botcmd import botcmd
 from .helpers.files import EMOTES
 
 
