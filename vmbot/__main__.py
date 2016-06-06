@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 
 # Copyright (C) 2010 Arthur Furlan <afurlan@afurlan.org>
@@ -13,16 +12,17 @@
 # /usr/share/common-licenses/GPL-3
 
 import logging
-from datetime import datetime
+import logging.handlers
 
 from .config import config
 from .vmbot import VMBot
 
 if __name__ == "__main__":
-    logfile = "{:%Y-%m-%d_%H%M}.vmbot.log".format(datetime.now())
     logger = logging.getLogger("vmbot")
     logger.setLevel(logging.getLevelName(config['loglevel']))
-    logger.addHandler(logging.FileHandler(logfile, encoding="utf-8"))
+    logger.addHandler(logging.handlers.TimedRotatingFileHandler(
+        "vmbot.log", when='d', interval=7, backupCount=3, encoding="utf-8"
+    ))
 
     # Grabbing values from imported config file
     jbc = config['jabber']
