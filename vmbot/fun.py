@@ -9,7 +9,7 @@ from .helpers.files import EMOTES
 
 class Say(object):
     # 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
-    eball_answers = [
+    eball_answers = (
         "It is certain",
         "It is decidedly so",
         "Without a doubt",
@@ -30,21 +30,21 @@ class Say(object):
         "My sources say no",
         "Outlook not so good",
         "Very doubtful"
-    ]
-    fishisms = [
+    )
+    fishisms = (
         "~The Python Way!~",
         "HOOOOOOOOOOOOOOOOOOOOOOO! SWISH!",
         "DIVERGENT ZONES!",
         "BONUSSCHWEIN! BONUSSCHWEIN!"
-    ]
-    pimpisms = [
+    )
+    pimpisms = (
         "eabod",
         "why do you hate black people?",
         "i want a bucket full of money covered rainbows",
         "bundle of sticks",
         "that went over like a jerrys kids rodeo with live bulls"
-    ]
-    areleisms = [
+    )
+    areleisms = (
         "PzbjWI3EhyI",
         "5R8At-Qno_o",
         "MZwXoDyj9Vc",
@@ -55,15 +55,15 @@ class Say(object):
         "9XHqg7mTizE",
         "gtM9xD-Ky7E",
         "ZTidn2dBYbY"
-    ]
-    nickisms = [
+    )
+    nickisms = (
         "D{}d!",
         "But d{}d!",
         "Come on d{}d...",
         "Oh d{}d",
         "D{}d, never go full retart!"
-    ]
-    kairkisms = [
+    )
+    kairkisms = (
         "thanks for filling this out.",
         "voting on your application to join VM is over, and you have passed.",
         "congratulations, you passed the security check.",
@@ -72,19 +72,19 @@ class Say(object):
         "in 48h your membership of Valar Morghulis. will be terminated.",
         "you've got to improve, or I'll be sending out more kick notices, and I hate doing that.",
         "you get a cavity search, your friends get a cavity search, EVERYBODY gets a cavity search!"
-    ]
-    dariusisms = [
-        "Baby"
-    ]
-    scottisms = [
+    )
+    dariusisms = (
+        "Baby",
+    )
+    scottisms = (
         "would you like to buy a rose?",
         "Israel has a right to defend itself."
-    ]
-    jokerisms = [
+    )
+    jokerisms = (
         "dont be a retard",
         "dont ruin our zkb efficiency",
         "urbad"
-    ]
+    )
 
     @botcmd
     def fishsay(self, mess, args):
@@ -168,10 +168,10 @@ class Fun(object):
     @botcmd
     def rtd(self, mess, args):
         """Like a box of chocolates, you never know what you're gonna get"""
-        with open(EMOTES, 'r') as emotesFile:
-            emotes = emotesFile.read().split('\n')
+        with open(EMOTES, 'r') as emotes_file:
+            emotes = emotes_file.read().splitlines()
 
-        while not emotes.pop(0).startswith("[default]"):
+        while not emotes.pop(0) == "[default]":
             pass
 
         return random.choice(emotes).split()[-1]
@@ -185,17 +185,17 @@ class Fun(object):
             return "Error while connecting to http://bash.org: {}".format(e)
         soup = BeautifulSoup(r.text, "html.parser")
 
-        validIDs = {int(link['href'][1:]) for link
-                    in soup.find_all("a", title="Permanent link to this quote.")}
+        valid_ids = {int(link['href'][1:]) for link
+                     in soup.find_all("a", title="Permanent link to this quote.")}
 
-        if not validIDs:
+        if not valid_ids:
             return "Failed to load any quotes from http://bash.org/?random"
 
-        quoteID = random.choice(tuple(validIDs))
-        quoteURL = "http://bash.org/?{}".format(quoteID)
+        quote_id = random.choice(tuple(valid_ids))
+        quote_url = "http://bash.org/?{}".format(quote_id)
 
         try:
-            r = requests.get(quoteURL, timeout=3)
+            r = requests.get(quote_url, timeout=3)
         except requests.exceptions.RequestException as e:
             return "Error while connecting to http://bash.org: {}".format(e)
         soup = BeautifulSoup(r.text, "html.parser")
@@ -203,9 +203,9 @@ class Fun(object):
         try:
             quote = soup.find("p", class_="qt").text.encode("ascii", "replace")
         except AttributeError:
-            return "Failed to load quote #{} from {}".format(quoteID, quoteURL)
+            return "Failed to load quote #{} from {}".format(quote_id, quote_url)
 
-        return "{}\n{}".format(quote, quoteURL)
+        return "{}\n{}".format(quote, quote_url)
 
     @botcmd
     def rtxkcd(self, mess, args):
@@ -217,17 +217,17 @@ class Fun(object):
         except ValueError:
             return "Error while parsing response from https://xkcd.com"
 
-        comicID = random.randint(1, res['num'])
-        comicURL = "https://xkcd.com/{}/".format(comicID)
+        comic_id = random.randint(1, res['num'])
+        comic_url = "https://xkcd.com/{}/".format(comic_id)
 
         try:
-            comicData = requests.get("{}info.0.json".format(comicURL), timeout=3).json()
+            comic_data = requests.get("{}info.0.json".format(comic_url), timeout=3).json()
         except requests.exceptions.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
         except ValueError:
-            return "Failed to load xkcd #{} from {}".format(comicID, comicURL)
+            return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
 
-        return "<b>{}</b>: {}".format(comicData['title'], comicURL)
+        return "<b>{}</b>: {}".format(comic_data['title'], comic_url)
 
 
 class Chains(object):
