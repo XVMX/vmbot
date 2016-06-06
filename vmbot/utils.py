@@ -19,41 +19,42 @@ from .helpers import cache
 
 
 class Price(object):
-    def _getMarketOrders(self, region, system, item):
+    def _get_market_orders(self, region, system, item):
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/types/{}/".format(item)
 
         res = api.get_crest_endpoint(url, params={'type': type_}, timeout=5)
 
-        allOrders = []
-        for orderType in ["sell", "buy"]:
-            # order['buy'] = True for buy, False for sell
-            orders = [order for order in res['items'] if order['buy'] == (orderType == "buy") and
-                      order['location']['name'].startswith(system)]
+        sell = {'orders': [order for order in res['items'] if order['buy'] == False and
+                           order['location']['name'].startswith(system)],
+                'direction': max}
+        buy = {'orders': [order for order in res['items'] if order['buy'] == True and
+                          order['location']['name'].startswith(system)],
+               'direction': min}
 
-            volume = sum([order['volume'] for order in orders])
-            direction = min if orderType == "sell" else max
+        for data in (sell, buy):
+            data['volume'] = sum(order['volume'] for order in data['orders'])
             try:
-                price = direction([order['price'] for order in orders])
+                data['price'] = data['direction'](order['price'] for order in data['orders'])
             except ValueError:
-                price = 0
+                data['price'] = 0
 
-            allOrders.append((volume, price))
-
-        return allOrders
+        return (sell['price'], sell['volume']), (buy['price'], buy['volume'])
 
     def _disambiguate(self, given, like, category):
         reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
+
         if len(like) > 3:
             reply += ", and {} others".format(len(like) - 3)
+
         return reply
 
     @botcmd
     def price(self, mess, args):
-        """<item>@[system] - Displays price of item in system, defaulting to Jita"""
+        """<item>[@system] - Displays price of item in system, defaulting to Jita"""
         args = [item.strip() for item in args.split('@')]
-        if len(args) not in (1, 2) or args[0] == "":
-            return "Please provide an item name and optionally a system name: <item>@[system]"
+        if not 1 <= len(args) <= 2 or args[0] == "":
+            return "Please provide an item name and optionally a system name: <item>[@system]"
 
         item = args[0]
         try:
@@ -68,7 +69,6 @@ class Price(object):
             item = "30 Day Pilot's License Extension (PLEX)"
 
         conn = sqlite3.connect(STATICDATA_DB)
-        conn.text_factory = lambda t: unicode(t, "utf-8", "replace")
 
         systems = conn.execute(
             """SELECT regionID, solarSystemName
@@ -102,24 +102,27 @@ class Price(object):
         systemName = systemName.encode("ascii", "replace")
 
         try:
-            orders = self._getMarketOrders(regionID, systemName, typeID)
-            sellvolume, sellprice = orders.pop(0)
-            buyvolume, buyprice = orders.pop(0)
+            orders = self._get_market_orders(regionID, systemName, typeID)
+            sellprice, sellvolume = orders[0]
+            buyprice, buyvolume = orders[1]
         except APIError as e:
             return str(e)
 
-        reply = "<b>{}</b> in <b>{}</b>:<br />".format(typeName, systemName)
-        reply += "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />".format(sellprice, sellvolume)
-        reply += "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />".format(buyprice, buyvolume)
+        reply = ("<b>{}</b> in <b>{}</b>:<br />"
+                 "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                 "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                 "Spread: ").format(
+            typeName, systemName, sellprice, sellvolume, buyprice, buyvolume
+        )
         try:
-            reply += "Spread: {:,.2%}".format((sellprice - buyprice) / sellprice)
+            reply += "{:,.2%}".format((sellprice - buyprice) / sellprice)
         except ZeroDivisionError:
             # By request from Jack (See https://www.destroyallsoftware.com/talks/wat)
-            reply += "Spread: NaNNaNNaNNaNNaNBatman!"
+            reply += "NaNNaNNaNNaNNaNBatman!"
 
         if items:
             reply += self._disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) > 1 and systems:
+        if len(args) == 2 and systems:
             reply += self._disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply
