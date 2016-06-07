@@ -1,6 +1,7 @@
 import time
 from datetime import datetime, timedelta
 import re
+import urllib
 import json
 import xml.etree.ElementTree as ET
 import sqlite3
@@ -8,14 +9,13 @@ import sqlite3
 import requests
 
 from .botcmd import botcmd
-from .config import config as vmc
+from .config import config
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
-from .helpers.types import ISK
-
 from .helpers import api
-from .helpers.format import format_tickers
 from .helpers import cache
+from .helpers.format import format_tickers
+from .helpers.types import ISK
 
 
 class Price(object):
@@ -128,7 +128,7 @@ class Price(object):
         return reply
 
 
-class EveUtils(object):
+class EVEUtils(object):
     @botcmd
     def character(self, mess, args):
         """<character name>[, ...] - Displays employment information of character(s)"""
@@ -160,27 +160,28 @@ class EveUtils(object):
             return str(e)
 
         # Basic multi-character information
-        charDescriptions = []
+        descriptions = []
         for row in xml[1][0]:
             charName = row.attrib['characterName']
             corpName = row.attrib['corporationName']
             allianceName = row.attrib['allianceName']
             factionName = row.attrib['factionName']
-            corpTicker, allianceTicker = api.get_tickers(int(row.attrib['corporationID']), None)
+            corp_ticker, alliance_ticker = api.get_tickers(int(row.attrib['corporationID']),
+                                                           int(row.attrib['allianceID']))
 
-            charDescription = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
-                charName, corpName, format_tickers(corpTicker, None)
+            desc = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
+                charName, corpName, format_tickers(corp_ticker, None)
             )
             if allianceName:
-                charDescription += " in <b>{} {}</b>".format(
-                    allianceName, format_tickers(None, allianceTicker)
+                desc += " in <b>{} {}</b>".format(
+                    allianceName, format_tickers(None, alliance_ticker)
                 )
             if factionName:
-                charDescription += " which is part of <b>{}</b>".format(factionName)
+                desc += " which is part of <b>{}</b>".format(factionName)
 
-            charDescriptions.append(charDescription)
+            descriptions.append(desc)
 
-        reply = "<br />".join(charDescriptions)
+        reply = "<br />".join(descriptions)
 
         if len(charIDs) > 1:
             return reply
@@ -213,21 +214,21 @@ class EveUtils(object):
         corps = {}
         for row in xml[1][0]:
             corpID = row.attrib['characterID']
-            corpTicker, allianceTicker = api.get_tickers(corpID, None)
-            corps[corpID] = {'corpName': row.attrib['name'], 'corpTicker': corpTicker}
+            corp_ticker, alliance_ticker = api.get_tickers(corpID, None)
+            corps[corpID] = {'corpName': row.attrib['name'], 'corp_ticker': corp_ticker}
 
-        for corpRecord in res['history'][-10:]:
-            corpData = corps[corpRecord['corporation_id']]
+        for record in res['history'][-10:]:
+            data = corps[record['corporation_id']]
             reply += "<br />From {} til {} in <b>{} {}</b>".format(
-                corpRecord['start_date'],
-                corpRecord['end_date'] or "now",
-                corpData['corpName'],
-                format_tickers(corpData['corpTicker'], None)
+                record['start_date'],
+                record['end_date'] or "now",
+                data['corpName'],
+                format_tickers(data['corp_ticker'], None)
             )
 
         if len(res['history']) > 10:
-            reply += "<br/>The full history is available under http://evewho.com/pilot/{}/".format(
-                res['info']['name'].replace(' ', '+')
+            reply += "<br/>The full history is available at http://evewho.com/pilot/{}/".format(
+                urllib.quote(res['info']['name'])
             )
 
         return reply
@@ -235,13 +236,13 @@ class EveUtils(object):
     @botcmd
     def evetime(self, mess, args):
         """[+offset] - Displays the current evetime, server status and evetime + offset if given"""
-        timefmt = "%Y-%m-%d %H:%M:%S"
         evetime = datetime.utcnow()
-        reply = "The current EVE time is {}".format(evetime.strftime(timefmt))
+        reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(evetime)
 
         try:
-            offset_time = evetime + timedelta(hours=int(args))
-            reply += " and {} hour(s) is {}".format(args.strip(), offset_time.strftime(timefmt))
+            args = int(args)
+            offset_time = evetime + timedelta(hours=args)
+            reply += " and {:+} hour(s) is {:%Y-%m-%d %H:%M:%S}".format(args, offset_time)
         except ValueError:
             pass
 
@@ -251,22 +252,21 @@ class EveUtils(object):
                 reply += "\nThe server is online and {} players are playing".format(xml[1][1].text)
             else:
                 reply += "\nThe server is offline"
-        except:
+        except APIError:
             pass
 
         return reply
 
     @botcmd
-    def zbot(self, mess, args):
-        """<zKB link> [compact] - Displays statistics of a killmail (as a oneliner with compact)"""
-        args = args.strip().split(" ", 1)
+    def zbot(self, mess, args, compact=False):
+        """<zKB link> - Displays statistics of a killmail"""
+        args = args.strip().split(' ', 1)
 
         regex = self.zBotRegex.match(args[0])
         if regex is None:
-            return "Please provide a link to a zKB Killmail"
+            return "Please provide a link to a zKB killmail"
 
         killID = regex.group(1)
-        compact = len(args) == 2
 
         url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
         cached = cache.get_http(url)
@@ -279,27 +279,28 @@ class EveUtils(object):
                 return "zKB-API returned error code {}".format(r.status_code)
 
             killdata = r.json()
-            cacheSec = int(re.search("(?:public|private).+max-age=(\d+)",
-                                     r.headers['Cache-Control']).group(1))
-            cache.set_http(url, doc=r.text, expiry=int(time.time() + cacheSec))
+            try:
+                expires_in = int(re.search("max-age=(\d+)", r.headers['Cache-Control']).group(1))
+            except (KeyError, AttributeError):
+                expires_in = 0
+            cache.set_http(url, doc=r.content, expiry=int(time.time() + expires_in))
         else:
             killdata = json.loads(cached)
 
         if not killdata:
-            return "Failed to find a killmail for {}".format(regex.group(0))
+            return "Failed to load data for {}".format(regex.group(0))
 
         victim = killdata[0]['victim']
-        solarSystemData = api.get_solarSystemData(killdata[0]['solarSystemID'])
+        system = api.get_solarSystemData(killdata[0]['solarSystemID'])
         attackers = killdata[0]['attackers']
-        corpTicker, allianceTicker = api.get_tickers(victim['corporationID'], victim['allianceID'])
+        corp_ticker, alliance_ticker = api.get_tickers(victim['corporationID'],
+                                                       victim['allianceID'])
 
         reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] or victim['corporationName'],
-            format_tickers(corpTicker, allianceTicker),
-            api.get_typeName(victim['shipTypeID']),
+            format_tickers(corp_ticker, alliance_ticker), api.get_typeName(victim['shipTypeID']),
             ISK(killdata[0]['zkb']['totalValue']),
-            solarSystemData['solarSystemName'],
-            solarSystemData['regionName'],
+            system['solarSystemName'], system['regionName'],
             len(attackers),
             killdata[0]['killTime']
         )
@@ -310,15 +311,15 @@ class EveUtils(object):
         if victim['characterName']:
             reply += "<br /><b>{}</b> is part of corporation <b>{} {}</b>".format(
                 victim['characterName'], victim['corporationName'],
-                format_tickers(corpTicker, None)
+                format_tickers(corp_ticker, None)
             )
         else:
             reply += "<br />The structure is owned by corporation <b>{} {}</b>".format(
-                victim['corporationName'], format_tickers(corpTicker, None)
+                victim['corporationName'], format_tickers(corp_ticker, None)
             )
         if victim['allianceName']:
             reply += " in <b>{} {}</b>".format(victim['allianceName'],
-                                               format_tickers(None, allianceTicker))
+                                               format_tickers(None, alliance_ticker))
         if victim['factionName']:
             reply += " which is part of <b>{}</b>".format(victim['factionName'])
 
@@ -326,43 +327,43 @@ class EveUtils(object):
             victim['damageTaken'], killdata[0]['zkb']['points']
         )
 
-        attackerDetails = [{'characterName': char['characterName'],
-                            'corporationID': char['corporationID'],
-                            'corporationName': char['corporationName'],
-                            'damageDone': char['damageDone'],
-                            'shipTypeName': api.get_typeName(char['shipTypeID']),
-                            'finalBlow': bool(char['finalBlow'])} for char in attackers]
+        attackers = [{'characterName': char['characterName'],
+                      'corporationID': char['corporationID'],
+                      'corporationName': char['corporationName'],
+                      'damageDone': char['damageDone'],
+                      'shipTypeName': api.get_typeName(char['shipTypeID']),
+                      'finalBlow': bool(char['finalBlow'])} for char in attackers]
         # Sort after inflicted damage
-        attackerDetails.sort(key=lambda x: x['damageDone'], reverse=True)
+        attackers.sort(key=lambda x: x['damageDone'], reverse=True)
 
         # Add attackerDetails
-        detailedInfo = "<b>{}</b> {} (<b>{}</b>) inflicted <b>{:,} damage</b> "
-        detailedInfo += "(<i>{:,.2%} of total damage</i>)"
-        for char in attackerDetails[:5]:
-            corpTicker, allianceTicker = api.get_tickers(char['corporationID'], None)
+        attacker_info = "<b>{}</b> {} (<b>{}</b>) inflicted <b>{:,} damage</b> "
+        attacker_info += "(<i>{:,.2%} of total damage</i>)"
+        for char in attackers[:5]:
+            corp_ticker, alliance_ticker = api.get_tickers(char['corporationID'], None)
 
             reply += "<br />"
-            reply += detailedInfo.format(char['characterName'] or char['corporationName'],
-                                         format_tickers(corpTicker, allianceTicker),
-                                         char['shipTypeName'], char['damageDone'],
-                                         char['damageDone'] / float(victim['damageTaken']))
+            reply += attacker_info.format(char['characterName'] or char['corporationName'],
+                                          format_tickers(corp_ticker, alliance_ticker),
+                                          char['shipTypeName'], char['damageDone'],
+                                          char['damageDone'] / float(victim['damageTaken']))
             reply += " and scored the <b>final blow</b>" if char['finalBlow'] else ""
 
         # Add final blow if not already included
         if "final blow" not in reply:
-            char = [char for char in attackerDetails if char['finalBlow']][0]
-            corpTicker, allianceTicker = api.get_tickers(char['corporationID'], None)
+            char = next(char for char in attackers if char['finalBlow'])
+            corp_ticker, alliance_ticker = api.get_tickers(char['corporationID'], None)
 
             reply += "<br />"
-            reply += detailedInfo.format(char['characterName'] or char['corporationName'],
-                                         format_tickers(corpTicker, allianceTicker),
-                                         char['shipTypeName'], char['damageDone'],
-                                         char['damageDone'] / float(victim['damageTaken']))
+            reply += attacker_info.format(char['characterName'] or char['corporationName'],
+                                          format_tickers(corp_ticker, alliance_ticker),
+                                          char['shipTypeName'], char['damageDone'],
+                                          char['damageDone'] / float(victim['damageTaken']))
             reply += " and scored the <b>final blow</b>"
 
         return reply
 
-    def kmFeed(self):
+    def km_feed(self):
         """Send a message to the first chatroom with the latest losses."""
         url = "https://zkillboard.com/api/corporationID/2052404106/losses/"
         url += "afterKillID/{}/no-items/no-attackers/".format(self.kmFeedID)
@@ -374,8 +375,8 @@ class EveUtils(object):
         if r.status_code != 200:
             return
 
-        minimumValue = 5000000
-        losses = filter(lambda x: x['zkb']['totalValue'] >= minimumValue, r.json())
+        min_val = 5000000
+        losses = filter(lambda x: x['zkb']['totalValue'] >= min_val, r.json())
         if not losses:
             return
 
@@ -384,34 +385,32 @@ class EveUtils(object):
         reply = "{} new loss(es):".format(len(losses))
         for loss in reversed(losses):
             victim = loss['victim']
-            solarSystemData = api.get_solarSystemData(loss['solarSystemID'])
+            system = api.get_solarSystemData(loss['solarSystemID'])
 
             reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
                 victim['characterName'] or victim['corporationName'],
-                format_tickers("XVMX", "CONDI"),
-                api.get_typeName(victim['shipTypeID']),
+                format_tickers("XVMX", "CONDI"), api.get_typeName(victim['shipTypeID']),
                 ISK(loss['zkb']['totalValue']),
-                solarSystemData['solarSystemName'],
-                solarSystemData['regionName'],
+                system['solarSystemName'], system['regionName'],
                 loss['killTime'],
                 "https://zkillboard.com/kill/{}/".format(loss['killID'])
             )
 
-        self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
+        self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
-    def newsFeed(self):
+    def news_feed(self):
         """Send a message to the first chatroom with the latest EVE news and devblogs."""
-        def getFeed(feedType):
+        def get_feed(type_):
             """Find all new Atom entries available at feedType.
 
             feedType must be either "news" or "devblog".
             """
-            if feedType == "news":
+            if type_ == "news":
                 url = "http://newsfeed.eveonline.com/en-US/44/articles/page/1/20"
-            elif feedType == "devblog":
+            elif type_ == "devblog":
                 url = "http://newsfeed.eveonline.com/en-US/2/articles/page/1/20"
             else:
-                raise ValueError('feedType must be either "news" or "devblog"')
+                raise ValueError('type_ must be either "news" or "devblog"')
 
             try:
                 r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=3)
@@ -434,55 +433,50 @@ class EveUtils(object):
             entries.sort(key=lambda x: time.strptime(x['updated'], "%Y-%m-%dT%H:%M:%SZ"),
                          reverse=True)
 
-            if self.newsFeedIDs[feedType] is None:
-                self.newsFeedIDs[feedType] = entries[0]['id']
+            if self.newsFeedIDs[type_] is None:
+                self.newsFeedIDs[type_] = entries[0]['id']
                 return []
             else:
-                idx = next(idx for (idx, entry) in enumerate(entries)
-                           if entry['id'] == self.newsFeedIDs[feedType])
-                self.newsFeedIDs[feedType] = entries[0]['id']
+                idx = next(idx for idx, entry in enumerate(entries)
+                           if entry['id'] == self.newsFeedIDs[type_])
+                self.newsFeedIDs[type_] = entries[0]['id']
                 return entries[:idx]
 
-        newsEntries = None
-        devblogEntries = None
+        news = None
+        devblogs = None
         try:
-            newsEntries = getFeed("news")
-        except:
+            news = get_feed("news")
+        except APIError:
             pass
         try:
-            devblogEntries = getFeed("devblog")
-        except:
+            devblogs = get_feed("devblog")
+        except APIError:
             pass
 
-        if newsEntries:
-            reply = "{} new EVE news:".format(len(newsEntries))
-            for entry in newsEntries:
+        if news:
+            reply = "{} new EVE news:".format(len(news))
+            for entry in news:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
+            self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
-        if devblogEntries:
-            reply = "{} new devblog(s):".format(len(devblogEntries))
-            for entry in devblogEntries:
+        if devblogs:
+            reply = "{} new devblog(s):".format(len(devblogs))
+            for entry in devblogs:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(vmc['jabber']['chatrooms'][0], reply, message_type="groupchat")
+            self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
     @botcmd
     def rcbl(self, mess, args):
         """<name>[, ...] - Displays if name has an entry in the blacklist"""
-        # Remove verify=False as soon as python 2.7.7 hits (exp. May 31, 2014).
-        # Needed due to self-signed cert with multiple domains + requests/urllib3
-        # Ref.:
-        #     https://github.com/kennethreitz/requests/issues/1977
-        #     http://legacy.python.org/dev/peps/pep-0466/
-        #     http://legacy.python.org/dev/peps/pep-0373/
-        blrequest = "{}{}/".format(vmc['blacklist']['url'], vmc['blacklist']['key'])
+        url = "{}{}/".format(config['blacklist']['url'], config['blacklist']['key'])
         results = []
-        for pilot in [item.strip() for item in args.split(',')]:
+
+        for character in (item.strip() for item in args.split(',')):
             try:
-                r = requests.get(blrequest + pilot,
-                                 headers={'User-Agent': "XVMX JabberBot"}, timeout=3, verify=False)
-                results.append("{} is {}".format(pilot, r.json()[0]['output']))
-            except:
-                pass
+                r = requests.get(url + character, headers={'User-Agent': "XVMX JabberBot"},
+                                 timeout=3)
+                results.append("{} is <b>{}</b>".format(character, r.json()[0]['output']))
+            except requests.exceptions.RequestException:
+                results.append("Failed to load blacklist entry for {}".format(character))
 
         return "<br />".join(results)

@@ -21,7 +21,7 @@ from .config import config as vmc
 from .helpers.exceptions import TimeoutError
 
 from .fun import Say, Fun, Chains
-from .utils import Price, EveUtils
+from .utils import Price, EVEUtils
 from .wh import Wormhole
 
 
@@ -114,7 +114,7 @@ def timeout(seconds=10, error_message="Timer expired"):
     return decorator
 
 
-class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
+class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     # Access control lists
     directors = [
         "jack_haydn",
@@ -189,11 +189,11 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
     def idle_proc(self):
         """Execute asynchronous commands."""
         if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
-            self.kmFeed()
+            self.km_feed()
             self.kmFeedTrigger += 5 * 60
 
         if self.newsFeedTrigger and self.newsFeedTrigger <= time.time():
-            self.newsFeed()
+            self.news_feed()
             self.newsFeedTrigger += 60 * 60
 
         return super(VMBot, self).idle_proc()
@@ -235,8 +235,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EveUtils, Wormhole):
 
             if not message.lower().startswith("zbot"):
                 uniqueMatches = {match.group(0) for match in self.zBotRegex.finditer(message)}
-                zBotReplies = [self.zbot(mess, "{} compact".format(match))
-                               for match in uniqueMatches]
+                zBotReplies = [self.zbot(mess, match, compact=True) for match in uniqueMatches]
                 if zBotReplies:
                     self.send_simple_reply(mess, "<br />".join(zBotReplies))
 
