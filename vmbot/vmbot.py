@@ -4,8 +4,6 @@ import time
 from datetime import datetime
 import os
 import subprocess
-import signal
-from functools import wraps
 import random
 import re
 import xml.etree.ElementTree as ET
@@ -18,11 +16,10 @@ import pint
 from .botcmd import botcmd
 from .config import config as vmc
 
-from .helpers.exceptions import TimeoutError
-
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .wh import Wormhole
+from .helpers.decorators import timeout
 
 
 class MUCJabberBot(JabberBot):
@@ -90,28 +87,6 @@ class MUCJabberBot(JabberBot):
         # Fix multiline docstring indentation (not compliant to PEP 257)
         reply = super(MUCJabberBot, self).help(mess, args)
         return '\n'.join([line.lstrip() for line in reply.splitlines()])
-
-
-def timeout(seconds=10, error_message="Timer expired"):
-    def decorator(func):
-        def _handle_timeout(signum, frame):
-            raise TimeoutError(error_message)
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.alarm(seconds)
-
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                signal.alarm(0)
-
-            return result
-
-        return wrapper
-
-    return decorator
 
 
 class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
