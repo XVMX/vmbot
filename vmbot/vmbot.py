@@ -1,5 +1,3 @@
-from .jabberbot import JabberBot
-
 import time
 from datetime import datetime
 import os
@@ -8,14 +6,15 @@ import random
 import re
 import xml.etree.ElementTree as ET
 
+from xmpp.protocol import JID
+from .jabberbot import JabberBot
 import requests
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
 from .botcmd import botcmd
-from .config import config as vmc
-
+from .config import config
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .wh import Wormhole
@@ -37,18 +36,16 @@ class MUCJabberBot(JabberBot):
     def get_uname_from_mess(self, mess, full_jid=False):
         nick = self.get_sender_username(mess)
         node = mess.getFrom().getNode()
-        jid = self.nick_dict[node][nick]
+        jid = self.nick_dict[node].get(nick, JID("default"))
 
-        return jid if full_jid else jid.split('@')[0]
+        return jid if full_jid else jid.getNode()
 
     def send_simple_reply(self, mess, text, private=False):
-        cmd = mess.getBody()
-        cmd = cmd.split(' ', 1)[0] if ' ' in cmd else cmd
-        cmd = cmd.lower()
+        cmd = mess.getBody().split(' ', 1)[0].lower()
         cmd = self.commands.get(cmd, None)
 
         if len(text) > self.MAX_CHAT_CHARS or getattr(cmd, "_vmbot_forcepm", False):
-            self.send(self.get_uname_from_mess(mess, full_jid=True), text)
+            self.send_message(self.build_reply(mess, text, private=True))
             text = "Private message sent"
 
         return super(MUCJabberBot, self).send_simple_reply(mess, text, private)
@@ -65,19 +62,18 @@ class MUCJabberBot(JabberBot):
             if presence.getType() == self.OFFLINE and nick in self.nick_dict[node]:
                 del self.nick_dict[node][nick]
             else:
-                self.nick_dict[node][nick] = jid
+                self.nick_dict[node][nick] = JID(jid)
 
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
     def callback_message(self, conn, mess):
         # solodrakban (PM) protection
-        # Change this to be limited to certain people if you want by
-        # if self.get_sender_username(mess) == "solodrakban":
+        # Discard non-groupchat messages
         if mess.getType() != "groupchat":
             return
 
-        # Ignore messages from myself in group chats
-        if self.get_sender_username(mess) == vmc['jabber']['nickname']:
+        # Discard messages from myself
+        if self.get_uname_from_mess(mess, full_jid=True) == self.jid:
             return
 
         return super(MUCJabberBot, self).callback_message(conn, mess)
@@ -86,12 +82,12 @@ class MUCJabberBot(JabberBot):
     def help(self, mess, args):
         # Fix multiline docstring indentation (not compliant to PEP 257)
         reply = super(MUCJabberBot, self).help(mess, args)
-        return '\n'.join([line.lstrip() for line in reply.splitlines()])
+        return '\n'.join(line.lstrip() for line in reply.splitlines())
 
 
 class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     # Access control lists
-    directors = [
+    directors = (
         "jack_haydn",
         "thirteen_fish",
         "pimpin_yourhos",
@@ -103,13 +99,13 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         "joker_gates",
         "lordshazbot",
         "borodimer"
-    ]
-    admins = [
-        "joker_gates"
-    ]
+    )
+    admins = (
+        "joker_gates",
+    )
 
     # Pubbie talk regex parts
-    pubbietalk = [
+    pubbietalk = (
         "sup",
         "dank",
         "frag",
@@ -130,46 +126,46 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         "rofl",
         "stronk",
         "lmao"
-    ]
+    )
 
     def __init__(self, *args, **kwargs):
-        self.startupTime = datetime.now()
-        self.kmFeedTrigger = time.time() if kwargs.pop('kmFeed', False) else None
-        self.newsFeedTrigger = time.time() if kwargs.pop('newsFeed', False) else None
+        self.startup_time = datetime.now()
+        self.km_feed_trigger = time.time() if kwargs.pop('km_feed', False) else None
+        self.news_feed_trigger = time.time() if kwargs.pop('news_feed', False) else None
 
         super(VMBot, self).__init__(*args, **kwargs)
 
-        # Regex to check for zKillboard link
-        self.zBotRegex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
+        # Regex to check for zKB link(s)
+        self.zbot_regex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
 
         # Regex to check for pubbie talk
-        self.pubbieRegex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.pubbietalk)),
-                                      re.IGNORECASE)
-        self.pubbieKicked = set()
+        self.pubbie_regex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.pubbietalk)),
+                                       re.IGNORECASE)
+        self.pubbie_kicked = set()
 
         # Initialize asynchronous commands
-        if self.kmFeedTrigger:
+        if self.km_feed_trigger:
             try:
-                self.kmFeedID = requests.get(
+                self.km_feed_id = requests.get(
                     "https://zkillboard.com/api/losses/corporationID/2052404106/"
                     "limit/1/no-items/no-attackers/",
-                    headers={'User-Agent': "XVMX JabberBot"}, timeout=5
+                    headers={'User-Agent': "XVMX JabberBot"}, timeout=3
                 ).json()[0]['killID']
             except (requests.exceptions.RequestException, ValueError):
-                self.kmFeedTrigger = None
+                self.km_feed_trigger = None
 
-        if self.newsFeedTrigger:
-            self.newsFeedIDs = {'news': None, 'devblog': None}
+        if self.news_feed_trigger:
+            self.news_feed_ids = {'news': None, 'devblog': None}
 
     def idle_proc(self):
         """Execute asynchronous commands."""
-        if self.kmFeedTrigger and self.kmFeedTrigger <= time.time():
+        if self.km_feed_trigger and self.km_feed_trigger <= time.time():
             self.km_feed()
-            self.kmFeedTrigger += 5 * 60
+            self.km_feed_trigger += 5 * 60
 
-        if self.newsFeedTrigger and self.newsFeedTrigger <= time.time():
+        if self.news_feed_trigger and self.news_feed_trigger <= time.time():
             self.news_feed()
-            self.newsFeedTrigger += 60 * 60
+            self.news_feed_trigger += 60 * 60
 
         return super(VMBot, self).idle_proc()
 
@@ -177,18 +173,23 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         reply = super(VMBot, self).callback_presence(conn, presence)
 
         jid = presence.getJid()
+        if jid is None:
+            return reply
+
         type_ = presence.getType()
-        if jid is not None and type_ == self.AVAILABLE:
+        jid = JID(jid).getStripped()
+
+        if type_ == self.AVAILABLE:
             nick = presence.getFrom().getResource()
             room = presence.getFrom().getStripped()
-            uname = jid.split('@')[0]
 
-            if uname in self.pubbieKicked and room == vmc['jabber']['chatrooms'][0]:
-                self.pubbieKicked.remove(uname)
-                self.send(vmc['jabber']['chatrooms'][0], "{}: Talk shit, get hit".format(nick),
+            if jid in self.pubbie_kicked and room == config['jabber']['chatrooms'][0]:
+                self.send(config['jabber']['chatrooms'][0],
+                          "{}: Talk shit, get hit".format(nick),
                           message_type="groupchat")
+                self.pubbie_kicked.remove(jid)
         elif type_ == self.OFFLINE and presence.getStatusCode() == "307":
-            self.pubbieKicked.add(jid.split('@')[0])
+            self.pubbie_kicked.add(jid)
 
         return reply
 
@@ -201,18 +202,18 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
 
         message = mess.getBody()
         room = mess.getFrom().getStripped()
-        primaryRoom = room == vmc['jabber']['chatrooms'][0]
+        primary_room = room == config['jabber']['chatrooms'][0]
 
-        if message and self.get_sender_username(mess) != vmc['jabber']['nickname']:
-            if self.pubbieRegex.search(message) is not None and primaryRoom:
+        if message and self.get_uname_from_mess(mess, full_jid=True) != self.jid:
+            if self.pubbie_regex.search(message) is not None and primary_room:
                 self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
 
             if not message.lower().startswith("zbot"):
-                uniqueMatches = {match.group(0) for match in self.zBotRegex.finditer(message)}
-                zBotReplies = [self.zbot(mess, match, compact=True) for match in uniqueMatches]
-                if zBotReplies:
-                    self.send_simple_reply(mess, "<br />".join(zBotReplies))
+                matches = {match.group(0) for match in self.zbot_regex.finditer(message)}
+                replies = [self.zbot(mess, match, compact=True) for match in matches]
+                if replies:
+                    self.send_simple_reply(mess, "<br />".join(replies))
 
         return reply
 
@@ -242,11 +243,11 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     @botcmd
     def convert(self, mess, args):
         """<amount> <source> to <destination> - Converts amount from source to destination"""
-        src, dst = args.split(" to ", 1)
+        src, dest = args.split(" to ", 1)
         ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 
         try:
-            return str(ureg(src).to(dst))
+            return str(ureg(src).to(dest))
         except pint.unit.DimensionalityError as e:
             return str(e)
         except Exception as e:
@@ -255,12 +256,12 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     @botcmd
     def dice(self, mess, args):
         """[dice count] [sides] - Roll the dice. Defaults to one dice and six sides"""
+        args = args.split()
         if len(args) > 2:
                 return "You need to provide none, one or two parameters"
 
         dice = 1
         sides = 6
-        args = args.split()
         try:
             dice = int(args[0])
             sides = int(args[1])
@@ -275,7 +276,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
             return "That's an absurd number of sides, try again"
 
         return "I rolled {} dice with {} sides each. The result is [{}]".format(
-            dice, sides, "][".join(map(str, [random.randint(1, sides) for i in xrange(dice)]))
+            dice, sides, "][".join(map(str, (random.randint(1, sides) for i in xrange(dice))))
         )
 
     @botcmd
@@ -286,7 +287,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     @botcmd
     def flipcoin(self, mess, args):
         """Flips a coin"""
-        return random.choice(["Heads!", "Tails!"])
+        return random.choice(("Heads!", "Tails!"))
 
     @botcmd
     def pickone(self, mess, args):
@@ -314,15 +315,15 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         "vm" required to avoid accidental bcasts, only works in dir chat.
         Do not abuse this or Solo's wrath shall be upon you.
         """
-        def sendBcast(broadcast, author):
+        def send_bcast(broadcast, author):
             # API docs: http://goo.gl/cTYPzg
             messaging = ET.Element("messaging")
             messages = ET.SubElement(messaging, "messages")
             message = ET.SubElement(messages, "message")
-            id = ET.SubElement(message, "id")
-            id.text = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+            id_ = ET.SubElement(message, "id")
+            id_.text = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
             target = ET.SubElement(message, "target")
-            target.text = vmc['bcast']['target']
+            target.text = config['bcast']['target']
             sender = ET.SubElement(message, "from")
             sender.text = author
             text = ET.SubElement(message, "text")
@@ -331,36 +332,36 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
 
             try:
                 r = requests.post(
-                    vmc['bcast']['url'], data=result,
+                    config['bcast']['url'], data=result,
                     headers={'User-Agent': "XVMX JabberBot",
-                             'X-SourceID': vmc['bcast']['id'], 'X-SharedKey': vmc['bcast']['key']},
+                             'X-SourceID': config['bcast']['id'],
+                             'X-SharedKey': config['bcast']['key']},
                     timeout=10
                 )
                 return r.status_code
             except requests.exceptions.RequestException as e:
                 return str(e)
 
-        if args[:2] != "vm" or len(args) <= 3:
+        if not args.startswith("vm "):
             return None
+        broadcast = args[3:]
 
-        if str(mess.getFrom()).split('@')[0] != "vm_dir":
+        if mess.getFrom().getNode() != "vm_dir":
             return "Broadcasting is only enabled in director chat"
 
         sender = self.get_uname_from_mess(mess)
         if sender not in self.directors:
             return "You don't have the rights to send broadcasts"
 
-        broadcast = args[3:]
-
         if len(broadcast) > 10240:
             return ("This broadcast has {} characters and is too long; "
                     "max length is 10240 characters. Please try again with less of a tale. "
                     "You could try, y'know, a forum post.").format(len(broadcast))
 
-        status = sendBcast(broadcast, "{} via VMBot".format(sender))
+        status = send_bcast(broadcast, "{} via VMBot".format(sender))
         if status == 200:
             return "{}, I have sent your broadcast to {}".format(self.get_sender_username(mess),
-                                                                 vmc['bcast']['target'])
+                                                                 config['bcast']['target'])
         elif isinstance(status, str):
             return "Error while connecting to Broadcast-API: {}".format(status)
         else:
@@ -380,7 +381,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     def uptime(self, mess, args):
         """Displays for how long the bot is running already"""
         return "arc_codie has servers, but they haven't been up as long as {}".format(
-            datetime.now() - self.startupTime
+            datetime.now() - self.startup_time
         )
 
     @botcmd(hidden=True)
@@ -399,7 +400,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
         """Pulls the latest commit from the bot repository and updates the bot with it"""
-        if str(mess.getFrom()).split("@")[0] != "vm_dir":
+        if mess.getFrom().getNode() != "vm_dir":
             return "git pull is only enabled in director chat"
 
         if self.get_uname_from_mess(mess) not in self.admins:

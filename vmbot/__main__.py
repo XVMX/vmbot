@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Grabbing values from imported config file
     jbc = config['jabber']
-    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], kmFeed=True, newsFeed=True)
+    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], km_feed=True, news_feed=True)
     for room in jbc['chatrooms']:
         morgooglie.muc_join_room(room, jbc['nickname'])
 

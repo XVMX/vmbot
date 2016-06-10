@@ -262,7 +262,7 @@ class EVEUtils(object):
         """<zKB link> - Displays statistics of a killmail"""
         args = args.strip().split(' ', 1)
 
-        regex = self.zBotRegex.match(args[0])
+        regex = self.zbot_regex.match(args[0])
         if regex is None:
             return "Please provide a link to a zKB killmail"
 
@@ -366,7 +366,7 @@ class EVEUtils(object):
     def km_feed(self):
         """Send a message to the first chatroom with the latest losses."""
         url = "https://zkillboard.com/api/corporationID/2052404106/losses/"
-        url += "afterKillID/{}/no-items/no-attackers/".format(self.kmFeedID)
+        url += "afterKillID/{}/no-items/no-attackers/".format(self.km_feed_id)
 
         try:
             r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
@@ -380,7 +380,7 @@ class EVEUtils(object):
         if not losses:
             return
 
-        self.kmFeedID = losses[0]['killID']
+        self.km_feed_id = losses[0]['killID']
 
         reply = "{} new loss(es):".format(len(losses))
         for loss in reversed(losses):
@@ -433,13 +433,13 @@ class EVEUtils(object):
             entries.sort(key=lambda x: time.strptime(x['updated'], "%Y-%m-%dT%H:%M:%SZ"),
                          reverse=True)
 
-            if self.newsFeedIDs[type_] is None:
-                self.newsFeedIDs[type_] = entries[0]['id']
+            if self.news_feed_ids[type_] is None:
+                self.news_feed_ids[type_] = entries[0]['id']
                 return []
             else:
                 idx = next(idx for idx, entry in enumerate(entries)
-                           if entry['id'] == self.newsFeedIDs[type_])
-                self.newsFeedIDs[type_] = entries[0]['id']
+                           if entry['id'] == self.news_feed_ids[type_])
+                self.news_feed_ids[type_] = entries[0]['id']
                 return entries[:idx]
 
         news = None

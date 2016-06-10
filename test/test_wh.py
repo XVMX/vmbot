@@ -18,7 +18,7 @@ class TestWormhole(unittest.TestCase):
         self.wormhole.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
                                                            side_effect=lambda arg: arg)
         # Mock self.admins
-        self.wormhole.admins = ["Admin"]
+        self.wormhole.admins = ("Admin",)
 
     def tearDown(self):
         del self.wormhole
