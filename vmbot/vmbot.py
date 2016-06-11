@@ -223,6 +223,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
 
         Force floating point numbers by doing 4.0/3 instead of 4/3
         """
+
         @timeout(10, "Sorry, this query took too long to execute and I had to kill it off")
         def do_math(args):
             return pretty(parse_expr(args), full_prec=False, use_unicode=False)
@@ -258,7 +259,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         """[dice count] [sides] - Roll the dice. Defaults to one dice and six sides"""
         args = args.split()
         if len(args) > 2:
-                return "You need to provide none, one or two parameters"
+            return "You need to provide none, one or two parameters"
 
         dice = 1
         sides = 6
@@ -315,6 +316,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         "vm" required to avoid accidental bcasts, only works in dir chat.
         Do not abuse this or Solo's wrath shall be upon you.
         """
+
         def send_bcast(broadcast, author):
             # API docs: http://goo.gl/cTYPzg
             messaging = ET.Element("messaging")

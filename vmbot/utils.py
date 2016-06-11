@@ -402,6 +402,7 @@ class EVEUtils(object):
 
     def news_feed(self):
         """Send a message to the primary chatroom with the latest EVE news and devblogs."""
+
         def get_feed(type_):
             """Find all new Atom entries available at feedType.
 

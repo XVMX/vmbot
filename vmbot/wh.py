@@ -207,7 +207,7 @@ class Wormhole(object):
         conn = self.__db_connection()
 
         try:
-            data = conn.execute("""SELECT author, COUNT(*) as scannedWHs
+            data = conn.execute("""SELECT author, COUNT(*) AS scannedWHs
                                    FROM connections
                                    WHERE created BETWEEN DATETIME("now", "-1 month")
                                                      AND DATETIME("now")
