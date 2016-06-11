@@ -114,19 +114,19 @@ class Say(object):
     @botcmd
     def chasesay(self, mess, args):
         """Please"""
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = args.strip() or self.get_sender_username(mess)
         return "{}, would you PLEASE".format(sender)
 
     @botcmd
     def kairksay(self, mess, args):
         """Like fishsay but more Kafkaesque"""
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = args.strip() or self.get_sender_username(mess)
         return "{}, {} -Kairk".format(sender, random.choice(self.kairkisms))
 
     @botcmd
     def dariussay(self, mess, args):
         """Like fishsay but bordering on weird"""
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = args.strip() or self.get_sender_username(mess)
         return "{}, {}".format(sender, random.choice(self.dariusisms))
 
     @botcmd
@@ -140,7 +140,7 @@ class Say(object):
     @botcmd
     def eksay(self, mess, args):
         """Like fishsay but more dead"""
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = args.strip() or self.get_sender_username(mess)
         return ":rip: {}".format(sender)
 
     @botcmd
@@ -162,7 +162,7 @@ class Say(object):
     @botcmd
     def sayhi(self, mess, args):
         """[name] - Says hi to you or name if provided"""
-        sender = args.strip() if args else self.get_sender_username(mess)
+        sender = args.strip() or self.get_sender_username(mess)
         return "Hi {}!".format(sender)
 
 
