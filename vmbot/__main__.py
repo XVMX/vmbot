@@ -31,5 +31,5 @@ if __name__ == "__main__":
     try:
         morgooglie.serve_forever()
     except Exception:
-        logger.exception("An error happened in the main loop:")
+        logger.exception("%(asctime)s An error happened in the main loop:")
         morgooglie.shutdown()
