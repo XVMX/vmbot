@@ -132,6 +132,8 @@ class Price(object):
 
 
 class EVEUtils(object):
+    FEED_MIN_VAL = 5000000
+
     @botcmd
     def character(self, mess, args):
         """<character name>[, ...] - Displays employment information of character(s)"""
@@ -367,7 +369,7 @@ class EVEUtils(object):
         return reply
 
     def km_feed(self):
-        """Send a message to the first chatroom with the latest losses."""
+        """Send a message to the primary chatroom with the latest losses."""
         url = "https://zkillboard.com/api/corporationID/2052404106/losses/"
         url += "afterKillID/{}/no-items/no-attackers/".format(self.km_feed_id)
 
@@ -378,8 +380,7 @@ class EVEUtils(object):
         if r.status_code != 200:
             return
 
-        min_val = 5000000
-        losses = filter(lambda x: x['zkb']['totalValue'] >= min_val, r.json())
+        losses = filter(lambda x: x['zkb']['totalValue'] >= self.FEED_MIN_VAL, r.json())
         if not losses:
             return
 
@@ -402,7 +403,7 @@ class EVEUtils(object):
         self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
 
     def news_feed(self):
-        """Send a message to the first chatroom with the latest EVE news and devblogs."""
+        """Send a message to the primary chatroom with the latest EVE news and devblogs."""
         def get_feed(type_):
             """Find all new Atom entries available at feedType.
 
