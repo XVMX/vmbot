@@ -30,10 +30,10 @@ class Price(object):
 
         sell = {'orders': [order for order in res['items'] if order['buy'] is False and
                            order['location']['name'].startswith(system)],
-                'direction': max}
+                'direction': min}
         buy = {'orders': [order for order in res['items'] if order['buy'] is True and
                           order['location']['name'].startswith(system)],
-               'direction': min}
+               'direction': max}
 
         for data in (sell, buy):
             data['volume'] = sum(order['volume'] for order in data['orders'])
