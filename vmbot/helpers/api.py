@@ -120,7 +120,7 @@ def get_tickers(corporationID, allianceID):
 
             corp_ticker = str(xml[1].find("ticker").text)
             allianceID = allianceID or int(xml[1].find("allianceID").text) or None
-        except:
+        except Exception:
             pass
 
     alliance_ticker = None
@@ -130,7 +130,7 @@ def get_tickers(corporationID, allianceID):
             alliance_ticker = get_crest_endpoint(
                 "https://crest-tq.eveonline.com/alliances/{}/".format(allianceID)
             )['shortName']
-        except:
+        except Exception:
             pass
 
     return corp_ticker, alliance_ticker
