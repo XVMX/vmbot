@@ -8,10 +8,10 @@ from .helpers.files import WH_DB, STATICDATA_DB
 from .helpers.exceptions import DBError
 from .helpers import api
 
+WH_VERSION = 2
+
 
 class Wormhole(object):
-    WH_VERSION = 2
-
     def __db_connection(self):
         conn = sqlite3.connect(WH_DB)
         conn.row_factory = sqlite3.Row
@@ -30,14 +30,14 @@ class Wormhole(object):
                FROM metadata
                WHERE key = "version";"""
         ).fetchall()
-        if res and int(res[0][0]) != self.WH_VERSION:
+        if res and int(res[0][0]) != WH_VERSION:
             raise DBError("Tell {} to update the WH database!".format(", ".join(self.ADMINS)))
         conn.commit()
 
         conn.execute(
             """INSERT OR REPLACE INTO metadata
                VALUES ("version", :version);""",
-            {'version': self.WH_VERSION}
+            {'version': WH_VERSION}
         )
         conn.execute(
             """CREATE TABLE IF NOT EXISTS connections (

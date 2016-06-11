@@ -7,7 +7,7 @@ import os
 
 from vmbot.helpers.files import WH_DB
 
-from vmbot.wh import Wormhole
+import vmbot.wh
 
 
 class TestWormhole(unittest.TestCase):
@@ -15,7 +15,7 @@ class TestWormhole(unittest.TestCase):
     default_args = ""
 
     def setUp(self):
-        self.wormhole = Wormhole()
+        self.wormhole = vmbot.wh.Wormhole()
         # Mock self.get_uname_from_mess(mess) to return mess
         self.wormhole.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
                                                            side_effect=lambda arg: arg)
@@ -141,7 +141,7 @@ class TestWormhole(unittest.TestCase):
         self.wormhole.wh(self.default_mess, "add Jita ABC-123 VFK-IV XYZ-789 24")
 
         # Increment db version
-        self.wormhole.WH_VERSION += 1
+        vmbot.wh.WH_VERSION += 1
 
         # Try to add new entry
         self.assertEqual(
