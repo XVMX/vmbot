@@ -111,10 +111,7 @@ class Wormhole(object):
                 float(connection['TTL']), connection['author']
             ))
 
-        if connections:
-            return "<br />".join(connections)
-
-        return "No connections found"
+        return "<br />".join(connections) if connections else "No connections found"
 
     def wh_filter(self, mess, filter_type, filter_val):
         filter_type, filter_val = filter_type.upper(), filter_val.upper()
@@ -221,7 +218,5 @@ class Wormhole(object):
         if not data:
             return "No connections were added during the last month"
 
-        stats = ["{}: {} WH(s)".format(scanner['author'], scanner['scannedWHs'])
-                 for scanner in data]
-
-        return "<br />".join(stats)
+        return "<br />".join("{}: {} WH(s)".format(scanner['author'], scanner['scannedWHs'])
+                             for scanner in data)
