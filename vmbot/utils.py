@@ -28,10 +28,10 @@ class Price(object):
 
         res = api.get_crest_endpoint(url, params={'type': type_}, timeout=5)
 
-        sell = {'orders': [order for order in res['items'] if order['buy'] == False and
+        sell = {'orders': [order for order in res['items'] if order['buy'] is False and
                            order['location']['name'].startswith(system)],
                 'direction': max}
-        buy = {'orders': [order for order in res['items'] if order['buy'] == True and
+        buy = {'orders': [order for order in res['items'] if order['buy'] is True and
                           order['location']['name'].startswith(system)],
                'direction': min}
 
