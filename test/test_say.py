@@ -1,7 +1,12 @@
+# coding: utf-8
+
 import unittest
 import mock
 
 import re
+
+from vmbot.fun import (EBALL_ANSWERS, FISHISMS, PIMPISMS, ARELEISMS, NICKISMS,
+                       KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS)
 
 from vmbot.fun import Say
 
@@ -20,24 +25,24 @@ class TestSay(unittest.TestCase):
         del self.say
 
     def test_fishsay(self):
-        self.assertIn(self.say.fishsay(self.default_mess, self.default_args), Say.fishisms)
+        self.assertIn(self.say.fishsay(self.default_mess, self.default_args), FISHISMS)
 
     def test_pimpsay_noargs(self):
-        self.assertIn(self.say.pimpsay(self.default_mess, self.default_args), Say.pimpisms)
+        self.assertIn(self.say.pimpsay(self.default_mess, self.default_args), PIMPISMS)
 
     def test_pimpsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.pimpsay(self.default_mess, test_arg),
-                      ["{} {}".format(test_arg, line) for line in Say.pimpisms])
+                      ["{} {}".format(test_arg, line) for line in PIMPISMS])
 
     def test_arelesay(self):
         self.assertIn(self.say.arelesay(self.default_mess, self.default_args),
-                      ["https://youtu.be/{}".format(line) for line in Say.areleisms])
+                      ["https://youtu.be/{}".format(line) for line in ARELEISMS])
 
     def test_nicksay(self):
         res = self.say.nicksay(self.default_mess, self.default_args)
 
-        if not any(re.match(line.format("0{2,}"), res) for line in Say.nickisms):
+        if not any(re.match(line.format("0{2,}"), res) for line in NICKISMS):
             self.fail("nicksay didn't return a valid nickism")
 
     def test_chasesay_noargs(self):
@@ -51,29 +56,29 @@ class TestSay(unittest.TestCase):
 
     def test_kairksay_noargs(self):
         self.assertIn(self.say.kairksay(self.default_mess, self.default_args),
-                      ["{}, {} -Kairk".format(self.default_mess, line) for line in Say.kairkisms])
+                      ["{}, {} -Kairk".format(self.default_mess, line) for line in KAIRKISMS])
 
     def test_kairksay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.kairksay(self.default_mess, test_arg),
-                      ["{}, {} -Kairk".format(test_arg, line) for line in Say.kairkisms])
+                      ["{}, {} -Kairk".format(test_arg, line) for line in KAIRKISMS])
 
     def test_dariussay_noargs(self):
         self.assertIn(self.say.dariussay(self.default_mess, self.default_args),
-                      ["{}, {}".format(self.default_mess, line) for line in Say.dariusisms])
+                      ["{}, {}".format(self.default_mess, line) for line in DARIUSISMS])
 
     def test_dariussay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.dariussay(self.default_mess, test_arg),
-                      ["{}, {}".format(test_arg, line) for line in Say.dariusisms])
+                      ["{}, {}".format(test_arg, line) for line in DARIUSISMS])
 
     def test_scottsay_noargs(self):
-        self.assertIn(self.say.scottsay(self.default_mess, self.default_args), Say.scottisms)
+        self.assertIn(self.say.scottsay(self.default_mess, self.default_args), SCOTTISMS)
 
     def test_scottsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.scottsay(self.default_mess, test_arg),
-                      ["{}, {}".format(test_arg, line) for line in Say.scottisms])
+                      ["{}, {}".format(test_arg, line) for line in SCOTTISMS])
 
     def test_eksay_noargs(self):
         self.assertEqual(self.say.eksay(self.default_mess, self.default_args),
@@ -84,12 +89,12 @@ class TestSay(unittest.TestCase):
         self.assertEqual(self.say.eksay(self.default_mess, test_arg), ":rip: {}".format(test_arg))
 
     def test_jokersay_noargs(self):
-        self.assertIn(self.say.jokersay(self.default_mess, self.default_args), Say.jokerisms)
+        self.assertIn(self.say.jokersay(self.default_mess, self.default_args), JOKERISMS)
 
     def test_jokersay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.jokersay(self.default_mess, test_arg),
-                      ["{} {}".format(test_arg, line) for line in Say.jokerisms])
+                      ["{} {}".format(test_arg, line) for line in JOKERISMS])
 
     def test_8ball_noargs(self):
         self.assertEqual(self.say.bot_8ball(self.default_mess, self.default_args),
@@ -97,7 +102,7 @@ class TestSay(unittest.TestCase):
 
     def test_8ball_args(self):
         test_arg = "TestArg"
-        self.assertIn(self.say.bot_8ball(self.default_mess, test_arg), Say.eball_answers)
+        self.assertIn(self.say.bot_8ball(self.default_mess, test_arg), EBALL_ANSWERS)
 
     def test_sayhi_noargs(self):
         self.assertEqual(self.say.sayhi(self.default_mess, self.default_args),

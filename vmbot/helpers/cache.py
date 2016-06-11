@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import time
 import json
 import sqlite3
@@ -95,6 +97,6 @@ def get_http(url, params=None):
 
 
 def set_http(url, doc, expiry=None, params=None):
-    """Add a HTTP request to the cache."""
+    """Add an HTTP request to the cache."""
     key = url + (json.dumps(params) if params else "")
     return _set(key, sqlite3.Binary(doc), expiry)

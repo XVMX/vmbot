@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from os import path, pardir
 
 _DATADIR = path.abspath(path.join(path.dirname(__file__), pardir, "data"))

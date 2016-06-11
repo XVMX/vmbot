@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import time
 from calendar import timegm
 import re
@@ -7,9 +9,9 @@ import sqlite3
 
 import requests
 
-from . import cache
 from .files import STATICDATA_DB
 from .exceptions import APIError
+from . import cache
 
 
 def get_typeName(typeID):
