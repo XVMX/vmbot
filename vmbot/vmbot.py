@@ -39,8 +39,11 @@ class MUCJabberBot(JabberBot):
     def get_uname_from_mess(self, mess, full_jid=False):
         nick = self.get_sender_username(mess)
         node = mess.getFrom().getNode()
-        jid = self.nick_dict[node].get(nick, JID("default"))
 
+        if nick == node:
+            return nick
+
+        jid = self.nick_dict[node].get(nick, JID("default"))
         return jid if full_jid else jid.getNode()
 
     def send_simple_reply(self, mess, text, private=False):
