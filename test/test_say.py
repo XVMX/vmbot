@@ -5,9 +5,10 @@ import mock
 
 import re
 
-from vmbot.fun import Say
 from vmbot.fun import (EBALL_ANSWERS, FISHISMS, PIMPISMS, ARELEISMS, NICKISMS,
                        KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS)
+
+from vmbot.fun import Say
 
 
 class TestSay(unittest.TestCase):
