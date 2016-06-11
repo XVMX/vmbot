@@ -335,17 +335,14 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
             text.text = broadcast
             result = '<?xml version="1.0"?>' + ET.tostring(messaging)
 
-            try:
-                r = requests.post(
-                    config['bcast']['url'], data=result,
-                    headers={'User-Agent': "XVMX JabberBot",
-                             'X-SourceID': config['bcast']['id'],
-                             'X-SharedKey': config['bcast']['key']},
-                    timeout=10
-                )
-                return r.status_code
-            except requests.exceptions.RequestException as e:
-                return str(e)
+            r = requests.post(
+                config['bcast']['url'], data=result,
+                headers={'User-Agent': "XVMX JabberBot",
+                         'X-SourceID': config['bcast']['id'],
+                         'X-SharedKey': config['bcast']['key']},
+                timeout=10
+            )
+            return r.status_code
 
         if not args.startswith("vm "):
             return None
@@ -363,12 +360,14 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
                     "max length is 10240 characters. Please try again with less of a tale. "
                     "You could try, y'know, a forum post.").format(len(broadcast))
 
-        status = send_bcast(broadcast, "{} via VMBot".format(sender))
+        try:
+            status = send_bcast(broadcast, "{} via VMBot".format(sender))
+        except requests.exceptions.RequestException as e:
+            return "Error while connecting to Broadcast-API: {}".format(status)
+
         if status == 200:
             return "{}, I have sent your broadcast to {}".format(self.get_sender_username(mess),
                                                                  config['bcast']['target'])
-        elif isinstance(status, str):
-            return "Error while connecting to Broadcast-API: {}".format(status)
         else:
             return "Broadcast-API returned error code {}".format(status)
 
