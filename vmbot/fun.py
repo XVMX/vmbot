@@ -145,7 +145,7 @@ class Say(object):
 
     @botcmd
     def jokersay(self, mess, args):
-        """Jokery wisdom"""
+        """Like fishsay but german"""
         if args:
             return "{} {}".format(args, random.choice(self.jokerisms))
         else:
