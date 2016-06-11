@@ -184,12 +184,11 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         jid = JID(jid).getStripped()
 
         if type_ == self.AVAILABLE:
-            nick = presence.getFrom().getResource()
             room = presence.getFrom().getStripped()
 
             if jid in self.pubbie_kicked and room == config['jabber']['chatrooms'][0]:
                 self.send(config['jabber']['chatrooms'][0],
-                          "{}: Talk shit, get hit".format(nick),
+                          "{}: Talk shit, get hit".format(presence.getFrom().getResource()),
                           message_type="groupchat")
                 self.pubbie_kicked.remove(jid)
         elif type_ == self.OFFLINE and presence.getStatusCode() == "307":
@@ -201,7 +200,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         reply = super(VMBot, self).callback_message(conn, mess)
 
         # See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
-        if "urn:xmpp:delay" in mess.getProperties():
+        if "urn:xmpp:delay" in mess.getProperties() or mess.getType() != "groupchat":
             return reply
 
         message = mess.getBody()
