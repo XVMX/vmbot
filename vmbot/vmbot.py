@@ -89,7 +89,7 @@ class MUCJabberBot(JabberBot):
 
 class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     # Access control lists
-    directors = (
+    DIRECTORS = (
         "jack_haydn",
         "thirteen_fish",
         "pimpin_yourhos",
@@ -102,12 +102,12 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         "lordshazbot",
         "borodimer"
     )
-    admins = (
+    ADMINS = (
         "joker_gates",
     )
 
     # Pubbie talk regex parts
-    pubbietalk = (
+    PUBBIETALK = (
         "sup",
         "dank",
         "frag",
@@ -141,7 +141,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         self.zbot_regex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
 
         # Regex to check for pubbie talk
-        self.pubbie_regex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.pubbietalk)),
+        self.pubbie_regex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.PUBBIETALK)),
                                        re.IGNORECASE)
         self.pubbie_kicked = set()
 
@@ -352,7 +352,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
             return "Broadcasting is only enabled in director chat"
 
         sender = self.get_uname_from_mess(mess)
-        if sender not in self.directors:
+        if sender not in self.DIRECTORS:
             return "You don't have the rights to send broadcasts"
 
         if len(broadcast) > 10240:
@@ -372,7 +372,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     @botcmd
     def pingall(self, mess, args):
         """Pings everyone in the current MUC room"""
-        if self.get_uname_from_mess(mess) not in self.directors:
+        if self.get_uname_from_mess(mess) not in self.DIRECTORS:
             return ":getout:"
 
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
@@ -393,7 +393,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         If ran in a while true loop on the shell, it'll immediately reconnect.
         """
         if not args:
-            if self.get_uname_from_mess(mess) in self.admins:
+            if self.get_uname_from_mess(mess) in self.ADMINS:
                 self.quit()
                 return "afk shower"
             else:
@@ -405,7 +405,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
         if mess.getFrom().getNode() != "vm_dir":
             return "git pull is only enabled in director chat"
 
-        if self.get_uname_from_mess(mess) not in self.admins:
+        if self.get_uname_from_mess(mess) not in self.ADMINS:
             return "You are not allowed to git pull"
 
         path = os.path

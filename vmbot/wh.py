@@ -31,7 +31,7 @@ class Wormhole(object):
                WHERE key = "version";"""
         ).fetchall()
         if res and int(res[0][0]) != self.WH_VERSION:
-            raise DBError("Tell {} to update the WH database!".format(", ".join(self.admins)))
+            raise DBError("Tell {} to update the WH database!".format(", ".join(self.ADMINS)))
         conn.commit()
 
         conn.execute(

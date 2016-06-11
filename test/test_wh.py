@@ -19,8 +19,8 @@ class TestWormhole(unittest.TestCase):
         # Mock self.get_uname_from_mess(mess) to return mess
         self.wormhole.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
                                                            side_effect=lambda arg: arg)
-        # Mock self.admins
-        self.wormhole.admins = ("Admin",)
+        # Mock VMBot.ADMINS
+        self.wormhole.ADMINS = ("Admin",)
 
     def tearDown(self):
         del self.wormhole
@@ -146,7 +146,7 @@ class TestWormhole(unittest.TestCase):
         # Try to add new entry
         self.assertEqual(
             self.wormhole.wh(self.default_mess, "add YA0-XJ DEF-456 Asakai UVW-456 12"),
-            "Tell {} to update the WH database!".format(", ".join(self.wormhole.admins))
+            "Tell {} to update the WH database!".format(", ".join(self.wormhole.ADMINS))
         )
 
 
