@@ -12,7 +12,7 @@
 # /usr/share/common-licenses/GPL-3
 
 import logging
-import logging.handlers
+from logging.handlers import TimedRotatingFileHandler
 
 from .config import config
 from .vmbot import VMBot
@@ -20,11 +20,9 @@ from .vmbot import VMBot
 if __name__ == "__main__":
     logger = logging.getLogger("vmbot")
     logger.setLevel(logging.getLevelName(config['loglevel']))
-    logger.addHandler(logging.handlers.TimedRotatingFileHandler(
-        "vmbot.log", when='d', interval=7, backupCount=3, encoding="utf-8"
-    ))
+    logger.addHandler(TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
+                                               backupCount=3, encoding="utf-8"))
 
-    # Grabbing values from imported config file
     jbc = config['jabber']
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], km_feed=True, news_feed=True)
     for room in jbc['chatrooms']:
