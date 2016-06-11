@@ -9,9 +9,9 @@ import sqlite3
 
 import requests
 
-from . import cache
 from .files import STATICDATA_DB
 from .exceptions import APIError
+from . import cache
 
 
 def get_typeName(typeID):

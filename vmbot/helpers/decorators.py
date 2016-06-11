@@ -7,13 +7,15 @@ from .exceptions import TimeoutError
 
 
 def timeout(seconds=10, error_message="Timer expired"):
+    """Raise TimeoutError after timer expires."""
+
     def decorator(func):
-        def _handle_timeout(signum, frame):
+        def handle_timeout(signum, frame):
             raise TimeoutError(error_message)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.signal(signal.SIGALRM, handle_timeout)
             signal.alarm(seconds)
 
             try:

@@ -46,10 +46,8 @@ class Price(object):
 
     def _disambiguate(self, given, like, category):
         reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
-
         if len(like) > 3:
             reply += ", and {} others".format(len(like) - 3)
-
         return reply
 
     @botcmd
