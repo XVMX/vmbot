@@ -190,10 +190,10 @@ class Wormhole(object):
 
         conn.execute(
             """INSERT INTO `connections` (SRC, `SRC-SIG`, DEST, `DEST-SIG`, expiry, author)
-               VALUES (:srcID, :srcSIG, :destID, :destSIG,
+               VALUES (:srcID, :src_sig, :destID, :dest_sig,
                        DATETIME("now", "{:+} hours"), :author);""".format(ttl),
-            {'srcID': src_systems[0][0], 'srcSIG': src_sig,
-             'destID': dest_systems[0][0], 'destSIG': dest_sig,
+            {'srcID': src_systems[0][0], 'src_sig': src_sig,
+             'destID': dest_systems[0][0], 'dest_sig': dest_sig,
              'author': self.get_uname_from_mess(mess)}
         )
         conn.commit()
