@@ -280,7 +280,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
             return "That's an absurd number of sides, try again"
 
         return "I rolled {} dice with {} sides each. The result is [{}]".format(
-            dice, sides, "][".join(map(str, (random.randint(1, sides) for i in xrange(dice))))
+            dice, sides, "][".join(map(str, (random.randint(1, sides) for _ in xrange(dice))))
         )
 
     @botcmd
