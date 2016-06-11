@@ -1,3 +1,5 @@
+# coding: utf-8
+
 def format_tickers(corporation_ticker, alliance_ticker):
     """Format ticker(s) like the EVE client does."""
     tickers = []

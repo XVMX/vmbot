@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import signal
 from functools import wraps
 

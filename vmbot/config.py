@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from ConfigParser import SafeConfigParser
 
 from .helpers.files import CONFIG
