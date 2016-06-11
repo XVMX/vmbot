@@ -35,6 +35,7 @@ class MUCJabberBot(JabberBot):
     def __init__(self, *args, **kwargs):
         self.nick_dict = {}
         super(MUCJabberBot, self).__init__(*args, **kwargs)
+        self.jid.setResource(args[2])
 
     def get_uname_from_mess(self, mess, full_jid=False):
         nick = self.get_sender_username(mess)
