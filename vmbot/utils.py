@@ -16,6 +16,7 @@ from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
 from .helpers import api
 from .helpers import cache
+from .helpers.regex import ZKB_REGEX
 from .helpers.format import format_tickers
 from .helpers.types import ISK
 
@@ -264,7 +265,7 @@ class EVEUtils(object):
         """<zKB link> - Displays statistics of a killmail"""
         args = args.strip().split(' ', 1)
 
-        regex = self.zbot_regex.match(args[0])
+        regex = ZKB_REGEX.match(args[0])
         if regex is None:
             return "Please provide a link to a zKB killmail"
 

@@ -21,6 +21,7 @@ from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .wh import Wormhole
 from .helpers.decorators import timeout
+from .helpers.regex import ZKB_REGEX
 
 
 class MUCJabberBot(JabberBot):
@@ -137,9 +138,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
 
         super(VMBot, self).__init__(*args, **kwargs)
 
-        # Regex to check for zKB link(s)
-        self.zbot_regex = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
-
         # Regex to check for pubbie talk
         self.pubbie_regex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.PUBBIETALK)),
                                        re.IGNORECASE)
@@ -212,7 +210,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
                               "Emergency pubbie broadcast system")
 
             if not message.lower().startswith("zbot"):
-                matches = {match.group(0) for match in self.zbot_regex.finditer(message)}
+                matches = {match.group(0) for match in ZKB_REGEX.finditer(message)}
                 replies = [self.zbot(mess, match, compact=True) for match in matches]
                 if replies:
                     self.send_simple_reply(mess, "<br />".join(replies))
