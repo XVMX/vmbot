@@ -2,4 +2,4 @@
 
 import re
 
-ZKB_REGEX = re.compile("https?:\/\/zkillboard\.com\/kill\/(\d+)\/?", re.IGNORECASE)
+ZKB_REGEX = re.compile("https?://zkillboard\.com/kill/(\d+)/?", re.IGNORECASE)
