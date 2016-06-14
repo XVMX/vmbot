@@ -32,10 +32,10 @@ class MUCJabberBot(JabberBot):
     PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, username, password, res, *args, **kwargs):
         self.nick_dict = {}
-        super(MUCJabberBot, self).__init__(*args, **kwargs)
-        self.jid.setResource(args[2])
+        super(MUCJabberBot, self).__init__(username, password, res, *args, **kwargs)
+        self.jid.setResource(res)
 
     def get_uname_from_mess(self, mess, full_jid=False):
         nick = self.get_sender_username(mess)
