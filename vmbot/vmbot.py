@@ -161,14 +161,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
 
         # Initialize asynchronous commands
         if self.km_feed_trigger:
-            try:
-                self.km_feed_id = requests.get(
-                    "https://zkillboard.com/api/losses/corporationID/2052404106/"
-                    "limit/1/no-items/no-attackers/",
-                    headers={'User-Agent': "XVMX JabberBot"}, timeout=3
-                ).json()[0]['killID']
-            except (requests.exceptions.RequestException, ValueError):
-                self.km_feed_trigger = None
+            self.km_feed_id = None
 
         if self.news_feed_trigger:
             self.news_feed_ids = {'news': None, 'devblog': None}

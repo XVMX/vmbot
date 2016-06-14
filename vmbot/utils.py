@@ -368,6 +368,17 @@ class EVEUtils(object):
 
     def km_feed(self):
         """Send a message to the primary chatroom with the latest losses."""
+        if self.km_feed_id is None:
+            try:
+                self.km_feed_id = requests.get(
+                    "https://zkillboard.com/api/losses/corporationID/2052404106/"
+                    "limit/1/no-items/no-attackers/",
+                    headers={'User-Agent': "XVMX JabberBot"}, timeout=3
+                ).json()[0]['killID']
+            except (requests.exceptions.RequestException, IndexError, ValueError):
+                pass
+            return
+
         url = "https://zkillboard.com/api/corporationID/2052404106/losses/"
         url += "afterKillID/{}/no-items/no-attackers/".format(self.km_feed_id)
 
