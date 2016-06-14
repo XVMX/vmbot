@@ -127,9 +127,10 @@ def get_tickers(corporationID, allianceID):
     if allianceID:
         alliance_ticker = "{Failed to load}"
         try:
-            alliance_ticker = get_crest_endpoint(
-                "https://crest-tq.eveonline.com/alliances/{}/".format(allianceID)
-            )['shortName']
+            alliance_ticker = post_xml_endpoint(
+                "https://api.eveonline.com/eve/AllianceList.xml.aspx",
+                data={'version': 1}
+            ).find(".//*[@allianceID='{}']".format(allianceID)).attrib['shortName']
         except Exception:
             pass
 
