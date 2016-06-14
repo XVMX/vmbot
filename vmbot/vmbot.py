@@ -42,7 +42,7 @@ class MUCJabberBot(JabberBot):
         node = mess.getFrom().getNode()
 
         if nick == node:
-            return nick
+            return mess.getFrom() if full_jid else nick
 
         jid = self.nick_dict[node].get(nick, JID("default"))
         return jid if full_jid else jid.getNode()
