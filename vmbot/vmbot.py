@@ -91,6 +91,18 @@ class MUCJabberBot(JabberBot):
         reply = super(MUCJabberBot, self).help(mess, args)
         return '\n'.join(line.lstrip() for line in reply.splitlines())
 
+    @botcmd
+    def nopm(self, mess, args):
+        """<command> [args] - Forces <command> to be sent to the channel"""
+        if ' ' in args:
+            cmd, args = args.split(' ', 1)
+        else:
+            cmd, args = args, ""
+        cmd = cmd.lower()
+
+        if cmd in self.commands:
+            super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
+
 
 class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
     # Access control lists
