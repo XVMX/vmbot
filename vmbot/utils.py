@@ -24,7 +24,7 @@ from .helpers.types import ISK
 class Price(object):
     def _get_market_orders(self, region, system, item):
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
-        type_ = "https://crest-tq.eveonline.com/types/{}/".format(item)
+        type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
 
         res = api.get_crest_endpoint(url, params={'type': type_}, timeout=5)
 
