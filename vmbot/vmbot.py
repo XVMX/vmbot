@@ -216,7 +216,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
                 matches = {match.group(0) for match in ZKB_REGEX.finditer(message)}
                 replies = [self.zbot(mess, match, compact=True) for match in matches]
                 if replies:
-                    self.send_simple_reply(mess, "<br />".join(replies))
+                    super(MUCJabberBot, self).send_simple_reply(mess, "<br />".join(replies))
 
         return reply
 
