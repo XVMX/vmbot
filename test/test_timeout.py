@@ -28,7 +28,7 @@ def timeout_msg():
 
 
 @unittest.skipUnless(hasattr(signal, "alarm"), "OS doesn't support SIGALRM")
-class TestFormat(unittest.TestCase):
+class TestTimeout(unittest.TestCase):
     def test_timeout(self):
         self.assertRaises(TimeoutError, timeout_fail)
 
