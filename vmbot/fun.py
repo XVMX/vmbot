@@ -215,7 +215,7 @@ class Fun(object):
         except AttributeError:
             return "Failed to load quote #{} from {}".format(quote_id, quote_url)
 
-        return "{}\n{}".format(quote, quote_url)
+        return "{}\n{}".format(quote_url, quote)
 
     @botcmd
     def rtxkcd(self, mess, args):

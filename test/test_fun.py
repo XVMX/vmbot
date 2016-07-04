@@ -57,7 +57,7 @@ class TestFun(unittest.TestCase):
         except AttributeError:
             self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
 
-        self.assertEqual(res, "{}\n{}".format(quote, quote_url))
+        self.assertEqual(res, "{}\n{}".format(quote_url, quote))
 
     def test_rtq_RequestException(self):
         desc = "TestException"
