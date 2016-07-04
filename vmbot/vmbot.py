@@ -93,7 +93,7 @@ class MUCJabberBot(JabberBot):
 
     @botcmd
     def nopm(self, mess, args):
-        """<command> [args] - Forces <command> to be sent to the channel"""
+        """<command> [args] - Forces command to be sent to the channel"""
         if ' ' in args:
             cmd, args = args.split(' ', 1)
         else:
@@ -290,7 +290,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
 
     @botcmd
     def roll(self, mess, args):
-        """Displays a random number between 1 and 100"""
+        """Picks a random number between 1 and 100"""
         return str(random.randint(1, 100))
 
     @botcmd
