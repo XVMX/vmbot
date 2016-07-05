@@ -1,6 +1,9 @@
 # coding: utf-8
 
 import random
+import re
+import cgi
+import urllib
 
 import requests
 from bs4 import BeautifulSoup
@@ -238,6 +241,64 @@ class Fun(object):
             return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
 
         return "<b>{}</b>: {}".format(comic_data['title'], comic_url)
+
+    @botcmd
+    def rtud(self, mess, args):
+        """Like a box of chocolates, but with loads of pubbie talk"""
+        return self.urban(mess, "")
+
+    @botcmd
+    def urban(self, mess, args):
+        """[word] - Displays Urban Dictionary's definition of word or, if missing, a random word"""
+        url = "http://api.urbandictionary.com/v0/"
+        url += "random" if not args else "define"
+        params = None if not args else {'term': args}
+
+        try:
+            res = requests.get(url, params=params, timeout=3).json()
+        except requests.exceptions.RequestException as e:
+            return "Error while connecting to https://www.urbandictionary.com: {}".format(e)
+        except ValueError:
+            return "Error while parsing response from https://www.urbandictionary.com"
+
+        if not res['list']:
+            return 'Failed to find any definitions for "{}"'.format(args)
+
+        # Create a list of definitions with positive (>= 0) rating numbers
+        choices = [(desc, desc['thumbs_up'] - desc['thumbs_down']) for desc in res['list']]
+        min_rating = min(desc[1] for desc in choices)
+        if min_rating < 0:
+            abs_min = abs(min_rating)
+            choices = [(desc[0], desc[1] + abs_min) for desc in choices]
+
+        # Select a random definition using rating as weight
+        rand = random.uniform(0, sum(choice[1] for choice in choices))
+        entry = None
+
+        for desc, weight in choices:
+            rand -= weight
+            if rand <= 0:
+                entry = desc
+                break
+
+        def urban_link(match):
+            return '<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
+                urllib.quote_plus(match.group(1)), match.group(1)
+            )
+
+        desc = cgi.escape(entry['definition'])
+        desc = re.sub("((?:\r|\n|\r\n)+)", "<br />", desc).rstrip("<br />")
+        desc = re.sub("\[([\w\d ]+)\]", urban_link, desc)
+
+        desc = "<b>{}</b> by <i>{}</i> rated {:+}: {}<br />{}".format(
+            entry['word'], entry['author'], entry['thumbs_up'] - entry['thumbs_down'],
+            entry['permalink'], desc
+        )
+
+        if 'tags' in res and res['tags']:
+            desc += "<br />Tags: {}".format(' '.join("#{}".format(tag) for tag in res['tags']))
+
+        return desc
 
 
 class Chains(object):
