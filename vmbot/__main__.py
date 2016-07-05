@@ -20,8 +20,10 @@ from .vmbot import VMBot
 if __name__ == "__main__":
     logger = logging.getLogger("vmbot")
     logger.setLevel(logging.getLevelName(config['loglevel']))
-    logger.addHandler(TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
-                                               backupCount=3, encoding="utf-8"))
+    handler = TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
+                                       backupCount=3, encoding="utf-8")
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+    logger.addHandler(handler)
 
     jbc = config['jabber']
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], km_feed=True, news_feed=True)
@@ -31,5 +33,7 @@ if __name__ == "__main__":
     try:
         morgooglie.serve_forever()
     except Exception:
-        logger.exception("%(asctime)s An error happened in the main loop:")
+        logger.exception("An error happened in the main loop:")
         morgooglie.shutdown()
+
+    logging.shutdown()
