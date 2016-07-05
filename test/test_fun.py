@@ -192,6 +192,34 @@ class TestFun(unittest.TestCase):
 
         requests_patcher.stop()
 
+    def test_urban(self):
+        self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
+                                 "<b>[\w\d ]+</b> by <i>[\w\d ]+</i> rated (?:\+|-)\d+: .+<br />.+")
+
+    def test_urban_random(self):
+        self.assertRegexpMatches(self.fun.rtud(self.default_mess, self.default_args),
+                                 "<b>[\w\d ]+</b> by <i>[\w\d ]+</i> rated (?:\+|-)\d+: .+<br />.+")
+
+    @mock.patch("cgi.escape", return_value="[API]")
+    def test_urban_link(self, mock_cgi):
+        self.assertIn('<a href="https://www.urbandictionary.com/define.php?term=API">API</a>',
+                      self.fun.urban(self.default_mess, "API"))
+
+    @mock.patch("requests.Response.json", return_value={'list': []})
+    def test_urban_unknown(self, mock_requests):
+        self.assertEqual(self.fun.urban(self.default_mess, "API"),
+                         'Failed to find any definitions for "API"')
+
+    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
+    def test_urban_RequestException(self, mock_requests):
+        self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
+                                 "Error while connecting to https://www.urbandictionary.com: .*")
+
+    @mock.patch("requests.get", side_effect=flawed_response)
+    def test_urban_flawedresponse(self, mock_requests):
+        self.assertEqual(self.fun.urban(self.default_mess, "API"),
+                         "Error while parsing response from https://www.urbandictionary.com")
+
 
 if __name__ == "__main__":
     unittest.main()
