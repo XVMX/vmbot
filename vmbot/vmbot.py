@@ -217,7 +217,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
                 self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
 
-            if not message.lower().startswith("zbot"):
+            if "zbot" not in message.lower():
                 matches = {match.group(0) for match in ZKB_REGEX.finditer(message)}
                 replies = [self.zbot(mess, match, compact=True) for match in matches]
                 if replies:
