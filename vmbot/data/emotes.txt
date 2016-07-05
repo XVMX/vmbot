@@ -1,5 +1,5 @@
 Name=SA-GF Pack, No-Smile Version
-Description=Last Updated: May 28th, 2016
+Description=Last Updated: June 23rd, 2016
 Icon=smugjones.001.gif
 Author=Querns
 
@@ -1229,3 +1229,10 @@ shrek.001.gif :dota:
 ! potg.001.gif :potg:
 ! mamacita.gif :mamacita:
 ! zenpop.001.gif :zenpop:
+! dva.001.gif :dva:
+! dukedoge.png :dukedoge:
+! abuela.001.png :abuela:
+! sandance.001.gif :sandance:
+! kayak.001.gif :kayak:
+! snod.001.gif :snod:
+! iidx.001.gif :iidx:
