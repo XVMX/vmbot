@@ -194,11 +194,13 @@ class TestFun(unittest.TestCase):
 
     def test_urban(self):
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
-                                 "<b>[\w\d ]+</b> by <i>[\w\d ]+</i> rated (?:\+|-)\d+: .+<br />.+")
+                                 "<b>[\w\d\-_ ]+</b> by <i>[\w\d\-_ ]+</i>"
+                                 " rated (?:\+|-)\d+: .+<br />.+")
 
     def test_urban_random(self):
         self.assertRegexpMatches(self.fun.rtud(self.default_mess, self.default_args),
-                                 "<b>[\w\d ]+</b> by <i>[\w\d ]+</i> rated (?:\+|-)\d+: .+<br />.+")
+                                 "<b>[\w\d\-_ ]+</b> by <i>[\w\d\-_ ]+</i>"
+                                 " rated (?:\+|-)\d+: .+<br />.+")
 
     @mock.patch("cgi.escape", return_value="[API]")
     def test_urban_link(self, mock_cgi):
