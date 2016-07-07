@@ -288,7 +288,7 @@ class Fun(object):
 
         desc = cgi.escape(entry['definition'])
         desc = re.sub("((?:\r|\n|\r\n)+)", "<br />", desc).rstrip("<br />")
-        desc = re.sub("\[([\w\d ]+)\]", urban_link, desc)
+        desc = re.sub("\[([\w\d\-_ ]+)\]", urban_link, desc)
 
         desc = u"<b>{}</b> by <i>{}</i> rated {:+}: {}<br />{}".format(
             entry['word'], entry['author'], entry['thumbs_up'] - entry['thumbs_down'],
