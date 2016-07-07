@@ -296,7 +296,7 @@ class Fun(object):
         )
 
         if 'tags' in res and res['tags']:
-            desc += "<br />Tags: {}".format(' '.join("#{}".format(tag) for tag in res['tags']))
+            desc += "<br />{}".format(' '.join("#{}".format(tag) for tag in res['tags']))
 
         return desc
 
