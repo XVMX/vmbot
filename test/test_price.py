@@ -5,8 +5,9 @@ import mock
 
 import os
 
-from vmbot.helpers.files import CACHE_DB
+from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import APIError
+import vmbot.helpers.database as db
 
 from vmbot.utils import Price
 
@@ -36,9 +37,11 @@ class TestPrice(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
-            os.remove(CACHE_DB)
+            os.remove(BOT_DB)
         except OSError:
             pass
+
+        db.init_db()
 
     @classmethod
     def tearDownClass(cls):
