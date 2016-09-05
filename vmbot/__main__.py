@@ -15,7 +15,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 
 from .config import config
-from .vmbot import VMBot
+from . import VMBot
 
 if __name__ == "__main__":
     logger = logging.getLogger("vmbot")
