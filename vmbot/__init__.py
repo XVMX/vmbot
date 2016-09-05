@@ -19,7 +19,6 @@ from .botcmd import botcmd
 from .config import config
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
-from .wh import Wormhole
 from .helpers.decorators import timeout
 from .helpers.regex import ZKB_REGEX
 
@@ -104,7 +103,7 @@ class MUCJabberBot(JabberBot):
             super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
 
 
-class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils, Wormhole):
+class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
     # Access control lists
     DIRECTORS = (
         "jack_haydn",
