@@ -2,9 +2,7 @@
 
 import time
 from datetime import datetime, timedelta
-import re
 import urllib
-import json
 import xml.etree.ElementTree as ET
 import sqlite3
 
@@ -15,7 +13,6 @@ from .config import config
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
 from .helpers import api
-from .helpers import cache
 from .helpers.regex import ZKB_REGEX
 from .helpers.format import format_tickers
 from .helpers.types import ISK
@@ -272,23 +269,7 @@ class EVEUtils(object):
         killID = regex.group(1)
 
         url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
-        cached = cache.get_http(url)
-        if not cached:
-            try:
-                r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
-            except requests.exceptions.RequestException as e:
-                return "Error while connecting to zKB-API: {}".format(e)
-            if r.status_code != 200:
-                return "zKB-API returned error code {}".format(r.status_code)
-
-            killdata = r.json()
-            try:
-                expires_in = int(re.search("max-age=(\d+)", r.headers['Cache-Control']).group(1))
-            except (KeyError, AttributeError):
-                expires_in = 0
-            cache.set_http(url, doc=r.content, expiry=int(time.time() + expires_in))
-        else:
-            killdata = json.loads(cached)
+        killdata = api.get_crest_endpoint(url)
 
         if not killdata:
             return "Failed to load data for {}".format(regex.group(0))
