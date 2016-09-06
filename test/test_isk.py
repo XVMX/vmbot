@@ -5,7 +5,7 @@ import unittest
 from vmbot.helpers.types import ISK
 
 
-class TestConfig(unittest.TestCase):
+class TestISK(unittest.TestCase):
     large_isk_value = float(1234567890000)
     small_isk_value = float(123456.78)
 
