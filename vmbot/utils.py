@@ -9,13 +9,14 @@ import sqlite3
 import requests
 
 from .botcmd import botcmd
-from .config import config
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
 from .helpers import api
 from .helpers.regex import ZKB_REGEX
 from .helpers.format import format_tickers
 from .helpers.types import ISK
+
+import config
 
 
 class Price(object):
@@ -390,7 +391,7 @@ class EVEUtils(object):
                 "https://zkillboard.com/kill/{}/".format(loss['killID'])
             )
 
-        self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
+        self.send(config.JABBER['chatrooms'][0], reply, message_type="groupchat")
 
     def news_feed(self):
         """Send a message to the primary chatroom with the latest EVE news and devblogs."""
@@ -452,18 +453,18 @@ class EVEUtils(object):
             reply = "{} new EVE news:".format(len(news))
             for entry in news:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
+            self.send(config.JABBER['chatrooms'][0], reply, message_type="groupchat")
 
         if devblogs:
             reply = "{} new devblog(s):".format(len(devblogs))
             for entry in devblogs:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(config['jabber']['chatrooms'][0], reply, message_type="groupchat")
+            self.send(config.JABBER['chatrooms'][0], reply, message_type="groupchat")
 
     @botcmd
     def rcbl(self, mess, args):
         """<name>[, ...] - Displays if name has an entry in the blacklist"""
-        url = "{}{}/".format(config['blacklist']['url'], config['blacklist']['key'])
+        url = "{}{}/".format(config.BLACKLIST['url'], config.BLACKLIST['key'])
         results = []
 
         for character in (item.strip() for item in args.split(',')):

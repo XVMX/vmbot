@@ -1,4 +1,5 @@
 *.py[cod]
+/config.py
 .coverage
 nohup.out
 vmbot.log*

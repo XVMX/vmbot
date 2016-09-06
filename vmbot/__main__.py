@@ -14,18 +14,19 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-from .config import config
 from . import VMBot
+
+import config
 
 if __name__ == "__main__":
     logger = logging.getLogger("vmbot")
-    logger.setLevel(logging.getLevelName(config['loglevel']))
+    logger.setLevel(config.LOGLEVEL)
     handler = TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
                                        backupCount=3, encoding="utf-8")
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
     logger.addHandler(handler)
 
-    jbc = config['jabber']
+    jbc = config.JABBER
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], km_feed=True, news_feed=True)
     for room in jbc['chatrooms']:
         morgooglie.muc_join_room(room, jbc['nickname'])

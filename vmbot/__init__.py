@@ -16,11 +16,12 @@ from sympy.printing.pretty import pretty
 import pint
 
 from .botcmd import botcmd
-from .config import config
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .helpers.decorators import timeout
 from .helpers.regex import ZKB_REGEX
+
+import config
 
 
 class MUCJabberBot(JabberBot):
@@ -190,8 +191,8 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
         if type_ == self.AVAILABLE:
             room = presence.getFrom().getStripped()
 
-            if jid in self.pubbie_kicked and room == config['jabber']['chatrooms'][0]:
-                self.send(config['jabber']['chatrooms'][0],
+            if jid in self.pubbie_kicked and room == config.JABBER['chatrooms'][0]:
+                self.send(config.JABBER['chatrooms'][0],
                           "{}: Talk shit, get hit".format(presence.getFrom().getResource()),
                           message_type="groupchat")
                 self.pubbie_kicked.remove(jid)
@@ -209,7 +210,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
 
         message = mess.getBody()
         room = mess.getFrom().getStripped()
-        primary_room = room == config['jabber']['chatrooms'][0]
+        primary_room = room == config.JABBER['chatrooms'][0]
 
         if message and self.get_uname_from_mess(mess, full_jid=True) != self.jid:
             if self.pubbie_regex.search(message) is not None and primary_room:
@@ -332,7 +333,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
             id_ = ET.SubElement(message, "id")
             id_.text = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
             target = ET.SubElement(message, "target")
-            target.text = config['bcast']['target']
+            target.text = config.BCAST['target']
             sender = ET.SubElement(message, "from")
             sender.text = author
             text = ET.SubElement(message, "text")
@@ -340,10 +341,10 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
             result = '<?xml version="1.0"?>' + ET.tostring(messaging)
 
             r = requests.post(
-                config['bcast']['url'], data=result,
+                config.BCAST['url'], data=result,
                 headers={'User-Agent': "XVMX JabberBot",
-                         'X-SourceID': config['bcast']['id'],
-                         'X-SharedKey': config['bcast']['key']},
+                         'X-SourceID': config.BCAST['id'],
+                         'X-SharedKey': config.BCAST['key']},
                 timeout=10
             )
             return r.status_code
@@ -371,7 +372,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
 
         if status == 200:
             return "{}, I have sent your broadcast to {}".format(self.get_sender_username(mess),
-                                                                 config['bcast']['target'])
+                                                                 config.BCAST['target'])
         else:
             return "Broadcast-API returned error code {}".format(status)
 
