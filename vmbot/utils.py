@@ -14,7 +14,7 @@ from .helpers.exceptions import APIError
 from .helpers import api
 from .helpers.regex import ZKB_REGEX
 from .helpers.format import format_tickers
-from .helpers.types import ISK
+from .models import ISK
 
 import config
 

@@ -2,7 +2,7 @@
 
 import unittest
 
-from vmbot.helpers.types import ISK
+from vmbot.models.isk import ISK
 
 
 class TestISK(unittest.TestCase):
