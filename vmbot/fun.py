@@ -234,13 +234,14 @@ class Fun(object):
         comic_url = "https://xkcd.com/{}/".format(comic_id)
 
         try:
-            comic_data = requests.get("{}info.0.json".format(comic_url), timeout=3).json()
+            comic = requests.get("{}info.0.json".format(comic_url), timeout=3).json()
         except requests.exceptions.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
         except ValueError:
             return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
 
-        return "<b>{}</b>: {}".format(comic_data['title'], comic_url)
+        return "<b>{}</b> (<i>{}/{}/{}</i>): {}".format(comic['safe_title'], comic['year'],
+                                                        comic['month'], comic['day'], comic_url)
 
     @botcmd
     def rtud(self, mess, args):

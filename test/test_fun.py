@@ -126,13 +126,15 @@ class TestFun(unittest.TestCase):
             self.fail("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
 
         try:
-            comic_data = requests.get("{}info.0.json".format(comic_url), timeout=5).json()
+            comic = requests.get("{}info.0.json".format(comic_url), timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.skipTest("Error while connecting to https://xkcd.com in test_rtxkcd: {}".format(e))
         except ValueError:
             self.skipTest("Failed to load xkcd from {} in test_rtxkcd".format(comic_url))
 
-        self.assertEqual(res, "<b>{}</b>: {}".format(comic_data['title'], comic_url))
+        self.assertEqual(res, "<b>{}</b> (<i>{}/{}/{}</i>): {}".format(
+            comic['safe_title'], comic['year'], comic['month'], comic['day'], comic_url
+        ))
 
     def test_rtxkcd_RequestException(self):
         desc = "TestException"
