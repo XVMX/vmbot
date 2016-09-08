@@ -9,7 +9,7 @@ import requests
 from .files import STATICDATA_DB
 from .exceptions import APIError, NoCacheError
 from . import database as db
-from .cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
+from ..models.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
 
 
 def get_typeName(typeID):
@@ -96,7 +96,7 @@ def get_crest_endpoint(url, params=None, timeout=3):
         except (KeyError, NoCacheError):
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params)
+            HTTPCacheObject(url, r.content, expiry, params=params).save(session)
 
     return json.loads(res.decode("utf-8"))
 
@@ -113,7 +113,7 @@ def post_xml_endpoint(url, data=None, timeout=3):
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=data)
+            HTTPCacheObject(url, r.content, expiry, params=data).save(session)
 
         return xml
 

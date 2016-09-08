@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 import re
 import json
 
-from .exceptions import NoCacheError
-from . import database as db
+from ..helpers.exceptions import NoCacheError
+from ..helpers import database as db
 
 
 def parse_cache_control(cache_control):
@@ -43,14 +43,10 @@ class BaseCacheObject(db.Model):
         self.value = value
         self.expiry = expiry
 
-        self.save()
-
-    def save(self):
+    def save(self, session):
         """Save cache object to the database."""
-        session = db.Session()
         session.merge(self)
         session.commit()
-        session.close()
 
     @classmethod
     def get(cls, key, session):

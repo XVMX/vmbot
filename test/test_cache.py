@@ -10,7 +10,7 @@ from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import NoCacheError
 import vmbot.helpers.database as db
 
-from vmbot.helpers.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
+from vmbot.models.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
 
 
 class TestCache(unittest.TestCase):
@@ -55,16 +55,17 @@ class TestCache(unittest.TestCase):
         self.assertRaises(NoCacheError, parse_xml_cache, ET.fromstring("<empty />"))
 
     def test_basic(self):
-        HTTPCacheObject("abc", b"123")
+        HTTPCacheObject("abc", b"123").save(self.sess)
         self.assertEqual(HTTPCacheObject.get("abc", self.sess), b"123")
 
     def test_overwrite(self):
-        HTTPCacheObject("abc", b"123")
-        HTTPCacheObject("abc", b"789")
+        HTTPCacheObject("abc", b"123").save(self.sess)
+        HTTPCacheObject("abc", b"789").save(self.sess)
         self.assertEqual(HTTPCacheObject.get("abc", self.sess), b"789")
 
     def test_expired(self):
-        HTTPCacheObject("abc", b"123", expiry=datetime.utcnow() - timedelta(hours=1))
+        HTTPCacheObject("abc", b"123",
+                        expiry=datetime.utcnow() - timedelta(hours=1)).save(self.sess)
         self.assertIsNone(HTTPCacheObject.get("abc", self.sess))
 
     def test_get_http_notfound(self):
