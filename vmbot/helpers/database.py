@@ -12,4 +12,5 @@ Model = declarative_base()
 
 
 def init_db():
+    """Create all required database tables."""
     Model.metadata.create_all(engine)
