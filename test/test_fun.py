@@ -8,18 +8,10 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+from .test_api import flawed_response
 from vmbot.helpers.files import EMOTES
 
 from vmbot.fun import Fun
-
-
-def flawed_response(*args, **kwargs):
-    """Return a requests.Response with 404 status code."""
-    res = requests.Response()
-    res.status_code = 404
-    res._content = b"ASCII text"
-    res.encoding = "ascii"
-    return res
 
 
 class TestFun(unittest.TestCase):
