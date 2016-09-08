@@ -214,11 +214,11 @@ class Fun(object):
         soup = BeautifulSoup(r.text, "html.parser")
 
         try:
-            quote = soup.find("p", class_="qt").text.encode("ascii", "replace")
+            quote = soup.find("p", class_="qt").text
         except AttributeError:
             return "Failed to load quote #{} from {}".format(quote_id, quote_url)
 
-        return "{}\n{}".format(quote_url, quote)
+        return u"{}\n{}".format(quote_url, quote)
 
     @botcmd
     def rtxkcd(self, mess, args):

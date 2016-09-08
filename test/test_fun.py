@@ -53,11 +53,11 @@ class TestFun(unittest.TestCase):
         soup = BeautifulSoup(r.text, "html.parser")
 
         try:
-            quote = soup.find("p", class_="qt").text.encode("ascii", "replace")
+            quote = soup.find("p", class_="qt").text
         except AttributeError:
             self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
 
-        self.assertEqual(res, "{}\n{}".format(quote_url, quote))
+        self.assertEqual(res, u"{}\n{}".format(quote_url, quote))
 
     def test_rtq_RequestException(self):
         desc = "TestException"
