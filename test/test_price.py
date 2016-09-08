@@ -25,7 +25,7 @@ class TestPrice(unittest.TestCase):
                           "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
                           "Spread: NaNNaNNaNNaNNaNBatman!")
 
-    simple_disambiguate_template = "<br />Other {} like \"{}\": {}"
+    simple_disambiguate_template = '<br />Other {} like "{}": {}'
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
 
     def setUp(self):
@@ -82,13 +82,12 @@ class TestPrice(unittest.TestCase):
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
-    def test_price_disambiguate(self, mock_price_volume):
+    @mock.patch("vmbot.utils.Price._disambiguate", return_value="TestResponse")
+    def test_price_disambiguate(self, mock_price_volume, mock_disambiguate):
         self.assertEqual(
             self.price.price(self.default_mess, "Tritanium@Hek"),
             (self.price_template.format("Tritanium", "Hek", 45.99, 1000, 45.99, 1000, 0) +
-             self.simple_disambiguate_template.format("items", "Tritanium",
-                                                      "Alloyed Tritanium Bar") +
-             self.simple_disambiguate_template.format("systems", "Hek", "Ghekon"))
+             "TestResponse" + "TestResponse")
         )
 
     def test_price_invaliditem(self):
@@ -141,7 +140,7 @@ class TestPrice(unittest.TestCase):
         self.assertIsInstance(res[1][0], float)
         self.assertIsInstance(res[1][1], (int, long))
 
-    @mock.patch("vmbot.helpers.api.get_crest_endpoint", return_value={'items': []})
+    @mock.patch("vmbot.helpers.api.get_rest_endpoint", return_value={'items': []})
     def test_get_market_orders_noorders(self, mock_crest):
         # The Forge
         regionID = 10000002

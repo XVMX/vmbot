@@ -81,20 +81,20 @@ class TestAPI(unittest.TestCase):
     def test_get_tickers_none(self):
         self.assertTupleEqual(api.get_tickers(None, None), (None, None))
 
-    def test_get_crest_endpoint(self):
+    def test_get_rest_endpoint(self):
         test_url = "https://crest-tq.eveonline.com/"
 
         # Test without cache
         with mock.patch("vmbot.helpers.api.parse_cache_control", side_effect=NoCacheError):
-            res_nocache = api.get_crest_endpoint(test_url)
+            res_nocache = api.get_rest_endpoint(test_url)
             self.assertIsInstance(res_nocache, dict)
 
         # Test with cache
-        res_cache = api.get_crest_endpoint(test_url)
+        res_cache = api.get_rest_endpoint(test_url)
         self.assertIsInstance(res_cache, dict)
 
         # Test cached response
-        self.assertDictEqual(api.get_crest_endpoint(test_url), res_cache)
+        self.assertDictEqual(api.get_rest_endpoint(test_url), res_cache)
 
     def test_post_xml_endpoint(self):
         test_url = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
@@ -114,13 +114,13 @@ class TestAPI(unittest.TestCase):
     @mock.patch("requests.request",
                 side_effect=requests.exceptions.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "Error while connecting to API: TestException",
-                                api._request_api, "TestURL")
+        self.assertRaisesRegexp(APIError, "Error while connecting to an API: TestException",
+                                api.request_api, "TestURL")
 
     @mock.patch("requests.request", side_effect=flawed_response)
     def test_request_api_flawedresponse(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "API returned error code 404",
-                                api._request_api, "TestURL")
+        self.assertRaisesRegexp(APIError, "An API returned error code 404",
+                                api.request_api, "TestURL")
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ class Price(object):
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
 
-        res = api.get_crest_endpoint(url, params={'type': type_}, timeout=5)
+        res = api.get_rest_endpoint(url, params={'type': type_}, timeout=5)
 
         sell = {'orders': [order for order in res['items'] if order['buy'] is False and
                            order['location']['name'].startswith(system)],
@@ -142,7 +142,7 @@ class EVEUtils(object):
 
         try:
             xml = api.post_xml_endpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx",
-                                        data={'names': ','.join(args)})
+                                        params={'names': ','.join(args)})
         except APIError as e:
             return str(e)
 
@@ -155,7 +155,7 @@ class EVEUtils(object):
         try:
             xml = api.post_xml_endpoint(
                 "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
-                data={'ids': ','.join(map(str, charIDs))}, timeout=5
+                params={'ids': ','.join(map(str, charIDs))}, timeout=5
             )
         except APIError as e:
             return str(e)
@@ -207,7 +207,7 @@ class EVEUtils(object):
         try:
             xml = api.post_xml_endpoint(
                 "https://api.eveonline.com/eve/CharacterName.xml.aspx",
-                data={'ids': ','.join(map(str, corpIDs))}
+                params={'ids': ','.join(map(str, corpIDs))}
             )
         except APIError as e:
             return "{}<br/>Error while loading corp history: {}".format(reply, e)
@@ -270,7 +270,7 @@ class EVEUtils(object):
         killID = regex.group(1)
 
         url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
-        killdata = api.get_crest_endpoint(url)
+        killdata = api.get_rest_endpoint(url)
 
         if not killdata:
             return "Failed to load data for {}".format(regex.group(0))

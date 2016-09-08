@@ -62,10 +62,10 @@ def get_tickers(corporationID, allianceID):
         try:
             xml = post_xml_endpoint(
                 "https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
-                data={'corporationID': corporationID}
+                params={'corporationID': corporationID}
             ).find("result")
 
-            corp_ticker = str(xml.find("ticker").text)
+            corp_ticker = xml.find("ticker").text
             allianceID = allianceID or int(xml.find("allianceID").text) or None
         except Exception:
             pass
@@ -76,19 +76,19 @@ def get_tickers(corporationID, allianceID):
         try:
             alliance_ticker = post_xml_endpoint(
                 "https://api.eveonline.com/eve/AllianceList.xml.aspx",
-                data={'version': 1}
-            ).find("result/rowset/*[@allianceID='{}']".format(allianceID)).attrib['shortName']
+                params={'version': 1}
+            ).find("result/rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
         except Exception:
             pass
 
     return corp_ticker, alliance_ticker
 
 
-def get_crest_endpoint(url, params=None, timeout=3):
+def get_rest_endpoint(url, params=None, timeout=3):
     session = db.Session()
     res = HTTPCacheObject.get(url, session, params=params)
     if res is None:
-        r = _request_api(url, params, timeout, method="GET")
+        r = request_api(url, params, timeout, method="GET")
         res = r.content
 
         try:
@@ -101,11 +101,11 @@ def get_crest_endpoint(url, params=None, timeout=3):
     return json.loads(res.decode("utf-8"))
 
 
-def post_xml_endpoint(url, data=None, timeout=3):
+def post_xml_endpoint(url, params=None, timeout=3):
     session = db.Session()
-    res = HTTPCacheObject.get(url, session, params=data)
+    res = HTTPCacheObject.get(url, session, params=params)
     if res is None:
-        r = _request_api(url, data, timeout, method="POST")
+        r = request_api(url, params, timeout, method="POST")
         xml = ET.fromstring(r.content)
 
         try:
@@ -113,14 +113,14 @@ def post_xml_endpoint(url, data=None, timeout=3):
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=data).save(session)
+            HTTPCacheObject(url, r.content, expiry, params=params).save(session)
 
         return xml
 
     return ET.fromstring(res)
 
 
-def _request_api(url, params=None, timeout=3, method="GET"):
+def request_api(url, params=None, timeout=3, method="GET"):
     headers = {'User-Agent': "XVMX JabberBot"}
 
     try:
@@ -129,8 +129,8 @@ def _request_api(url, params=None, timeout=3, method="GET"):
         else:
             r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
     except requests.exceptions.RequestException as e:
-        raise APIError("Error while connecting to API: {}".format(e))
+        raise APIError("Error while connecting to an API: {}".format(e))
     if r.status_code != 200:
-        raise APIError("API returned error code {}".format(r.status_code))
+        raise APIError("An API returned error code {}".format(r.status_code))
 
     return r
