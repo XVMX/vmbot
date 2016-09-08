@@ -250,7 +250,7 @@ class Fun(object):
 
     @botcmd
     def urban(self, mess, args):
-        """[word] - Displays Urban Dictionary's definition of word or, if missing, a random word"""
+        """[word] - Urban Dictionary's definition of word or, if missing, a random word"""
         url = "http://api.urbandictionary.com/v0/"
         url += "random" if not args else "define"
         params = None if not args else {'term': args}
@@ -263,7 +263,7 @@ class Fun(object):
             return "Error while parsing response from https://www.urbandictionary.com"
 
         if not res['list']:
-            return 'Failed to find any definitions for "{}"'.format(args)
+            return u'Failed to find any definitions for "{}"'.format(args)
 
         # Create a list of definitions with positive (>= 0) rating numbers
         choices = [(desc, desc['thumbs_up'] - desc['thumbs_down']) for desc in res['list']]
@@ -283,8 +283,8 @@ class Fun(object):
                 break
 
         def urban_link(match):
-            return '<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
-                urllib.quote_plus(match.group(1)), match.group(1)
+            return u'<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
+                urllib.quote_plus(match.group(1).encode("utf-8")), match.group(1)
             )
 
         desc = cgi.escape(entry['definition'])
@@ -297,7 +297,7 @@ class Fun(object):
         )
 
         if 'tags' in res and res['tags']:
-            desc += "<br />{}".format(' '.join("#{}".format(tag) for tag in res['tags']))
+            desc += u"<br />{}".format(u' '.join(u"#{}".format(tag) for tag in res['tags']))
 
         return desc
 

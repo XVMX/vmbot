@@ -204,13 +204,13 @@ class TestFun(unittest.TestCase):
 
     @mock.patch("cgi.escape", return_value="[API]")
     def test_urban_link(self, mock_cgi):
-        self.assertIn('<a href="https://www.urbandictionary.com/define.php?term=API">API</a>',
+        self.assertIn(u'<a href="https://www.urbandictionary.com/define.php?term=API">API</a>',
                       self.fun.urban(self.default_mess, "API"))
 
     @mock.patch("requests.Response.json", return_value={'list': []})
     def test_urban_unknown(self, mock_requests):
         self.assertEqual(self.fun.urban(self.default_mess, "API"),
-                         'Failed to find any definitions for "API"')
+                         u'Failed to find any definitions for "API"')
 
     @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
     def test_urban_RequestException(self, mock_requests):
