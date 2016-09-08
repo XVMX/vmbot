@@ -12,3 +12,11 @@ def format_tickers(corporation_ticker, alliance_ticker):
         tickers.append("<span>&lt;{}&gt;</span>".format(alliance_ticker))
 
     return ' '.join(tickers)
+
+
+def disambiguate(given, like, category):
+    reply = 'Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
+    if len(like) > 3:
+        reply += ", and {} others".format(len(like) - 3)
+
+    return reply

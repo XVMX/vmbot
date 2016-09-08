@@ -25,9 +25,6 @@ class TestPrice(unittest.TestCase):
                           "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
                           "Spread: NaNNaNNaNNaNNaNBatman!")
 
-    simple_disambiguate_template = '<br />Other {} like "{}": {}'
-    extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
-
     def setUp(self):
         self.price = Price()
 
@@ -82,12 +79,12 @@ class TestPrice(unittest.TestCase):
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
-    @mock.patch("vmbot.utils.Price._disambiguate", return_value="TestResponse")
+    @mock.patch("vmbot.utils.disambiguate", return_value="TestResponse")
     def test_price_disambiguate(self, mock_price_volume, mock_disambiguate):
         self.assertEqual(
             self.price.price(self.default_mess, "Tritanium@Hek"),
             (self.price_template.format("Tritanium", "Hek", 45.99, 1000, 45.99, 1000, 0) +
-             "TestResponse" + "TestResponse")
+             "<br />TestResponse" + "<br />TestResponse")
         )
 
     def test_price_invaliditem(self):
@@ -114,18 +111,6 @@ class TestPrice(unittest.TestCase):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite"),
             self.no_spread_template.format("Pyerite", "Jita", 0, 0, 0, 0)
-        )
-
-    def test_disambiguate_simple(self):
-        self.assertEqual(
-            self.price._disambiguate("Default", ["Test1", "Test2"], "Cat"),
-            self.simple_disambiguate_template.format("Cat", "Default", "Test1, Test2")
-        )
-
-    def test_disambiguate_extended(self):
-        self.assertEqual(
-            self.price._disambiguate("Default", ["Test1", "Test2", "Test3", "Test4"], "Cat"),
-            self.extended_disambiguate_template.format("Cat", "Default", "Test1, Test2, Test3", 1)
         )
 
     def test_get_market_orders(self):

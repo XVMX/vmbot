@@ -13,7 +13,7 @@ from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
 from .helpers import api
 from .helpers.regex import ZKB_REGEX
-from .helpers.format import format_tickers
+from .helpers.format import format_tickers, disambiguate
 from .models import ISK
 
 import config
@@ -41,12 +41,6 @@ class Price(object):
                 data['price'] = 0
 
         return (sell['price'], sell['volume']), (buy['price'], buy['volume'])
-
-    def _disambiguate(self, given, like, category):
-        reply = '<br />Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
-        if len(like) > 3:
-            reply += ", and {} others".format(len(like) - 3)
-        return reply
 
     @botcmd
     def price(self, mess, args):
@@ -120,9 +114,9 @@ class Price(object):
             reply += "NaNNaNNaNNaNNaNBatman!"
 
         if items:
-            reply += self._disambiguate(args[0], zip(*items)[1], "items")
+            reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
         if len(args) == 2 and systems:
-            reply += self._disambiguate(args[1], zip(*systems)[1], "systems")
+            reply += "<br />" + disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply
 
