@@ -93,8 +93,8 @@ class Price(object):
         conn.close()
 
         # Sort by length of name so that the most similar item is first
-        items.sort(cmp=lambda x, y: cmp(len(x), len(y)), key=lambda x: x[1])
-        systems.sort(cmp=lambda x, y: cmp(len(x), len(y)), key=lambda x: x[1])
+        items.sort(key=lambda x: len(x[1]))
+        systems.sort(key=lambda x: len(x[1]))
 
         typeID, typeName = items.pop(0)
         regionID, systemName = systems.pop(0)
@@ -103,8 +103,8 @@ class Price(object):
 
         try:
             orders = self._get_market_orders(regionID, systemName, typeID)
-            sellprice, sellvolume = orders[0]
-            buyprice, buyvolume = orders[1]
+            sell_price, sell_volume = orders[0]
+            buy_price, buy_volume = orders[1]
         except APIError as e:
             return str(e)
 
@@ -112,10 +112,10 @@ class Price(object):
                  "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
                  "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
                  "Spread: ").format(
-            typeName, systemName, sellprice, sellvolume, buyprice, buyvolume
+            typeName, systemName, sell_price, sell_volume, buy_price, buy_volume
         )
         try:
-            reply += "{:,.2%}".format((sellprice - buyprice) / sellprice)
+            reply += "{:,.2%}".format((sell_price - buy_price) / sell_price)
         except ZeroDivisionError:
             # By request from Jack (See https://www.destroyallsoftware.com/talks/wat)
             reply += "NaNNaNNaNNaNNaNBatman!"
