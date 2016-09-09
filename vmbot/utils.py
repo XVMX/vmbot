@@ -21,17 +21,24 @@ import config
 
 class Price(object):
     def _get_market_orders(self, region, system, item):
+        """Collect buy and sell orders stats for item in system.
+
+         Format: ((sell_price, sell_volume), (buy_price, buy_volume))
+         """
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
 
         res = api.get_rest_endpoint(url, params={'type': type_}, timeout=5)
 
-        sell = {'orders': [order for order in res['items'] if order['buy'] is False and
-                           order['location']['name'].startswith(system)],
-                'direction': min}
-        buy = {'orders': [order for order in res['items'] if order['buy'] is True and
-                          order['location']['name'].startswith(system)],
-               'direction': max}
+        sell = {'orders': [], 'direction': min}
+        buy = {'orders': [], 'direction': max}
+
+        for order in (order for order in res['items']
+                      if order['location']['name'].startswith(system)):
+            if order['buy']:
+                buy['orders'].append(order)
+            else:
+                sell['orders'].append(order)
 
         for data in (sell, buy):
             data['volume'] = sum(order['volume'] for order in data['orders'])
