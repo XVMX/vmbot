@@ -20,8 +20,8 @@ class TestCache(unittest.TestCase):
             os.remove(BOT_DB)
         except OSError:
             pass
-
-        db.init_db()
+        else:
+            db.init_db()
 
     def setUp(self):
         self.sess = db.Session()

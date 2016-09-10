@@ -37,8 +37,8 @@ class TestPrice(unittest.TestCase):
             os.remove(BOT_DB)
         except OSError:
             pass
-
-        db.init_db()
+        else:
+            db.init_db()
 
     @classmethod
     def tearDownClass(cls):
