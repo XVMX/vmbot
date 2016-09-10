@@ -108,7 +108,7 @@ class Say(object):
     def pimpsay(self, mess, args):
         """Like fishsay but blacker"""
         if args:
-            return "{} {}".format(args, random.choice(PIMPISMS))
+            return u"{} {}".format(args, random.choice(PIMPISMS))
         else:
             return random.choice(PIMPISMS)
 
@@ -126,25 +126,25 @@ class Say(object):
     def chasesay(self, mess, args):
         """Please"""
         sender = args.strip() or self.get_sender_username(mess)
-        return "{}, would you PLEASE".format(sender)
+        return u"{}, would you PLEASE".format(sender)
 
     @botcmd
     def kairksay(self, mess, args):
         """Like fishsay but more Kafkaesque"""
         sender = args.strip() or self.get_sender_username(mess)
-        return "{}, {} -Kairk".format(sender, random.choice(KAIRKISMS))
+        return u"{}, {} -Kairk".format(sender, random.choice(KAIRKISMS))
 
     @botcmd
     def dariussay(self, mess, args):
         """Like fishsay but bordering on weird"""
         sender = args.strip() or self.get_sender_username(mess)
-        return "{}, {}".format(sender, random.choice(DARIUSISMS))
+        return u"{}, {}".format(sender, random.choice(DARIUSISMS))
 
     @botcmd
     def scottsay(self, mess, args):
         """Like fishsay but coming from Israel"""
         if args:
-            return "{}, {}".format(args, random.choice(SCOTTISMS))
+            return u"{}, {}".format(args, random.choice(SCOTTISMS))
         else:
             return random.choice(SCOTTISMS)
 
@@ -152,13 +152,13 @@ class Say(object):
     def eksay(self, mess, args):
         """Like fishsay but more dead"""
         sender = args.strip() or self.get_sender_username(mess)
-        return ":rip: {}".format(sender)
+        return u":rip: {}".format(sender)
 
     @botcmd
     def jokersay(self, mess, args):
         """Like fishsay but german"""
         if args:
-            return "{} {}".format(args, random.choice(JOKERISMS))
+            return u"{} {}".format(args, random.choice(JOKERISMS))
         else:
             return random.choice(JOKERISMS)
 
@@ -174,7 +174,7 @@ class Say(object):
     def sayhi(self, mess, args):
         """[name] - Says hi to you or name if provided"""
         sender = args.strip() or self.get_sender_username(mess)
-        return "Hi {}!".format(sender)
+        return u"Hi {}!".format(sender)
 
 
 class Fun(object):

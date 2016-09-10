@@ -33,7 +33,7 @@ class TestSay(unittest.TestCase):
     def test_pimpsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.pimpsay(self.default_mess, test_arg),
-                      ["{} {}".format(test_arg, line) for line in PIMPISMS])
+                      [u"{} {}".format(test_arg, line) for line in PIMPISMS])
 
     def test_arelesay(self):
         self.assertIn(self.say.arelesay(self.default_mess, self.default_args),
@@ -47,30 +47,30 @@ class TestSay(unittest.TestCase):
 
     def test_chasesay_noargs(self):
         self.assertEqual(self.say.chasesay(self.default_mess, self.default_args),
-                         "{}, would you PLEASE".format(self.default_mess))
+                         u"{}, would you PLEASE".format(self.default_mess))
 
     def test_chasesay_args(self):
         test_arg = "TestArg"
         self.assertEqual(self.say.chasesay(self.default_mess, test_arg),
-                         "{}, would you PLEASE".format(test_arg))
+                         u"{}, would you PLEASE".format(test_arg))
 
     def test_kairksay_noargs(self):
         self.assertIn(self.say.kairksay(self.default_mess, self.default_args),
-                      ["{}, {} -Kairk".format(self.default_mess, line) for line in KAIRKISMS])
+                      [u"{}, {} -Kairk".format(self.default_mess, line) for line in KAIRKISMS])
 
     def test_kairksay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.kairksay(self.default_mess, test_arg),
-                      ["{}, {} -Kairk".format(test_arg, line) for line in KAIRKISMS])
+                      [u"{}, {} -Kairk".format(test_arg, line) for line in KAIRKISMS])
 
     def test_dariussay_noargs(self):
         self.assertIn(self.say.dariussay(self.default_mess, self.default_args),
-                      ["{}, {}".format(self.default_mess, line) for line in DARIUSISMS])
+                      [u"{}, {}".format(self.default_mess, line) for line in DARIUSISMS])
 
     def test_dariussay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.dariussay(self.default_mess, test_arg),
-                      ["{}, {}".format(test_arg, line) for line in DARIUSISMS])
+                      [u"{}, {}".format(test_arg, line) for line in DARIUSISMS])
 
     def test_scottsay_noargs(self):
         self.assertIn(self.say.scottsay(self.default_mess, self.default_args), SCOTTISMS)
@@ -78,11 +78,11 @@ class TestSay(unittest.TestCase):
     def test_scottsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.scottsay(self.default_mess, test_arg),
-                      ["{}, {}".format(test_arg, line) for line in SCOTTISMS])
+                      [u"{}, {}".format(test_arg, line) for line in SCOTTISMS])
 
     def test_eksay_noargs(self):
         self.assertEqual(self.say.eksay(self.default_mess, self.default_args),
-                         ":rip: {}".format(self.default_mess))
+                         u":rip: {}".format(self.default_mess))
 
     def test_eksay_args(self):
         test_arg = "TestArg"
@@ -94,7 +94,7 @@ class TestSay(unittest.TestCase):
     def test_jokersay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.jokersay(self.default_mess, test_arg),
-                      ["{} {}".format(test_arg, line) for line in JOKERISMS])
+                      [u"{} {}".format(test_arg, line) for line in JOKERISMS])
 
     def test_8ball_noargs(self):
         self.assertEqual(self.say.bot_8ball(self.default_mess, self.default_args),
@@ -106,12 +106,12 @@ class TestSay(unittest.TestCase):
 
     def test_sayhi_noargs(self):
         self.assertEqual(self.say.sayhi(self.default_mess, self.default_args),
-                         "Hi {}!".format(self.default_mess))
+                         u"Hi {}!".format(self.default_mess))
 
     def test_sayhi_args(self):
         test_arg = "TestArg"
         self.assertEqual(self.say.sayhi(self.default_mess, test_arg),
-                         "Hi {}!".format(test_arg))
+                         u"Hi {}!".format(test_arg))
 
 
 if __name__ == "__main__":
