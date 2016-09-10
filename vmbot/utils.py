@@ -11,7 +11,7 @@ import requests
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
-from .helpers import api
+from .helpers import api, staticdata
 from .helpers.regex import ZKB_REGEX
 from .helpers.format import format_tickers, disambiguate
 from .models import ISK
@@ -291,14 +291,14 @@ class EVEUtils(object):
             return "Failed to load data for {}".format(regex.group(0))
 
         victim = killdata[0]['victim']
-        system = api.get_solarSystemData(killdata[0]['solarSystemID'])
+        system = staticdata.solarSystemData(killdata[0]['solarSystemID'])
         attackers = killdata[0]['attackers']
         corp_ticker, alliance_ticker = api.get_tickers(victim['corporationID'],
                                                        victim['allianceID'])
 
         reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
             victim['characterName'] or victim['corporationName'],
-            format_tickers(corp_ticker, alliance_ticker), api.get_typeName(victim['shipTypeID']),
+            format_tickers(corp_ticker, alliance_ticker), staticdata.typeName(victim['shipTypeID']),
             ISK(killdata[0]['zkb']['totalValue']),
             system['solarSystemName'], system['regionName'],
             len(attackers),
@@ -331,7 +331,7 @@ class EVEUtils(object):
                       'corporationID': char['corporationID'],
                       'corporationName': char['corporationName'],
                       'damageDone': char['damageDone'],
-                      'shipTypeName': api.get_typeName(char['shipTypeID']),
+                      'shipTypeName': staticdata.typeName(char['shipTypeID']),
                       'finalBlow': bool(char['finalBlow'])} for char in attackers]
         # Sort after inflicted damage
         attackers.sort(key=lambda x: x['damageDone'], reverse=True)
@@ -395,11 +395,11 @@ class EVEUtils(object):
         reply = "{} new loss(es):".format(len(losses))
         for loss in reversed(losses):
             victim = loss['victim']
-            system = api.get_solarSystemData(loss['solarSystemID'])
+            system = staticdata.solarSystemData(loss['solarSystemID'])
 
             reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
                 victim['characterName'] or victim['corporationName'],
-                format_tickers("XVMX", "CONDI"), api.get_typeName(victim['shipTypeID']),
+                format_tickers("XVMX", "CONDI"), staticdata.typeName(victim['shipTypeID']),
                 ISK(loss['zkb']['totalValue']),
                 system['solarSystemName'], system['regionName'],
                 loss['killTime'],

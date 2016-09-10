@@ -38,30 +38,6 @@ class TestAPI(unittest.TestCase):
     def tearDownClass(cls):
         return cls.setUpClass()
 
-    def test_get_typeName(self):
-        # typeID: 34 Tritanium
-        self.assertEqual(api.get_typeName(34), "Tritanium")
-
-    def test_get_typeName_invaliditem(self):
-        self.assertEqual(api.get_typeName(-1), "{Failed to load}")
-
-    def test_get_solarSystemData(self):
-        # solarSystemID: 30000142 Jita
-        self.assertDictEqual(
-            api.get_solarSystemData(30000142),
-            {'solarSystemID': 30000142, 'solarSystemName': "Jita",
-             'constellationID': 20000020, 'constellationName': "Kimotoro",
-             'regionID': 10000002, 'regionName': "The Forge"}
-        )
-
-    def test_get_solarSystemData_invalidsystem(self):
-        self.assertDictEqual(
-            api.get_solarSystemData(-1),
-            {'solarSystemID': 0, 'solarSystemName': "{Failed to load}",
-             'constellationID': 0, 'constellationName': "{Failed to load}",
-             'regionID': 0, 'regionName': "{Failed to load}"}
-        )
-
     def test_get_tickers(self):
         # corporationID: 1164409536 [OTHER]
         # allianceID: 159826257 <OTHER>
