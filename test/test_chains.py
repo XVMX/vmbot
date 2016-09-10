@@ -102,7 +102,7 @@ class TestChains(unittest.TestCase):
 
     @mock.patch("random.randint", return_value=1)
     def test_z_out(self, mock_random):
-        self.assertEqual(self.chains.bot_z(self.default_mess, self.default_args), "0")
+        self.assertEqual(self.chains.bot_z(self.default_mess, self.default_args), '0')
 
     @mock.patch("random.randint", return_value=2)
     def test_z_noout(self, mock_random):
@@ -114,7 +114,7 @@ class TestChains(unittest.TestCase):
 
     @mock.patch("random.randint", return_value=1)
     def test_0_out(self, mock_random):
-        self.assertEqual(self.chains.bot_0(self.default_mess, self.default_args), "r")
+        self.assertEqual(self.chains.bot_0(self.default_mess, self.default_args), 'r')
 
     @mock.patch("random.randint", return_value=2)
     def test_0_noout(self, mock_random):
@@ -126,7 +126,7 @@ class TestChains(unittest.TestCase):
 
     @mock.patch("random.randint", return_value=1)
     def test_r_out(self, mock_random):
-        self.assertEqual(self.chains.bot_r(self.default_mess, self.default_args), "z")
+        self.assertEqual(self.chains.bot_r(self.default_mess, self.default_args), 'z')
 
     @mock.patch("random.randint", return_value=2)
     def test_r_noout(self, mock_random):

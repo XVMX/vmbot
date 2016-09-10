@@ -6,7 +6,7 @@ from functools import wraps
 from .exceptions import TimeoutError
 
 
-def timeout(seconds=10, error_message="Timer expired"):
+def timeout(seconds, error_message="Timer expired"):
     """Raise TimeoutError after timer expires."""
     def decorate(func):
         def handle_timeout(signum, frame):

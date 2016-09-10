@@ -23,7 +23,7 @@ def get_tickers(corporationID, allianceID):
 
             corp_ticker = xml.find("ticker").text
             allianceID = allianceID or int(xml.find("allianceID").text) or None
-        except Exception:
+        except (APIError, AttributeError):
             pass
 
     alliance_ticker = None
@@ -34,7 +34,7 @@ def get_tickers(corporationID, allianceID):
                 "https://api.eveonline.com/eve/AllianceList.xml.aspx",
                 params={'version': 1}
             ).find("result/rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
-        except Exception:
+        except (APIError, AttributeError):
             pass
 
     return corp_ticker, alliance_ticker
@@ -43,6 +43,7 @@ def get_tickers(corporationID, allianceID):
 def get_rest_endpoint(url, params=None, timeout=3):
     session = db.Session()
     res = HTTPCacheObject.get(url, session, params=params)
+
     if res is None:
         r = request_api(url, params, timeout, method="GET")
         res = r.content
@@ -54,26 +55,27 @@ def get_rest_endpoint(url, params=None, timeout=3):
         else:
             HTTPCacheObject(url, r.content, expiry, params=params).save(session)
 
+    session.close()
     return json.loads(res.decode("utf-8"))
 
 
 def post_xml_endpoint(url, params=None, timeout=3):
     session = db.Session()
     res = HTTPCacheObject.get(url, session, params=params)
+
     if res is None:
         r = request_api(url, params, timeout, method="POST")
-        xml = ET.fromstring(r.content)
+        res = ET.fromstring(r.content)
 
         try:
-            expiry = parse_xml_cache(xml)
+            expiry = parse_xml_cache(res)
         except NoCacheError:
             pass
         else:
             HTTPCacheObject(url, r.content, expiry, params=params).save(session)
 
-        return xml
-
-    return ET.fromstring(res)
+    session.close()
+    return res if isinstance(res, ET.Element) else ET.fromstring(res)
 
 
 def request_api(url, params=None, timeout=3, method="GET"):
@@ -85,8 +87,8 @@ def request_api(url, params=None, timeout=3, method="GET"):
         else:
             r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
     except requests.exceptions.RequestException as e:
-        raise APIError("Error while connecting to an API: {}".format(e))
+        raise APIError("Error while connecting to EVE-API: {}".format(e))
     if r.status_code != 200:
-        raise APIError("An API returned error code {}".format(r.status_code))
+        raise APIError("EVE-API returned error code {}".format(r.status_code))
 
     return r
