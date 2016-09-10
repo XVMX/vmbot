@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import unittest
 import mock
 
@@ -33,7 +35,7 @@ class TestSay(unittest.TestCase):
     def test_pimpsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.pimpsay(self.default_mess, test_arg),
-                      [u"{} {}".format(test_arg, line) for line in PIMPISMS])
+                      ["{} {}".format(test_arg, line) for line in PIMPISMS])
 
     def test_arelesay(self):
         self.assertIn(self.say.arelesay(self.default_mess, self.default_args),
@@ -47,30 +49,30 @@ class TestSay(unittest.TestCase):
 
     def test_chasesay_noargs(self):
         self.assertEqual(self.say.chasesay(self.default_mess, self.default_args),
-                         u"{}, would you PLEASE".format(self.default_mess))
+                         "{}, would you PLEASE".format(self.default_mess))
 
     def test_chasesay_args(self):
         test_arg = "TestArg"
         self.assertEqual(self.say.chasesay(self.default_mess, test_arg),
-                         u"{}, would you PLEASE".format(test_arg))
+                         "{}, would you PLEASE".format(test_arg))
 
     def test_kairksay_noargs(self):
         self.assertIn(self.say.kairksay(self.default_mess, self.default_args),
-                      [u"{}, {} -Kairk".format(self.default_mess, line) for line in KAIRKISMS])
+                      ["{}, {} -Kairk".format(self.default_mess, line) for line in KAIRKISMS])
 
     def test_kairksay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.kairksay(self.default_mess, test_arg),
-                      [u"{}, {} -Kairk".format(test_arg, line) for line in KAIRKISMS])
+                      ["{}, {} -Kairk".format(test_arg, line) for line in KAIRKISMS])
 
     def test_dariussay_noargs(self):
         self.assertIn(self.say.dariussay(self.default_mess, self.default_args),
-                      [u"{}, {}".format(self.default_mess, line) for line in DARIUSISMS])
+                      ["{}, {}".format(self.default_mess, line) for line in DARIUSISMS])
 
     def test_dariussay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.dariussay(self.default_mess, test_arg),
-                      [u"{}, {}".format(test_arg, line) for line in DARIUSISMS])
+                      ["{}, {}".format(test_arg, line) for line in DARIUSISMS])
 
     def test_scottsay_noargs(self):
         self.assertIn(self.say.scottsay(self.default_mess, self.default_args), SCOTTISMS)
@@ -78,11 +80,11 @@ class TestSay(unittest.TestCase):
     def test_scottsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.scottsay(self.default_mess, test_arg),
-                      [u"{}, {}".format(test_arg, line) for line in SCOTTISMS])
+                      ["{}, {}".format(test_arg, line) for line in SCOTTISMS])
 
     def test_eksay_noargs(self):
         self.assertEqual(self.say.eksay(self.default_mess, self.default_args),
-                         u":rip: {}".format(self.default_mess))
+                         ":rip: {}".format(self.default_mess))
 
     def test_eksay_args(self):
         test_arg = "TestArg"
@@ -94,7 +96,7 @@ class TestSay(unittest.TestCase):
     def test_jokersay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.jokersay(self.default_mess, test_arg),
-                      [u"{} {}".format(test_arg, line) for line in JOKERISMS])
+                      ["{} {}".format(test_arg, line) for line in JOKERISMS])
 
     def test_8ball_noargs(self):
         self.assertEqual(self.say.bot_8ball(self.default_mess, self.default_args),
@@ -106,12 +108,12 @@ class TestSay(unittest.TestCase):
 
     def test_sayhi_noargs(self):
         self.assertEqual(self.say.sayhi(self.default_mess, self.default_args),
-                         u"Hi {}!".format(self.default_mess))
+                         "Hi {}!".format(self.default_mess))
 
     def test_sayhi_args(self):
         test_arg = "TestArg"
         self.assertEqual(self.say.sayhi(self.default_mess, test_arg),
-                         u"Hi {}!".format(test_arg))
+                         "Hi {}!".format(test_arg))
 
 
 if __name__ == "__main__":

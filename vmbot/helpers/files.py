@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 from os import path, pardir
 
 _DATADIR = path.abspath(path.join(path.dirname(__file__), pardir, "data"))

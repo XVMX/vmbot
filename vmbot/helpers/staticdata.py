@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import sqlite3
 
 from .files import STATICDATA_DB

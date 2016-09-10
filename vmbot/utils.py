@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import time
 from datetime import datetime, timedelta
 import urllib
@@ -81,7 +83,7 @@ class Price(object):
             """SELECT regionID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name;""",
-            {'name': u"%{}%".format(system_or_region)}
+            {'name': "%{}%".format(system_or_region)}
         ).fetchall()
         if not systems and not region:
             return "Can't find a matching system/region"
@@ -92,7 +94,7 @@ class Price(object):
                WHERE typeName LIKE :name
                  AND marketGroupID IS NOT NULL
                  AND marketGroupID < 100000;""",
-            {'name': u"%{}%".format(item)}
+            {'name': "%{}%".format(item)}
         ).fetchall()
         if not items:
             return "Can't find a matching item"
@@ -119,10 +121,10 @@ class Price(object):
         except APIError as e:
             return str(e)
 
-        reply = (u"<b>{}</b> in <b>{}</b>:<br />"
-                 u"Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                 u"Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                 u"Spread: ").format(
+        reply = ("<b>{}</b> in <b>{}</b>:<br />"
+                 "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                 "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                 "Spread: ").format(
             typeName, market_name, sell_price, sell_volume, buy_price, buy_volume
         )
         try:

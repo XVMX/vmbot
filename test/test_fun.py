@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import unittest
 import mock
 
@@ -51,7 +53,7 @@ class TestFun(unittest.TestCase):
         except AttributeError:
             self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
 
-        self.assertEqual(res, u"{} ({:+})\n{}".format(quote_url, quote_rating, quote))
+        self.assertEqual(res, "{} ({:+})\n{}".format(quote_url, quote_rating, quote))
 
     @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
     def test_rtq_RequestException(self, mock_requests):
@@ -150,13 +152,13 @@ class TestFun(unittest.TestCase):
 
     @mock.patch("cgi.escape", return_value="[API]")
     def test_urban_link(self, mock_cgi):
-        self.assertIn(u'<a href="https://www.urbandictionary.com/define.php?term=API">API</a>',
+        self.assertIn('<a href="https://www.urbandictionary.com/define.php?term=API">API</a>',
                       self.fun.urban(self.default_mess, "API"))
 
     @mock.patch("requests.Response.json", return_value={'list': []})
     def test_urban_unknown(self, mock_requests):
         self.assertEqual(self.fun.urban(self.default_mess, "API"),
-                         u'Failed to find any definitions for "API"')
+                         'Failed to find any definitions for "API"')
 
     @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
     def test_urban_RequestException(self, mock_requests):

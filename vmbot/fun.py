@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import random
 import re
 import cgi
@@ -108,7 +110,7 @@ class Say(object):
     def pimpsay(self, mess, args):
         """Like fishsay but blacker"""
         if args:
-            return u"{} {}".format(args, random.choice(PIMPISMS))
+            return "{} {}".format(args, random.choice(PIMPISMS))
         else:
             return random.choice(PIMPISMS)
 
@@ -126,25 +128,25 @@ class Say(object):
     def chasesay(self, mess, args):
         """Please"""
         sender = args.strip() or self.get_sender_username(mess)
-        return u"{}, would you PLEASE".format(sender)
+        return "{}, would you PLEASE".format(sender)
 
     @botcmd
     def kairksay(self, mess, args):
         """Like fishsay but more Kafkaesque"""
         sender = args.strip() or self.get_sender_username(mess)
-        return u"{}, {} -Kairk".format(sender, random.choice(KAIRKISMS))
+        return "{}, {} -Kairk".format(sender, random.choice(KAIRKISMS))
 
     @botcmd
     def dariussay(self, mess, args):
         """Like fishsay but bordering on weird"""
         sender = args.strip() or self.get_sender_username(mess)
-        return u"{}, {}".format(sender, random.choice(DARIUSISMS))
+        return "{}, {}".format(sender, random.choice(DARIUSISMS))
 
     @botcmd
     def scottsay(self, mess, args):
         """Like fishsay but coming from Israel"""
         if args:
-            return u"{}, {}".format(args, random.choice(SCOTTISMS))
+            return "{}, {}".format(args, random.choice(SCOTTISMS))
         else:
             return random.choice(SCOTTISMS)
 
@@ -152,13 +154,13 @@ class Say(object):
     def eksay(self, mess, args):
         """Like fishsay but more dead"""
         sender = args.strip() or self.get_sender_username(mess)
-        return u":rip: {}".format(sender)
+        return ":rip: {}".format(sender)
 
     @botcmd
     def jokersay(self, mess, args):
         """Like fishsay but german"""
         if args:
-            return u"{} {}".format(args, random.choice(JOKERISMS))
+            return "{} {}".format(args, random.choice(JOKERISMS))
         else:
             return random.choice(JOKERISMS)
 
@@ -174,7 +176,7 @@ class Say(object):
     def sayhi(self, mess, args):
         """[name] - Says hi to you or name if provided"""
         sender = args.strip() or self.get_sender_username(mess)
-        return u"Hi {}!".format(sender)
+        return "Hi {}!".format(sender)
 
 
 class Fun(object):
@@ -207,7 +209,7 @@ class Fun(object):
         quote_rating = int(quote.find("font").text)
         quote = quote.next_sibling.text
 
-        return u"http://bash.org/{} ({:+})\n{}".format(quote_href, quote_rating, quote)
+        return "http://bash.org/{} ({:+})\n{}".format(quote_href, quote_rating, quote)
 
     @botcmd
     def rtxkcd(self, mess, args):
@@ -252,7 +254,7 @@ class Fun(object):
             return "Error while parsing response from https://www.urbandictionary.com"
 
         if not res['list']:
-            return u'Failed to find any definitions for "{}"'.format(args)
+            return 'Failed to find any definitions for "{}"'.format(args)
 
         # Create a list of definitions with positive (>= 0) rating numbers
         choices = [(desc, desc['thumbs_up'] - desc['thumbs_down']) for desc in res['list']]
@@ -272,7 +274,7 @@ class Fun(object):
                 break
 
         def urban_link(match):
-            return u'<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
+            return '<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
                 urllib.quote_plus(match.group(1).encode("utf-8")), match.group(1)
             )
 
@@ -280,13 +282,13 @@ class Fun(object):
         desc = re.sub("((?:\r|\n|\r\n)+)", "<br />", desc).rstrip("<br />")
         desc = re.sub("\[([\S ]+?)\]", urban_link, desc)
 
-        desc = u"<b>{}</b> by <i>{}</i> rated {:+}: {}<br />{}".format(
+        desc = "<b>{}</b> by <i>{}</i> rated {:+}: {}<br />{}".format(
             entry['word'], entry['author'], entry['thumbs_up'] - entry['thumbs_down'],
             entry['permalink'], desc
         )
 
         if 'tags' in res and res['tags']:
-            desc += u"<br />{}".format(u' '.join(u"#{}".format(tag) for tag in res['tags']))
+            desc += "<br />{}".format(' '.join("#{}".format(tag) for tag in res['tags']))
 
         return desc
 

@@ -1,12 +1,14 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import unittest
 
 from vmbot.helpers.format import format_tickers, disambiguate
 
 
 class TestFormat(unittest.TestCase):
-    simple_disambiguate_template = u'Other {} like "{}": {}'
+    simple_disambiguate_template = 'Other {} like "{}": {}'
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
 
     def test_format_tickers(self):

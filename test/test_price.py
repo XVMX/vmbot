@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from __future__ import absolute_import, division, unicode_literals, print_function
+
 import unittest
 import mock
 
@@ -16,14 +18,14 @@ class TestPrice(unittest.TestCase):
     default_mess = ""
     default_args = ""
 
-    price_template = (u"<b>{}</b> in <b>{}</b>:<br />"
-                      u"Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                      u"Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                      u"Spread: {:,.2%}")
-    no_spread_template = (u"<b>{}</b> in <b>{}</b>:<br />"
-                          u"Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                          u"Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                          u"Spread: NaNNaNNaNNaNNaNBatman!")
+    price_template = ("<b>{}</b> in <b>{}</b>:<br />"
+                      "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                      "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                      "Spread: {:,.2%}")
+    no_spread_template = ("<b>{}</b> in <b>{}</b>:<br />"
+                          "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                          "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                          "Spread: NaNNaNNaNNaNNaNBatman!")
 
     def setUp(self):
         self.price = Price()
