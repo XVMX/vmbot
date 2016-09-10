@@ -32,24 +32,21 @@ class Price(object):
 
         res = api.get_rest_endpoint(url, params={'type': type_}, timeout=5)
 
-        sell = {'orders': [], 'direction': min}
-        buy = {'orders': [], 'direction': max}
+        sell = {'volume': 0, 'price': None}
+        buy = {'volume': 0, 'price': None}
 
         for order in (order for order in res['items']
                       if order['location']['name'].startswith(system)):
             if order['buy']:
-                buy['orders'].append(order)
+                buy['volume'] += order['volume']
+                if order['price'] > buy['price'] or buy['price'] is None:
+                    buy['price'] = order['price']
             else:
-                sell['orders'].append(order)
+                sell['volume'] += order['volume']
+                if order['price'] < sell['price'] or sell['price'] is None:
+                    sell['price'] = order['price']
 
-        for data in (sell, buy):
-            data['volume'] = sum(order['volume'] for order in data['orders'])
-            try:
-                data['price'] = data['direction'](order['price'] for order in data['orders'])
-            except ValueError:
-                data['price'] = 0
-
-        return (sell['price'], sell['volume']), (buy['price'], buy['volume'])
+        return (sell['price'] or 0, sell['volume']), (buy['price'] or 0, buy['volume'])
 
     @botcmd
     def price(self, mess, args):
