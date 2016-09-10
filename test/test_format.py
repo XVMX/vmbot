@@ -4,12 +4,29 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import unittest
 
-from vmbot.helpers.format import format_tickers, disambiguate
+from vmbot.helpers.format import format_affil, format_tickers, disambiguate
 
 
 class TestFormat(unittest.TestCase):
+    _base_affil_template = (" corporation <b>{} [{}]</b> in <b>{} &lt;{}&gt;</b> "
+                            "which is part of the <b>{}</b>")
+    char_affil_template = "<b>{}</b> is part of" + _base_affil_template
+    structure_affil_template = "The structure is owned by" + _base_affil_template
+
     simple_disambiguate_template = 'Other {} like "{}": {}'
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
+
+    def test_format_character(self):
+        self.assertEquals(
+            format_affil("A", "B", "C", "D", "E", "F"),
+            self.char_affil_template.format("A", "B", "E", "C", "F", "D")
+        )
+
+    def test_format_structure(self):
+        self.assertEquals(
+            format_affil("", "B", "C", "D", "E", "F"),
+            self.structure_affil_template.format("B", "E", "C", "F", "D")
+        )
 
     def test_format_tickers(self):
         self.assertEqual(format_tickers("CORP", "ALLIANCE"), "[CORP] <ALLIANCE>")

@@ -2,6 +2,28 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+import cgi
+
+
+def format_affil(characterName, corporationName, allianceName,
+                 factionName, corp_ticker, alliance_ticker):
+    reply = ("<b>{}</b> is part of ".format(characterName)
+             if characterName else "The structure is owned by ")
+
+    reply += "corporation <b>{} {}</b>".format(
+            corporationName, cgi.escape(format_tickers(corp_ticker, None))
+    )
+
+    if allianceName:
+        reply += " in <b>{} {}</b>".format(
+            allianceName, cgi.escape(format_tickers(None, alliance_ticker))
+        )
+
+    if factionName:
+        reply += " which is part of the <b>{}</b>".format(factionName)
+
+    return reply
+
 
 def format_tickers(corporation_ticker, alliance_ticker):
     """Format ticker(s) like the default EVE client does."""
