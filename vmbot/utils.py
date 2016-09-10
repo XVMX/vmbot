@@ -20,11 +20,13 @@ import config
 
 
 class Price(object):
-    def _get_market_orders(self, region, system, item):
-        """Collect buy and sell orders stats for item in system.
+    @staticmethod
+    def _get_market_orders(region, system, item):
+        """Collect buy and sell order stats for item in system.
 
-         Format: ((sell_price, sell_volume), (buy_price, buy_volume))
-         """
+        Empty system name means data for all systems in region is collected.
+        Output format: ((sell_price, sell_volume), (buy_price, buy_volume))
+        """
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
 
@@ -51,16 +53,17 @@ class Price(object):
 
     @botcmd
     def price(self, mess, args):
-        """<item>[@system] - Displays price of item in system, defaulting to Jita"""
+        """<item>[@system_or_region] - Price of item in system_or_region, defaulting to Jita"""
         args = [item.strip() for item in args.split('@')]
         if not 1 <= len(args) <= 2 or args[0] == "":
-            return "Please provide an item name and optionally a system name: <item>[@system]"
+            return ("Please provide an item name and optionally a system/region name: "
+                    "<item>[@system_or_region]")
 
         item = args[0]
         try:
-            system = args[1]
+            system_or_region = args[1]
         except IndexError:
-            system = "Jita"
+            system_or_region = "Jita"
 
         # PLEX aliases
         if item.lower() in ("plex", "pilot license",
@@ -70,14 +73,21 @@ class Price(object):
 
         conn = sqlite3.connect(STATICDATA_DB)
 
+        region = conn.execute(
+            """SELECT regionID, regionName
+               FROM mapRegions
+               WHERE regionName LIKE :name;""",
+            {'name': system_or_region}
+        ).fetchone()
+
         systems = conn.execute(
             """SELECT regionID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name;""",
-            {'name': "%{}%".format(system)}
+            {'name': u"%{}%".format(system_or_region)}
         ).fetchall()
-        if not systems:
-            return "Can't find a matching system"
+        if not systems and not region:
+            return "Can't find a matching system/region"
 
         items = conn.execute(
             """SELECT typeID, typeName
@@ -85,7 +95,7 @@ class Price(object):
                WHERE typeName LIKE :name
                  AND marketGroupID IS NOT NULL
                  AND marketGroupID < 100000;""",
-            {'name': "%{}%".format(item)}
+            {'name': u"%{}%".format(item)}
         ).fetchall()
         if not items:
             return "Can't find a matching item"
@@ -94,12 +104,16 @@ class Price(object):
 
         # Sort by length of name so that the most similar item is first
         items.sort(key=lambda x: len(x[1]))
-        systems.sort(key=lambda x: len(x[1]))
-
         typeID, typeName = items.pop(0)
-        regionID, systemName = systems.pop(0)
-        typeName = typeName.encode("ascii", "replace")
-        systemName = systemName.encode("ascii", "replace")
+
+        if region:
+            # Empty systemName matches every system in Price._get_market_orders
+            regionID, market_name = region
+            systemName = ""
+        else:
+            systems.sort(key=lambda x: len(x[1]))
+            regionID, systemName = systems.pop(0)
+            market_name = systemName
 
         try:
             orders = self._get_market_orders(regionID, systemName, typeID)
@@ -108,11 +122,11 @@ class Price(object):
         except APIError as e:
             return str(e)
 
-        reply = ("<b>{}</b> in <b>{}</b>:<br />"
-                 "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                 "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                 "Spread: ").format(
-            typeName, systemName, sell_price, sell_volume, buy_price, buy_volume
+        reply = (u"<b>{}</b> in <b>{}</b>:<br />"
+                 u"Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                 u"Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                 u"Spread: ").format(
+            typeName, market_name, sell_price, sell_volume, buy_price, buy_volume
         )
         try:
             reply += "{:,.2%}".format((sell_price - buy_price) / sell_price)
@@ -122,7 +136,7 @@ class Price(object):
 
         if items:
             reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) == 2 and systems:
+        if len(args) == 2 and systems and systemName:
             reply += "<br />" + disambiguate(args[1], zip(*systems)[1], "systems")
 
         return reply

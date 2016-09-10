@@ -16,14 +16,14 @@ class TestPrice(unittest.TestCase):
     default_mess = ""
     default_args = ""
 
-    price_template = ("<b>{}</b> in <b>{}</b>:<br />"
-                      "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                      "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                      "Spread: {:,.2%}")
-    no_spread_template = ("<b>{}</b> in <b>{}</b>:<br />"
-                          "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                          "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                          "Spread: NaNNaNNaNNaNNaNBatman!")
+    price_template = (u"<b>{}</b> in <b>{}</b>:<br />"
+                      u"Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                      u"Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                      u"Spread: {:,.2%}")
+    no_spread_template = (u"<b>{}</b> in <b>{}</b>:<br />"
+                          u"Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                          u"Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+                          u"Spread: NaNNaNNaNNaNNaNBatman!")
 
     def setUp(self):
         self.price = Price()
@@ -47,13 +47,15 @@ class TestPrice(unittest.TestCase):
     def test_price_noargs(self):
         self.assertEqual(
             self.price.price(self.default_mess, self.default_args),
-            "Please provide an item name and optionally a system name: <item>[@system]"
+            ("Please provide an item name and optionally a system/region name: "
+             "<item>[@system_or_region]")
         )
 
     def test_price_excessargs(self):
         self.assertEqual(
             self.price.price(self.default_mess, "item@system@excess"),
-            "Please provide an item name and optionally a system name: <item>[@system]"
+            ("Please provide an item name and optionally a system/region name: "
+             "<item>[@system_or_region]")
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
@@ -79,6 +81,13 @@ class TestPrice(unittest.TestCase):
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
+    def test_price_region(self, mock_price_volume):
+        self.assertEqual(
+            self.price.price(self.default_mess, "Mexallon@The Forge"),
+            self.price_template.format("Mexallon", "The Forge", 45.99, 1000, 45.99, 1000, 0)
+        )
+
+    @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
     @mock.patch("vmbot.utils.disambiguate", return_value="TestResponse")
     def test_price_disambiguate(self, mock_price_volume, mock_disambiguate):
         self.assertEqual(
@@ -96,7 +105,7 @@ class TestPrice(unittest.TestCase):
     def test_price_invalidsystem(self):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite@InvalidSystem"),
-            "Can't find a matching system"
+            "Can't find a matching system/region"
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", side_effect=APIError("TestException"))
@@ -119,7 +128,7 @@ class TestPrice(unittest.TestCase):
         # Tritanium
         item_typeID = 34
 
-        res = self.price._get_market_orders(regionID, "Jita", item_typeID)
+        res = Price._get_market_orders(regionID, "Jita", item_typeID)
         self.assertIsInstance(res[0][0], float)
         self.assertIsInstance(res[0][1], (int, long))
         self.assertIsInstance(res[1][0], float)
@@ -132,7 +141,7 @@ class TestPrice(unittest.TestCase):
         # Pyerite
         item_typeID = 35
 
-        res = self.price._get_market_orders(regionID, "Jita", item_typeID)
+        res = Price._get_market_orders(regionID, "Jita", item_typeID)
         self.assertEqual(res[0][0], 0)
         self.assertEqual(res[0][1], 0)
         self.assertEqual(res[1][0], 0)
