@@ -198,27 +198,16 @@ class Fun(object):
             return "Error while connecting to http://bash.org: {}".format(e)
         soup = BeautifulSoup(r.text, "html.parser")
 
-        valid_ids = {int(link['href'][1:]) for link
-                     in soup.find_all("a", title="Permanent link to this quote.")}
-
-        if not valid_ids:
+        try:
+            quote = random.choice(soup.find_all("p", class_="quote"))
+        except IndexError:
             return "Failed to load any quotes from http://bash.org/?random"
 
-        quote_id = random.choice(tuple(valid_ids))
-        quote_url = "http://bash.org/?{}".format(quote_id)
+        quote_href = quote.find("a", title="Permanent link to this quote.")['href']
+        quote_rating = int(quote.find("font").text)
+        quote = quote.next_sibling.text
 
-        try:
-            r = requests.get(quote_url, timeout=3)
-        except requests.exceptions.RequestException as e:
-            return "Error while connecting to http://bash.org: {}".format(e)
-        soup = BeautifulSoup(r.text, "html.parser")
-
-        try:
-            quote = soup.find("p", class_="qt").text
-        except AttributeError:
-            return "Failed to load quote #{} from {}".format(quote_id, quote_url)
-
-        return u"{}\n{}".format(quote_url, quote)
+        return u"http://bash.org/{} ({:+})\n{}".format(quote_href, quote_rating, quote)
 
     @botcmd
     def rtxkcd(self, mess, args):
@@ -250,7 +239,7 @@ class Fun(object):
 
     @botcmd
     def urban(self, mess, args):
-        """[word] - Urban Dictionary's definition of word or, if missing, a random word"""
+        """[word] - Urban Dictionary's definition of word or, if missing, of a random word"""
         url = "http://api.urbandictionary.com/v0/"
         url += "random" if not args else "define"
         params = None if not args else {'term': args}

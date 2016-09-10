@@ -45,69 +45,23 @@ class TestFun(unittest.TestCase):
         soup = BeautifulSoup(r.text, "html.parser")
 
         try:
-            quote = soup.find("p", class_="qt").text
+            quote = soup.find("p", class_="quote")
+            quote_rating = int(quote.find("font").text)
+            quote = quote.next_sibling.text
         except AttributeError:
             self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
 
-        self.assertEqual(res, u"{}\n{}".format(quote_url, quote))
+        self.assertEqual(res, u"{} ({:+})\n{}".format(quote_url, quote_rating, quote))
 
-    def test_rtq_RequestException(self):
-        desc = "TestException"
-        exception_text = "Error while connecting to http://bash.org: {}".format(desc)
+    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
+    def test_rtq_RequestException(self, mock_requests):
+        self.assertRegexpMatches(self.fun.rtq(self.default_mess, self.default_args),
+                                 "Error while connecting to http://bash.org: .*")
 
-        def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request."""
-            requests_patcher.stop()
-            try:
-                r = requests.get(*args, **kwargs)
-            except requests.exceptions.RequestException as e:
-                self.skipTest(
-                    "Error while emulating request in test_rtq_RequestException: {}".format(e)
-                )
-            mock_requests = requests_patcher.start()
-            return r
-
-        # Exception at first request
-        requests_patcher = mock.patch("requests.get",
-                                      side_effect=requests.exceptions.RequestException(desc))
-        mock_requests = requests_patcher.start()
-
-        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args), exception_text)
-
-        # Exception at second request
-        mock_requests.side_effect = side_effect
-
-        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args), exception_text)
-
-        requests_patcher.stop()
-
-    def test_rtq_flawedresponse(self):
-        def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request."""
-            requests_patcher.stop()
-            try:
-                r = requests.get(*args, **kwargs)
-            except requests.exceptions.RequestException as e:
-                self.skipTest(
-                    "Error while emulating request in test_rtq_flawedresponse: {}".format(e)
-                )
-            mock_requests = requests_patcher.start()
-            return r
-
-        # 404 response after first request
-        requests_patcher = mock.patch("requests.get", side_effect=flawed_response)
-        mock_requests = requests_patcher.start()
-
+    @mock.patch("requests.get", side_effect=flawed_response)
+    def test_rtq_flawedresponse(self, mock_requests):
         self.assertEqual(self.fun.rtq(self.default_mess, self.default_args),
                          "Failed to load any quotes from http://bash.org/?random")
-
-        # 404 response after second request
-        mock_requests.side_effect = side_effect
-
-        self.assertRegexpMatches(self.fun.rtq(self.default_mess, self.default_args),
-                                 "Failed to load quote #\d+ from http://bash\.org/\?\d+")
-
-        requests_patcher.stop()
 
     def test_rtxkcd(self):
         res = self.fun.rtxkcd(self.default_mess, self.default_args)
