@@ -21,7 +21,7 @@ def get_tickers(corporationID, allianceID):
             xml = post_xml_endpoint(
                 "https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
                 params={'corporationID': corporationID}
-            ).find("result")
+            )
 
             corp_ticker = xml.find("ticker").text
             allianceID = allianceID or int(xml.find("allianceID").text) or None
@@ -35,7 +35,7 @@ def get_tickers(corporationID, allianceID):
             alliance_ticker = post_xml_endpoint(
                 "https://api.eveonline.com/eve/AllianceList.xml.aspx",
                 params={'version': 1}
-            ).find("result/rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
+            ).find("rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
         except (APIError, AttributeError):
             pass
 
@@ -75,9 +75,11 @@ def post_xml_endpoint(url, params=None, timeout=3):
             pass
         else:
             HTTPCacheObject(url, r.content, expiry, params=params).save(session)
+    else:
+        res = ET.fromstring(res)
 
     session.close()
-    return res if isinstance(res, ET.Element) else ET.fromstring(res)
+    return res.find("result")
 
 
 def request_api(url, params=None, timeout=3, method="GET"):
