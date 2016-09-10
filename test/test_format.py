@@ -12,7 +12,7 @@ class TestFormat(unittest.TestCase):
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
 
     def test_format_tickers(self):
-        self.assertEqual(format_tickers("CORP", "ALLIANCE"), "[CORP] <span>&lt;ALLIANCE&gt;</span>")
+        self.assertEqual(format_tickers("CORP", "ALLIANCE"), "[CORP] <ALLIANCE>")
 
     def test_disambiguate_simple(self):
         self.assertEqual(
