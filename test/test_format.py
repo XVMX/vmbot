@@ -6,7 +6,7 @@ from vmbot.helpers.format import format_tickers, disambiguate
 
 
 class TestFormat(unittest.TestCase):
-    simple_disambiguate_template = 'Other {} like "{}": {}'
+    simple_disambiguate_template = u'Other {} like "{}": {}'
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
 
     def test_format_tickers(self):

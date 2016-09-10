@@ -15,7 +15,8 @@ def format_tickers(corporation_ticker, alliance_ticker):
 
 
 def disambiguate(given, like, category):
-    reply = 'Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
+    """Disambiguate a list of names from the same category."""
+    reply = u'Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
     if len(like) > 3:
         reply += ", and {} others".format(len(like) - 3)
 
