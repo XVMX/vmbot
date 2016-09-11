@@ -21,7 +21,7 @@ def get_tickers(corporationID, allianceID):
     if corporationID:
         corp_ticker = "ERROR"
         try:
-            xml = post_xml_endpoint(
+            xml = request_xml(
                 "https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
                 params={'corporationID': corporationID}
             )
@@ -36,7 +36,7 @@ def get_tickers(corporationID, allianceID):
     if allianceID:
         alliance_ticker = "ERROR"
         try:
-            alliance_ticker = post_xml_endpoint(
+            alliance_ticker = request_xml(
                 "https://api.eveonline.com/eve/AllianceList.xml.aspx",
                 params={'version': 1}
             ).find("rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
@@ -50,7 +50,7 @@ def zbot(killID):
     """Create a compact overview of a zKB killmail."""
     url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
     try:
-        killdata = get_rest_endpoint(url)
+        killdata = request_rest(url)
     except APIError as e:
         return unicode(e)
 
@@ -75,12 +75,12 @@ def zbot(killID):
     )
 
 
-def get_rest_endpoint(url, params=None, timeout=3):
+def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
     session = db.Session()
-    res = HTTPCacheObject.get(url, session, params=params)
+    res = HTTPCacheObject.get(url, session, params=params, headers=headers)
 
     if res is None:
-        r = request_api(url, params, timeout, method="GET")
+        r = request_api(url, params, headers, timeout, method)
         res = r.content
 
         try:
@@ -88,18 +88,18 @@ def get_rest_endpoint(url, params=None, timeout=3):
         except (KeyError, NoCacheError):
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params).save(session)
+            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
 
     session.close()
     return json.loads(res.decode("utf-8"))
 
 
-def post_xml_endpoint(url, params=None, timeout=3):
+def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
     session = db.Session()
-    res = HTTPCacheObject.get(url, session, params=params)
+    res = HTTPCacheObject.get(url, session, params=params, headers=headers)
 
     if res is None:
-        r = request_api(url, params, timeout, method="POST")
+        r = request_api(url, params, headers, timeout, method)
         res = ET.fromstring(r.content)
 
         try:
@@ -107,7 +107,7 @@ def post_xml_endpoint(url, params=None, timeout=3):
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params).save(session)
+            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
     else:
         res = ET.fromstring(res)
 
@@ -115,8 +115,10 @@ def post_xml_endpoint(url, params=None, timeout=3):
     return res.find("result")
 
 
-def request_api(url, params=None, timeout=3, method="GET"):
-    headers = {'User-Agent': "XVMX JabberBot"}
+def request_api(url, params=None, headers=None, timeout=3, method="GET"):
+    if headers is None:
+        headers = {}
+    headers['User-Agent'] = "XVMX JabberBot"
 
     try:
         if method in ("GET", "HEAD"):

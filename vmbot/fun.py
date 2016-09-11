@@ -225,7 +225,7 @@ class Fun(object):
         comic_url = "https://xkcd.com/{}/".format(comic_id)
 
         try:
-            comic = requests.get("{}info.0.json".format(comic_url), timeout=3).json()
+            comic = requests.get(comic_url + "info.0.json", timeout=3).json()
         except requests.exceptions.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
         except ValueError:

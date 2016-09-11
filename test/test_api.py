@@ -76,39 +76,39 @@ class TestAPI(unittest.TestCase):
     def test_zbot_invalidid(self):
         self.assertEquals(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
 
-    @mock.patch("vmbot.helpers.api.get_rest_endpoint", side_effect=APIError("TestException"))
+    @mock.patch("vmbot.helpers.api.request_rest", side_effect=APIError("TestException"))
     def test_zbot_APIError(self, mock_request_endpoint):
         self.assertEquals(api.zbot("54520379"), "TestException")
 
-    def test_get_rest_endpoint(self):
+    def test_request_rest(self):
         test_url = "https://crest-tq.eveonline.com/"
 
         # Test without cache
         with mock.patch("vmbot.helpers.api.parse_cache_control", side_effect=NoCacheError):
-            res_nocache = api.get_rest_endpoint(test_url)
+            res_nocache = api.request_rest(test_url)
             self.assertIsInstance(res_nocache, dict)
 
         # Test with cache
-        res_cache = api.get_rest_endpoint(test_url)
+        res_cache = api.request_rest(test_url)
         self.assertIsInstance(res_cache, dict)
 
         # Test cached response
-        self.assertDictEqual(api.get_rest_endpoint(test_url), res_cache)
+        self.assertDictEqual(api.request_rest(test_url), res_cache)
 
-    def test_post_xml_endpoint(self):
+    def test_request_xml(self):
         test_url = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
 
         # Test without cache
         with mock.patch("vmbot.helpers.api.parse_xml_cache", side_effect=NoCacheError):
-            res_nocache = api.post_xml_endpoint(test_url)
+            res_nocache = api.request_xml(test_url)
             self.assertIsInstance(res_nocache, ET.Element)
 
         # Test with cache
-        res_cache = api.post_xml_endpoint(test_url)
+        res_cache = api.request_xml(test_url)
         self.assertIsInstance(res_cache, ET.Element)
 
         # Test cached response
-        self.assertEqual(ET.tostring(api.post_xml_endpoint(test_url)), ET.tostring(res_cache))
+        self.assertEqual(ET.tostring(api.request_xml(test_url)), ET.tostring(res_cache))
 
     @mock.patch("requests.request",
                 side_effect=requests.exceptions.RequestException("TestException"))

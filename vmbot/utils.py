@@ -32,7 +32,7 @@ class Price(object):
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
 
-        res = api.get_rest_endpoint(url, params={'type': type_}, timeout=5)
+        res = api.request_rest(url, params={'type': type_}, timeout=5)
 
         sell = {'volume': 0, 'price': None}
         buy = {'volume': 0, 'price': None}
@@ -155,8 +155,8 @@ class EVEUtils(object):
             return "Please limit your search to 10 characters at once"
 
         try:
-            xml = api.post_xml_endpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx",
-                                        params={'names': ','.join(args)}).find("rowset")
+            xml = api.request_xml("https://api.eveonline.com/eve/CharacterID.xml.aspx",
+                                  params={'names': ','.join(args)}).find("rowset")
         except APIError as e:
             return unicode(e)
 
@@ -167,7 +167,7 @@ class EVEUtils(object):
             return "None of these character(s) exist"
 
         try:
-            xml = api.post_xml_endpoint(
+            xml = api.request_xml(
                 "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
                 params={'ids': ','.join(map(unicode, charIDs))}, timeout=5
             ).find("rowset")
@@ -194,8 +194,8 @@ class EVEUtils(object):
 
         # Detailed single-character information
         try:
-            xml = api.post_xml_endpoint("https://api.eveonline.com/eve/CharacterInfo.xml.aspx",
-                                        params={'characterID': charIDs[0]})
+            xml = api.request_xml("https://api.eveonline.com/eve/CharacterInfo.xml.aspx",
+                                  params={'characterID': charIDs[0]})
         except APIError as e:
             return reply + "<br />" + unicode(e)
 
@@ -231,7 +231,7 @@ class EVEUtils(object):
         reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(datetime.utcnow())
 
         try:
-            xml = api.post_xml_endpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx")
+            xml = api.request_xml("https://api.eveonline.com/server/ServerStatus.xml.aspx")
         except APIError:
             pass
         else:
@@ -365,7 +365,7 @@ class EVEUtils(object):
 
         for character in (item.strip() for item in args.split(',')):
             try:
-                res = api.get_rest_endpoint(url + character)
+                res = api.request_rest(url + character)
             except APIError:
                 results.append("Failed to load blacklist entry for " + character)
             else:

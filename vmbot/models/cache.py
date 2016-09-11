@@ -68,13 +68,15 @@ class BaseCacheObject(db.Model):
 class HTTPCacheObject(BaseCacheObject):
     """Cache an HTTP response using URL and parameters as key."""
 
-    def __init__(self, url, doc, expiry=None, params=None):
+    def __init__(self, url, doc, expiry=None, params=None, headers=None):
         url += json.dumps(params) if params else ""
+        url += json.dumps(headers) if headers else ""
         expiry = expiry or datetime.utcnow() + timedelta(hours=1)
         super(HTTPCacheObject, self).__init__(url, doc, expiry)
 
     @classmethod
-    def get(cls, url, session, params=None):
+    def get(cls, url, session, params=None, headers=None):
         """Load cached HTTP response from the database."""
         url += json.dumps(params) if params else ""
+        url += json.dumps(headers) if headers else ""
         return super(HTTPCacheObject, cls).get(url, session)

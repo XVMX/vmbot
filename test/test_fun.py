@@ -74,7 +74,7 @@ class TestFun(unittest.TestCase):
             self.fail("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
 
         try:
-            comic = requests.get("{}info.0.json".format(comic_url), timeout=5).json()
+            comic = requests.get(comic_url + "info.0.json", timeout=5).json()
         except requests.exceptions.RequestException as e:
             self.skipTest("Error while connecting to https://xkcd.com in test_rtxkcd: {}".format(e))
         except ValueError:
