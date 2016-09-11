@@ -44,10 +44,16 @@ class MUCJabberBot(JabberBot):
         nick = self.get_sender_username(mess)
         node = mess.getFrom().getNode()
 
+        # Private message
         if nick == node:
             return mess.getFrom() if full_jid else nick
 
-        jid = self.nick_dict[node].get(nick, JID("default"))
+        # MUC message
+        try:
+            jid = self.nick_dict[node][nick]
+        except KeyError:
+            jid = JID("default")
+
         return jid if full_jid else jid.getNode()
 
     def send_simple_reply(self, mess, text, private=False):
