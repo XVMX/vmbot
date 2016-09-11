@@ -30,7 +30,7 @@ class MUCJabberBot(JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
-    MAX_CHAT_CHARS = 800
+    MAX_CHAT_CHARS = 1000
     PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
