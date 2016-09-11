@@ -7,16 +7,15 @@ from datetime import datetime
 import os
 import subprocess
 import random
-import xml.etree.ElementTree as ET
 
 from xmpp.protocol import JID
 from .jabberbot import JabberBot
-import requests
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.printing.pretty import pretty
 import pint
 
 from .botcmd import botcmd
+from .director import Director
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .helpers import api
@@ -112,7 +111,7 @@ class MUCJabberBot(JabberBot):
             super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
 
 
-class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
+class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.now()
         self.km_feed_trigger = time.time() if kwargs.pop('km_feed', False) else None
@@ -246,76 +245,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
             return random.choice(args)
         else:
             return "You need to provide at least 2 options to choose from"
-
-    @botcmd
-    def bcast(self, mess, args):
-        """vm <message> - Sends a broadcast to XVMX members
-
-        Must be <=10.24kb including the tag line.
-        "vm" required to avoid accidental bcasts, only works in dir chat.
-        Do not abuse this or Solo's wrath shall be upon you.
-        """
-
-        def send_bcast(broadcast, author):
-            # API docs: http://goo.gl/cTYPzg
-            messaging = ET.Element("messaging")
-            messages = ET.SubElement(messaging, "messages")
-            message = ET.SubElement(messages, "message")
-            id_ = ET.SubElement(message, "id")
-            id_.text = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-            target = ET.SubElement(message, "target")
-            target.text = config.BCAST['target']
-            sender = ET.SubElement(message, "from")
-            sender.text = author
-            text = ET.SubElement(message, "text")
-            text.text = broadcast
-            result = '<?xml version="1.0"?>' + ET.tostring(messaging)
-
-            r = requests.post(
-                config.BCAST['url'], data=result,
-                headers={'User-Agent': "XVMX JabberBot",
-                         'X-SourceID': config.BCAST['id'],
-                         'X-SharedKey': config.BCAST['key']},
-                timeout=10
-            )
-            return r.status_code
-
-        if not args.startswith("vm "):
-            return None
-        broadcast = args[3:]
-
-        if mess.getFrom().getNode() != "vm_dir":
-            return "Broadcasting is only enabled in director chat"
-
-        sender = self.get_uname_from_mess(mess)
-        if sender not in config.DIRECTORS:
-            return "You don't have the rights to send broadcasts"
-
-        if len(broadcast) > 10240:
-            return ("This broadcast has {} characters and is too long; "
-                    "max length is 10240 characters. Please try again with less of a tale. "
-                    "You could try, y'know, a forum post.").format(len(broadcast))
-
-        try:
-            status = send_bcast(broadcast, "{} via VMBot".format(sender))
-        except requests.exceptions.RequestException as e:
-            return "Error while connecting to Broadcast-API: {}".format(status)
-
-        if status == 200:
-            return "{}, I have sent your broadcast to {}".format(self.get_sender_username(mess),
-                                                                 config.BCAST['target'])
-        else:
-            return "Broadcast-API returned error code {}".format(status)
-
-    @botcmd
-    def pingall(self, mess, args):
-        """Pings everyone in the current MUC room"""
-        if self.get_uname_from_mess(mess) not in config.DIRECTORS:
-            return ":getout:"
-
-        reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
-        reply += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
-        return reply
 
     @botcmd
     def uptime(self, mess, args):
