@@ -104,7 +104,7 @@ class TestSay(unittest.TestCase):
 
     def test_8ball_noargs(self):
         self.assertEqual(self.say.bot_8ball(self.default_mess, self.default_args),
-                         "You will need to provide a question for me to answer")
+                         "Please provide a question to answer")
 
     def test_8ball_args(self):
         test_arg = "TestArg"

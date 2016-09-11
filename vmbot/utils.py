@@ -197,7 +197,7 @@ class EVEUtils(object):
             xml = api.request_xml("https://api.eveonline.com/eve/CharacterInfo.xml.aspx",
                                   params={'characterID': charIDs[0]})
         except APIError as e:
-            return reply + "<br />" + unicode(e)
+            return "{}<br />{}".format(reply, e)
 
         reply += "<br />Security status: <b>{:.2f}</b>".format(
             float(xml.find("securityStatus").text)

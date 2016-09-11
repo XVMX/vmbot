@@ -185,7 +185,7 @@ class Say(object):
     def bot_8ball(self, mess, args):
         """<question> - Provides insight into the future"""
         if not args:
-            return "You will need to provide a question for me to answer"
+            return "Please provide a question to answer"
         else:
             return random.choice(EBALL_ANSWERS)
 
