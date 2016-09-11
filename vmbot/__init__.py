@@ -299,14 +299,6 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
             return "You need to provide at least 2 options to choose from"
 
     @botcmd
-    def ping(self, mess, args):
-        """[-a] - Is this thing on? The -a flag makes the bot answer to you specifically"""
-        if args == "-a":
-            return "{}: Pong".format(self.get_sender_username(mess))
-        else:
-            return "Pong"
-
-    @botcmd
     def bcast(self, mess, args):
         """vm <message> - Sends a broadcast to XVMX members
 
