@@ -287,7 +287,8 @@ class EVEUtils(object):
                 "https://zkillboard.com/kill/{}/".format(loss['killID'])
             )
 
-        self.send(config.JABBER['chatrooms'][0], reply, message_type="groupchat")
+        for room in config.JABBER['primary_chatrooms']:
+            self.send(room, reply, message_type="groupchat")
 
     def news_feed(self):
         """Send a message to the primary chatroom with the latest EVE news and devblogs."""
@@ -349,13 +350,15 @@ class EVEUtils(object):
             reply = "{} new EVE news:".format(len(news))
             for entry in news:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(config.JABBER['chatrooms'][0], reply, message_type="groupchat")
+            for room in config.JABBER['primary_chatrooms']:
+                self.send(room, reply, message_type="groupchat")
 
         if devblogs:
             reply = "{} new devblog(s):".format(len(devblogs))
             for entry in devblogs:
                 reply += "<br /><b>{}</b>: {}".format(entry['title'], entry['url'])
-            self.send(config.JABBER['chatrooms'][0], reply, message_type="groupchat")
+            for room in config.JABBER['primary_chatrooms']:
+                self.send(room, reply, message_type="groupchat")
 
     @botcmd
     def rcbl(self, mess, args):

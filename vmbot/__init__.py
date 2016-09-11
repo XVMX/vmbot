@@ -201,7 +201,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
 
         message = mess.getBody()
         room = mess.getFrom().getStripped()
-        primary_room = room == config.JABBER['chatrooms'][0]
+        primary_room = room in config.JABBER['primary_chatrooms']
 
         if message and self.get_uname_from_mess(mess, full_jid=True) != self.jid:
             if self.pubbie_regex.search(message) is not None and primary_room:

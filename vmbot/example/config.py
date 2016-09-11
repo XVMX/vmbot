@@ -22,6 +22,8 @@ ADMINS = (
 )
 
 # Jabber credentials
+# Primary chatrooms: main corp channel(s), feeds will be posted there
+# Director chatrooms: director channel(s), important data will be posted there
 JABBER = {
     'username': "username@domain.tld",
     'password': "yourpassword",
@@ -31,6 +33,12 @@ JABBER = {
         "room1@conference.domain.tld",
         "room2@conference.domain.tld",
         "room3@conference.domain.tld"
+    ),
+    'primary_chatrooms': (
+        "room1@conference.domain.tld",
+    ),
+    'director_chatrooms': (
+        "room3@conference.domain.tld",
     )
 }
 
