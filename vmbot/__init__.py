@@ -114,24 +114,6 @@ class MUCJabberBot(JabberBot):
 
 
 class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
-    # Access control lists
-    DIRECTORS = (
-        "jack_haydn",
-        "thirteen_fish",
-        "pimpin_yourhos",
-        "johann_tollefson",
-        "petyr_baelich",
-        "ektony",
-        "kairk_efraim",
-        "lofac",
-        "joker_gates",
-        "lordshazbot",
-        "borodimer"
-    )
-    ADMINS = (
-        "joker_gates",
-    )
-
     # Pubbie talk regex parts
     PUBBIETALK = (
         "sup",
@@ -365,7 +347,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
             return "Broadcasting is only enabled in director chat"
 
         sender = self.get_uname_from_mess(mess)
-        if sender not in self.DIRECTORS:
+        if sender not in config.DIRECTORS:
             return "You don't have the rights to send broadcasts"
 
         if len(broadcast) > 10240:
@@ -387,7 +369,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
     @botcmd
     def pingall(self, mess, args):
         """Pings everyone in the current MUC room"""
-        if self.get_uname_from_mess(mess) not in self.DIRECTORS:
+        if self.get_uname_from_mess(mess) not in config.DIRECTORS:
             return ":getout:"
 
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
@@ -408,7 +390,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
         If ran in a while true loop on the shell, it'll immediately reconnect.
         """
         if not args:
-            if self.get_uname_from_mess(mess) in self.ADMINS:
+            if self.get_uname_from_mess(mess) in config.ADMINS:
                 self.quit()
                 return "afk shower"
             else:
@@ -420,7 +402,7 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
         if mess.getFrom().getNode() != "vm_dir":
             return "git pull is only enabled in director chat"
 
-        if self.get_uname_from_mess(mess) not in self.ADMINS:
+        if self.get_uname_from_mess(mess) not in config.ADMINS:
             return "You are not allowed to git pull"
 
         path = os.path
