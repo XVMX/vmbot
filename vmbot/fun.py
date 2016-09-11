@@ -99,8 +99,25 @@ JOKERISMS = (
     "urbad"
 )
 
+PUBBIESMACK = (
+    "go back to reddit fam",
+    "What are you, a fuckin alpha clone? :frogout:",
+    "Ascendance is that way ---->",
+    ":commissar:",
+    ":frogbarf:",
+    "sup m8 baited on free iskies",
+    "Too bad I can't kick you for that anymore :argh:",
+    "Me right now: :smithicide:",
+    "Dreddit is recruiting",
+    "Andail, is that you?"
+)
+
 
 class Say(object):
+    def pubbiesmack(self, mess):
+        """Smack that pubbie."""
+        return "{}: {}".format(self.get_sender_username(mess), random.choice(PUBBIESMACK))
+
     @botcmd
     def fishsay(self, mess, args):
         """Fishy wisdom"""

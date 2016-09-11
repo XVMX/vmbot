@@ -7,7 +7,6 @@ from datetime import datetime
 import os
 import subprocess
 import random
-import re
 import xml.etree.ElementTree as ET
 
 from xmpp.protocol import JID
@@ -22,7 +21,7 @@ from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .helpers import api
 from .helpers.decorators import timeout
-from .helpers.regex import ZKB_REGEX
+from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
 
 import config
 
@@ -114,41 +113,12 @@ class MUCJabberBot(JabberBot):
 
 
 class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
-    # Pubbie talk regex parts
-    PUBBIETALK = (
-        "sup",
-        "dank",
-        "frag",
-        "o7",
-        "o\/",
-        "m8",
-        "wot",
-        "retart",
-        "rekt",
-        "toon",
-        "iskies",
-        "thann(?:y|ies)",
-        "murica",
-        "yolo",
-        "swag",
-        "wewlad",
-        "fam",
-        "rofl",
-        "stronk",
-        "lmao"
-    )
-
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.now()
         self.km_feed_trigger = time.time() if kwargs.pop('km_feed', False) else None
         self.news_feed_trigger = time.time() if kwargs.pop('news_feed', False) else None
 
         super(VMBot, self).__init__(*args, **kwargs)
-
-        # Regex to check for pubbie talk
-        self.pubbie_regex = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(self.PUBBIETALK)),
-                                       re.IGNORECASE)
-        self.pubbie_kicked = set()
 
         # Initialize asynchronous commands
         if self.km_feed_trigger:
@@ -169,45 +139,24 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
 
         return super(VMBot, self).idle_proc()
 
-    def callback_presence(self, conn, presence):
-        reply = super(VMBot, self).callback_presence(conn, presence)
-
-        jid = presence.getJid()
-        if jid is None:
-            return reply
-
-        type_ = presence.getType()
-        jid = JID(jid).getStripped()
-
-        if type_ == self.AVAILABLE:
-            room = presence.getFrom().getStripped()
-
-            if jid in self.pubbie_kicked and room == config.JABBER['chatrooms'][0]:
-                self.send(config.JABBER['chatrooms'][0],
-                          "{}: Talk shit, get hit".format(presence.getFrom().getResource()),
-                          message_type="groupchat")
-                self.pubbie_kicked.remove(jid)
-        elif type_ == self.OFFLINE and presence.getStatusCode() == "307":
-            self.pubbie_kicked.add(jid)
-
-        return reply
-
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
 
         # See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
-        if "urn:xmpp:delay" in mess.getProperties() or mess.getType() != "groupchat":
+        if (self.get_uname_from_mess(mess, full_jid=True) == self.jid or
+                mess.getType() != "groupchat" or "urn:xmpp:delay" in mess.getProperties()):
             return reply
 
         message = mess.getBody()
         room = mess.getFrom().getStripped()
         primary_room = room in config.JABBER['primary_chatrooms']
 
-        if message and self.get_uname_from_mess(mess, full_jid=True) != self.jid:
-            if self.pubbie_regex.search(message) is not None and primary_room:
-                self.muc_kick(room, self.get_sender_username(mess),
-                              "Emergency pubbie broadcast system")
+        if message:
+            # Pubbie smacktalk
+            if PUBBIE_REGEX.search(message) is not None and primary_room:
+                super(MUCJabberBot, self).send_simple_reply(mess, self.pubbiesmack(mess))
 
+            # zBot
             matches = {match.group(1) for match in ZKB_REGEX.finditer(message)}
             replies = [api.zbot(match) for match in matches]
             if replies:

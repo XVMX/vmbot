@@ -8,7 +8,7 @@ import mock
 import re
 
 from vmbot.fun import (EBALL_ANSWERS, FISHISMS, PIMPISMS, ARELEISMS, NICKISMS,
-                       KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS)
+                       KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS, PUBBIESMACK)
 
 from vmbot.fun import Say
 
@@ -25,6 +25,10 @@ class TestSay(unittest.TestCase):
 
     def tearDown(self):
         del self.say
+
+    def test_pubbiesmack(self):
+        self.assertIn(self.say.pubbiesmack(self.default_mess),
+                      ["{}: {}".format(self.default_mess, line) for line in PUBBIESMACK])
 
     def test_fishsay(self):
         self.assertIn(self.say.fishsay(self.default_mess, self.default_args), FISHISMS)
