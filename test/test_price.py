@@ -101,13 +101,13 @@ class TestPrice(unittest.TestCase):
     def test_price_invaliditem(self):
         self.assertEqual(
             self.price.price(self.default_mess, "InvalidItem"),
-            "Can't find a matching item"
+            "Failed to find a matching item"
         )
 
     def test_price_invalidsystem(self):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite@InvalidSystem"),
-            "Can't find a matching system/region"
+            "Failed to find a matching system/region"
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", side_effect=APIError("TestException"))
@@ -137,7 +137,7 @@ class TestPrice(unittest.TestCase):
         self.assertIsInstance(res[1][1], (int, long))
 
     @mock.patch("vmbot.helpers.api.get_rest_endpoint", return_value={'items': []})
-    def test_get_market_orders_noorders(self, mock_crest):
+    def test_get_market_orders_noorders(self, mock_request_endpoint):
         # The Forge
         regionID = 10000002
         # Pyerite

@@ -10,10 +10,13 @@ import requests
 from .exceptions import APIError, NoCacheError
 from . import database as db
 from ..models.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
+from . import staticdata
+from .format import format_tickers
+from ..models import ISK
 
 
 def get_tickers(corporationID, allianceID):
-    """Resolve corpID/allianceID to their respective ticker(s)."""
+    """Resolve corporationID/allianceID to their respective ticker(s)."""
     corp_ticker = None
     if corporationID:
         corp_ticker = "ERROR"
@@ -24,7 +27,8 @@ def get_tickers(corporationID, allianceID):
             )
 
             corp_ticker = xml.find("ticker").text
-            allianceID = allianceID or int(xml.find("allianceID").text) or None
+            if allianceID is None:
+                allianceID = int(xml.find("allianceID").text) or None
         except (APIError, AttributeError):
             pass
 
@@ -40,6 +44,35 @@ def get_tickers(corporationID, allianceID):
             pass
 
     return corp_ticker, alliance_ticker
+
+
+def zbot(killID):
+    """Create a compact overview of a zKB killmail."""
+    url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
+    try:
+        killdata = get_rest_endpoint(url)
+    except APIError as e:
+        return unicode(e)
+
+    if not killdata:
+        return "Failed to load data for https://zkillboard.com/kill/{}/".format(killID)
+
+    killdata = killdata[0]
+    victim = killdata['victim']
+    system = staticdata.solarSystemData(killdata['solarSystemID'])
+    corp_ticker, alliance_ticker = get_tickers(victim['corporationID'], victim['allianceID'])
+
+    # Compact header
+    return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
+            "{} ({}) | {} participants ({:,} damage) | {}").format(
+        victim['characterName'] or victim['corporationName'],
+        format_tickers(corp_ticker, alliance_ticker),
+        staticdata.typeName(victim['shipTypeID']), killdata['zkb']['points'],
+        ISK(killdata['zkb']['totalValue']),
+        system['solarSystemName'], system['regionName'],
+        len(killdata['attackers']), victim['damageTaken'],
+        killdata['killTime']
+    )
 
 
 def get_rest_endpoint(url, params=None, timeout=3):

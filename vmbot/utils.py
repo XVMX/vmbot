@@ -3,7 +3,8 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
+import cgi
 import urllib
 import xml.etree.ElementTree as ET
 import sqlite3
@@ -14,8 +15,7 @@ from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
 from .helpers import api, staticdata
-from .helpers.regex import ZKB_REGEX
-from .helpers.format import format_tickers, disambiguate
+from .helpers.format import format_affil, format_tickers, disambiguate
 from .models import ISK
 
 import config
@@ -41,11 +41,11 @@ class Price(object):
                       if order['location']['name'].startswith(system)):
             if order['buy']:
                 buy['volume'] += order['volume']
-                if order['price'] > buy['price'] or buy['price'] is None:
+                if buy['price'] is None or order['price'] > buy['price']:
                     buy['price'] = order['price']
             else:
                 sell['volume'] += order['volume']
-                if order['price'] < sell['price'] or sell['price'] is None:
+                if sell['price'] is None or order['price'] < sell['price']:
                     sell['price'] = order['price']
 
         return (sell['price'] or 0, sell['volume']), (buy['price'] or 0, buy['volume'])
@@ -79,47 +79,47 @@ class Price(object):
             {'name': system_or_region}
         ).fetchone()
 
+        # Sort by length of name so that the most similar system is first
         systems = conn.execute(
             """SELECT regionID, solarSystemName
                FROM mapSolarSystems
-               WHERE solarSystemName LIKE :name;""",
+               WHERE solarSystemName LIKE :name
+               ORDER BY LENGTH(solarSystemName) ASC;""",
             {'name': "%{}%".format(system_or_region)}
         ).fetchall()
         if not systems and not region:
-            return "Can't find a matching system/region"
+            return "Failed to find a matching system/region"
 
+        # Sort by length of name so that the most similar item is first
         items = conn.execute(
             """SELECT typeID, typeName
                FROM invTypes
                WHERE typeName LIKE :name
                  AND marketGroupID IS NOT NULL
-                 AND marketGroupID < 100000;""",
+                 AND marketGroupID < 100000
+               ORDER BY LENGTH(typeName) ASC;""",
             {'name': "%{}%".format(item)}
         ).fetchall()
         if not items:
-            return "Can't find a matching item"
+            return "Failed to find a matching item"
 
         conn.close()
 
-        # Sort by length of name so that the most similar item is first
-        items.sort(key=lambda x: len(x[1]))
         typeID, typeName = items.pop(0)
-
         if region:
             # Empty systemName matches every system in Price._get_market_orders
             regionID, market_name = region
             systemName = ""
         else:
-            systems.sort(key=lambda x: len(x[1]))
             regionID, systemName = systems.pop(0)
             market_name = systemName
 
         try:
             orders = self._get_market_orders(regionID, systemName, typeID)
-            sell_price, sell_volume = orders[0]
-            buy_price, buy_volume = orders[1]
         except APIError as e:
-            return str(e)
+            return unicode(e)
+
+        (sell_price, sell_volume), (buy_price, buy_volume) = orders
 
         reply = ("<b>{}</b> in <b>{}</b>:<br />"
                  "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
@@ -146,21 +146,21 @@ class EVEUtils(object):
 
     @botcmd
     def character(self, mess, args):
-        """<character name>[, ...] - Displays employment information of character(s)"""
+        """<character>[, ...] - Employment information of character(s)"""
         if not args:
             return "Please provide character name(s), separated by commas"
 
         args = [item.strip() for item in args.split(',')]
         if len(args) > 10:
-            return "Please limit your search to 10 characters at most"
+            return "Please limit your search to 10 characters at once"
 
         try:
             xml = api.post_xml_endpoint("https://api.eveonline.com/eve/CharacterID.xml.aspx",
-                                        params={'names': ','.join(args)})
+                                        params={'names': ','.join(args)}).find("rowset")
         except APIError as e:
-            return str(e)
+            return unicode(e)
 
-        charIDs = [int(character.attrib['characterID']) for character in xml[1][0]
+        charIDs = [int(character.attrib['characterID']) for character in xml
                    if int(character.attrib['characterID'])]
 
         if not charIDs:
@@ -169,32 +169,23 @@ class EVEUtils(object):
         try:
             xml = api.post_xml_endpoint(
                 "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
-                params={'ids': ','.join(map(str, charIDs))}, timeout=5
-            )
+                params={'ids': ','.join(map(unicode, charIDs))}, timeout=5
+            ).find("rowset")
         except APIError as e:
-            return str(e)
+            return unicode(e)
 
         # Basic multi-character information
         descriptions = []
-        for row in xml[1][0]:
-            charName = row.attrib['characterName']
-            corpName = row.attrib['corporationName']
+        for row in xml:
+            characterName = row.attrib['characterName']
+            corporationName = row.attrib['corporationName']
             allianceName = row.attrib['allianceName']
             factionName = row.attrib['factionName']
             corp_ticker, alliance_ticker = api.get_tickers(int(row.attrib['corporationID']),
                                                            int(row.attrib['allianceID']))
 
-            desc = "<b>{}</b> is part of corporation <b>{} {}</b>".format(
-                charName, corpName, format_tickers(corp_ticker, None)
-            )
-            if allianceName:
-                desc += " in <b>{} {}</b>".format(
-                    allianceName, format_tickers(None, alliance_ticker)
-                )
-            if factionName:
-                desc += " which is part of <b>{}</b>".format(factionName)
-
-            descriptions.append(desc)
+            descriptions.append(format_affil(characterName, corporationName, allianceName,
+                                             factionName, corp_ticker, alliance_ticker))
 
         reply = "<br />".join(descriptions)
 
@@ -203,162 +194,53 @@ class EVEUtils(object):
 
         # Detailed single-character information
         try:
-            r = requests.get("http://evewho.com/api.php",
-                             params={'type': "character", 'id': charIDs[0]},
-                             headers={'User-Agent': "XVMX JabberBot"}, timeout=3)
-        except requests.exceptions.RequestException as e:
-            return "{}<br />Error while connecting to Eve Who-API: {}".format(reply, e)
-        if r.status_code != 200:
-            return "{}<br />Eve Who-API returned error code {}".format(reply, r.status_code)
-
-        res = r.json()
-        if res['info'] is None:
-            return "{}<br />Failed to load data from Eve Who for this character".format(reply)
-
-        reply += "<br />Security status: <b>{}</b>".format(res['info']['sec_status'])
-
-        corpIDs = list({int(corp['corporation_id']) for corp in res['history'][-10:]})
-        try:
-            xml = api.post_xml_endpoint(
-                "https://api.eveonline.com/eve/CharacterName.xml.aspx",
-                params={'ids': ','.join(map(str, corpIDs))}
-            )
+            xml = api.post_xml_endpoint("https://api.eveonline.com/eve/CharacterInfo.xml.aspx",
+                                        params={'characterID': charIDs[0]})
         except APIError as e:
-            return "{}<br/>Error while loading corp history: {}".format(reply, e)
+            return reply + "<br />" + unicode(e)
 
-        corps = {}
-        for row in xml[1][0]:
-            corpID = row.attrib['characterID']
-            corp_ticker, alliance_ticker = api.get_tickers(corpID, None)
-            corps[corpID] = {'corpName': row.attrib['name'], 'corp_ticker': corp_ticker}
+        reply += "<br />Security status: <b>{:.2f}</b>".format(
+            float(xml.find("securityStatus").text)
+        )
 
-        for record in res['history'][-10:]:
-            data = corps[record['corporation_id']]
+        # /eve/CharacterInfo.xml.aspx returns corp history from latest to earliest
+        corp_history = [row.attrib for row in reversed(xml.findall("rowset/row"))]
+        num_records = len(corp_history)
+        # Add endDate based on next startDate
+        for i in xrange(num_records):
+            corp_history[i]['endDate'] = (corp_history[i + 1]['startDate']
+                                          if i + 1 < num_records else None)
+
+        for record in corp_history[-10:]:
+            corp_ticker, _ = api.get_tickers(int(record['corporationID']), None)
             reply += "<br />From {} til {} in <b>{} {}</b>".format(
-                record['start_date'],
-                record['end_date'] or "now",
-                data['corpName'],
-                format_tickers(data['corp_ticker'], None)
+                record['startDate'], record['endDate'] or "now",
+                record['corporationName'], cgi.escape(format_tickers(corp_ticker, None))
             )
 
-        if len(res['history']) > 10:
-            reply += "<br/>The full history is available at http://evewho.com/pilot/{}/".format(
-                urllib.quote(res['info']['name'])
+        if num_records > 10:
+            reply += "<br />The full history is available at https://evewho.com/pilot/{}/".format(
+                urllib.quote_plus(xml.find("characterName").text)
             )
 
         return reply
 
     @botcmd
     def evetime(self, mess, args):
-        """[+offset] - Displays the current evetime, server status and evetime + offset if given"""
-        evetime = datetime.utcnow()
-        reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(evetime)
-
-        try:
-            args = int(args)
-            offset_time = evetime + timedelta(hours=args)
-            reply += " and {:+} hour(s) is {:%Y-%m-%d %H:%M:%S}".format(args, offset_time)
-        except ValueError:
-            pass
+        """Current EVE time and server status"""
+        reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(datetime.utcnow())
 
         try:
             xml = api.post_xml_endpoint("https://api.eveonline.com/server/ServerStatus.xml.aspx")
-            if xml[1][0].text == "True":
-                reply += "\nThe server is online and {} players are playing".format(xml[1][1].text)
-            else:
-                reply += "\nThe server is offline"
         except APIError:
             pass
-
-        return reply
-
-    @botcmd
-    def zbot(self, mess, args, compact=False):
-        """<zKB link> - Displays statistics of a killmail"""
-        args = args.strip().split(' ', 1)
-
-        regex = ZKB_REGEX.match(args[0])
-        if regex is None:
-            return "Please provide a link to a zKB killmail"
-
-        killID = regex.group(1)
-
-        url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
-        killdata = api.get_rest_endpoint(url)
-
-        if not killdata:
-            return "Failed to load data for {}".format(regex.group(0))
-
-        victim = killdata[0]['victim']
-        system = staticdata.solarSystemData(killdata[0]['solarSystemID'])
-        attackers = killdata[0]['attackers']
-        corp_ticker, alliance_ticker = api.get_tickers(victim['corporationID'],
-                                                       victim['allianceID'])
-
-        reply = "{} {} | {} | {:.2f} ISK | {} ({}) | {} participants | {}".format(
-            victim['characterName'] or victim['corporationName'],
-            format_tickers(corp_ticker, alliance_ticker), staticdata.typeName(victim['shipTypeID']),
-            ISK(killdata[0]['zkb']['totalValue']),
-            system['solarSystemName'], system['regionName'],
-            len(attackers),
-            killdata[0]['killTime']
-        )
-
-        if compact:
-            return reply
-
-        if victim['characterName']:
-            reply += "<br /><b>{}</b> is part of corporation <b>{} {}</b>".format(
-                victim['characterName'], victim['corporationName'],
-                format_tickers(corp_ticker, None)
-            )
         else:
-            reply += "<br />The structure is owned by corporation <b>{} {}</b>".format(
-                victim['corporationName'], format_tickers(corp_ticker, None)
-            )
-        if victim['allianceName']:
-            reply += " in <b>{} {}</b>".format(victim['allianceName'],
-                                               format_tickers(None, alliance_ticker))
-        if victim['factionName']:
-            reply += " which is part of <b>{}</b>".format(victim['factionName'])
-
-        reply += " and took <b>{:,} damage</b> for <b>{:,} point(s)</b>".format(
-            victim['damageTaken'], killdata[0]['zkb']['points']
-        )
-
-        attackers = [{'characterName': char['characterName'],
-                      'corporationID': char['corporationID'],
-                      'corporationName': char['corporationName'],
-                      'damageDone': char['damageDone'],
-                      'shipTypeName': staticdata.typeName(char['shipTypeID']),
-                      'finalBlow': bool(char['finalBlow'])} for char in attackers]
-        # Sort after inflicted damage
-        attackers.sort(key=lambda x: x['damageDone'], reverse=True)
-
-        # Add attackerDetails
-        attacker_info = "<b>{}</b> {} (<b>{}</b>) inflicted <b>{:,} damage</b> "
-        attacker_info += "(<i>{:,.2%} of total damage</i>)"
-        for char in attackers[:5]:
-            corp_ticker, alliance_ticker = api.get_tickers(char['corporationID'], None)
-
-            reply += "<br />"
-            reply += attacker_info.format(char['characterName'] or char['corporationName'],
-                                          format_tickers(corp_ticker, alliance_ticker),
-                                          char['shipTypeName'], char['damageDone'],
-                                          char['damageDone'] / float(victim['damageTaken']))
-            reply += " and scored the <b>final blow</b>" if char['finalBlow'] else ""
-
-        # Add final blow if not already included
-        if "final blow" not in reply:
-            char = next(char for char in attackers if char['finalBlow'])
-            corp_ticker, alliance_ticker = api.get_tickers(char['corporationID'], None)
-
-            reply += "<br />"
-            reply += attacker_info.format(char['characterName'] or char['corporationName'],
-                                          format_tickers(corp_ticker, alliance_ticker),
-                                          char['shipTypeName'], char['damageDone'],
-                                          char['damageDone'] / float(victim['damageTaken']))
-            reply += " and scored the <b>final blow</b>"
+            if xml.find("serverOpen").text == "True":
+                reply += ". The server is online and {:,} players are playing.".format(
+                    int(xml.find("onlinePlayers").text)
+                )
+            else:
+                reply += ". The server is offline."
 
         return reply
 
@@ -477,16 +359,16 @@ class EVEUtils(object):
 
     @botcmd
     def rcbl(self, mess, args):
-        """<name>[, ...] - Displays if name has an entry in the blacklist"""
-        url = "{}{}/".format(config.BLACKLIST['url'], config.BLACKLIST['key'])
+        """<character>[, ...] - Blacklist status of character(s)"""
+        url = config.BLACKLIST['url'] + config.BLACKLIST['key'] + '/'
         results = []
 
         for character in (item.strip() for item in args.split(',')):
             try:
-                r = requests.get(url + character, headers={'User-Agent': "XVMX JabberBot"},
-                                 timeout=3)
-                results.append("{} is <b>{}</b>".format(character, r.json()[0]['output']))
-            except requests.exceptions.RequestException:
-                results.append("Failed to load blacklist entry for {}".format(character))
+                res = api.get_rest_endpoint(url + character)
+            except APIError:
+                results.append("Failed to load blacklist entry for " + character)
+            else:
+                results.append("{} is <b>{}</b>".format(character, res[0]['output']))
 
         return "<br />".join(results)

@@ -4,4 +4,4 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import re
 
-ZKB_REGEX = re.compile("https?://zkillboard\.com/kill/(\d+)/?", re.IGNORECASE)
+ZKB_REGEX = re.compile("https?://zkillboard\.com/kill/(-?\d+)/?", re.IGNORECASE)

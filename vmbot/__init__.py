@@ -20,6 +20,7 @@ import pint
 from .botcmd import botcmd
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
+from .helpers import api
 from .helpers.decorators import timeout
 from .helpers.regex import ZKB_REGEX
 
@@ -219,11 +220,10 @@ class VMBot(MUCJabberBot, Say, Fun, Chains, Price, EVEUtils):
                 self.muc_kick(room, self.get_sender_username(mess),
                               "Emergency pubbie broadcast system")
 
-            if "zbot" not in message.lower():
-                matches = {match.group(0) for match in ZKB_REGEX.finditer(message)}
-                replies = [self.zbot(mess, match, compact=True) for match in matches]
-                if replies:
-                    super(MUCJabberBot, self).send_simple_reply(mess, "<br />".join(replies))
+            matches = {match.group(1) for match in ZKB_REGEX.finditer(message)}
+            replies = [api.zbot(match) for match in matches]
+            if replies:
+                super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
 
         return reply
 
