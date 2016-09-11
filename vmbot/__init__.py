@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import time
 from datetime import datetime
-import os
+from os import path, pardir
 import subprocess
 import random
 
@@ -18,6 +18,7 @@ from .botcmd import botcmd
 from .director import Director
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
+from .helpers.exceptions import TimeoutError
 from .helpers import api
 from .helpers.decorators import timeout
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
@@ -113,7 +114,7 @@ class MUCJabberBot(JabberBot):
 
 class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
-        self.startup_time = datetime.now()
+        self.startup_time = datetime.utcnow()
         self.km_feed_trigger = time.time() if kwargs.pop('km_feed', False) else None
         self.news_feed_trigger = time.time() if kwargs.pop('news_feed', False) else None
 
@@ -127,7 +128,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
             self.news_feed_ids = {'news': None, 'devblog': None}
 
     def idle_proc(self):
-        """Execute asynchronous commands."""
+        """Execute asynchronous triggers."""
         if self.km_feed_trigger and self.km_feed_trigger <= time.time():
             self.km_feed()
             self.km_feed_trigger += 5 * 60
@@ -146,17 +147,16 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
                 mess.getType() != "groupchat" or "urn:xmpp:delay" in mess.getProperties()):
             return reply
 
-        message = mess.getBody()
+        msg = mess.getBody()
         room = mess.getFrom().getStripped()
-        primary_room = room in config.JABBER['primary_chatrooms']
 
-        if message:
+        if msg:
             # Pubbie smacktalk
-            if PUBBIE_REGEX.search(message) is not None and primary_room:
+            if PUBBIE_REGEX.search(msg) is not None and room in config.JABBER['primary_chatrooms']:
                 super(MUCJabberBot, self).send_simple_reply(mess, self.pubbiesmack(mess))
 
             # zBot
-            matches = {match.group(1) for match in ZKB_REGEX.finditer(message)}
+            matches = {match.group(1) for match in ZKB_REGEX.finditer(msg)}
             replies = [api.zbot(match) for match in matches]
             if replies:
                 super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
@@ -165,47 +165,46 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
 
     @botcmd
     def math(self, mess, args):
-        """<expr> - Evaluates expr mathematically
-
-        Force floating point numbers by doing 4.0/3 instead of 4/3
-        """
-
-        @timeout(10, "Sorry, this query took too long to execute and I had to kill it off")
+        """<expr> - Evaluates expr mathematically"""
+        @timeout(5, "Your calculation is too expensive and was killed off")
         def do_math(args):
-            return pretty(parse_expr(args), full_prec=False, use_unicode=False)
+            return pretty(parse_expr(args), full_prec=False, use_unicode=True)
 
         try:
             reply = do_math(args)
+        except TimeoutError as e:
+            return unicode(e)
         except Exception as e:
-            return str(e)
+            return "Failed to calculate your request: {}".format(e)
 
-        if '\n' in reply:
-            reply = "\n{}".format(reply)
         reply = '<font face="monospace">{}</font>'.format(
-            reply.replace('\n', '</font><br/><font face="monospace">')
+            reply.replace('\n', '</font><br /><font face="monospace">')
         )
+        if "<br />" in reply:
+            reply = "<br />" + reply
 
         return reply
 
     @botcmd
     def convert(self, mess, args):
         """<amount> <source> to <destination> - Converts amount from source to destination"""
-        src, dest = args.split(" to ", 1)
+        try:
+            src, dest = args.split(" to ", 1)
+        except ValueError:
+            return "Please provide a source unit/amount and a destination unit"
         ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 
         try:
-            return str(ureg(src).to(dest))
+            return unicode(ureg(src).to(dest))
         except pint.unit.DimensionalityError as e:
-            return str(e)
+            return unicode(e)
         except Exception as e:
             return "Failed to convert your request: {}".format(e)
 
     @botcmd
     def dice(self, mess, args):
-        """[dice count] [sides] - Roll the dice. Defaults to one dice and six sides"""
+        """[dice count] [sides] - Rolls the dice. Defaults to one dice and six sides."""
         args = args.split()
-        if len(args) > 2:
-            return "You need to provide none, one or two parameters"
 
         dice = 1
         sides = 6
@@ -213,23 +212,23 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
             dice = int(args[0])
             sides = int(args[1])
         except ValueError:
-            return "You need to provide integer parameters"
+            return "Please provide integer parameters"
         except IndexError:
             pass
 
         if not 1 <= dice <= 50:
-            return "That's an absurd number of dice, try again"
+            return "Please limit yourself to up to 50 dice"
         if not 1 <= sides <= 256:
-            return "That's an absurd number of sides, try again"
+            return "Please limit yourself to up to 256 sides per dice"
 
-        return "I rolled {} dice with {} sides each. The result is [{}]".format(
-            dice, sides, "][".join(map(str, (random.randint(1, sides) for _ in xrange(dice))))
+        return "{} dice with {} sides each: [{}]".format(
+            dice, sides, "][".join(map(unicode, (random.randint(1, sides) for _ in xrange(dice))))
         )
 
     @botcmd
     def roll(self, mess, args):
         """Picks a random number between 1 and 100"""
-        return str(random.randint(1, 100))
+        return unicode(random.randint(1, 100))
 
     @botcmd
     def flipcoin(self, mess, args):
@@ -238,27 +237,22 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
 
     @botcmd
     def pickone(self, mess, args):
-        """<option1> or <option2> [or <option3> ...] - Chooses an option for you"""
-        args = args.strip().split(" or ")
+        """<option1> or <option2> [or <option3> ...] - Chooses an option"""
+        args = [item.strip() for item in args.split(" or ")]
 
         if len(args) > 1:
             return random.choice(args)
         else:
-            return "You need to provide at least 2 options to choose from"
+            return "Please provide multiple options to choose from"
 
     @botcmd
     def uptime(self, mess, args):
-        """Displays for how long the bot is running already"""
-        return "arc_codie has servers, but they haven't been up as long as {}".format(
-            datetime.now() - self.startup_time
-        )
+        """Bot's current uptime"""
+        return "/me has been running for {}".format(datetime.utcnow() - self.startup_time)
 
     @botcmd(hidden=True)
     def reload(self, mess, args):
-        """Kills the bot's process
-
-        If ran in a while true loop on the shell, it'll immediately reconnect.
-        """
+        """Kills the bot's process. Restarts the process if run in a while true loop."""
         if not args:
             if self.get_uname_from_mess(mess) in config.ADMINS:
                 self.quit()
@@ -268,15 +262,14 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
 
     @botcmd(hidden=True)
     def gitpull(self, mess, args):
-        """Pulls the latest commit from the bot repository and updates the bot with it"""
-        if mess.getFrom().getNode() != "vm_dir":
+        """Pulls the latest commit from the active remote/branch"""
+        if mess.getFrom().getStripped() not in config.JABBER['director_chatrooms']:
             return "git pull is only enabled in director chat"
 
         if self.get_uname_from_mess(mess) not in config.ADMINS:
             return "You are not allowed to git pull"
 
-        path = os.path
         p = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             cwd=path.abspath(path.join(path.dirname(__file__), os.pardir)))
+                             cwd=path.abspath(path.join(path.dirname(__file__), pardir)))
         out, err = p.communicate()
         return "{}\n{}".format(out, err).strip()
