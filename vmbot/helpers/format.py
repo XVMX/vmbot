@@ -7,6 +7,7 @@ import cgi
 
 def format_affil(characterName, corporationName, allianceName,
                  factionName, corp_ticker, alliance_ticker):
+    """Represent character or structure data in a common format."""
     reply = ("<b>{}</b> is part of ".format(characterName)
              if characterName else "The structure is owned by ")
 
