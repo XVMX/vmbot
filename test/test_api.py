@@ -92,12 +92,12 @@ class TestAPI(unittest.TestCase):
     @mock.patch("requests.request",
                 side_effect=requests.exceptions.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "Error while connecting to EVE-API: TestException",
+        self.assertRaisesRegexp(APIError, "Error while connecting to API: TestException",
                                 api.request_api, "TestURL")
 
     @mock.patch("requests.request", side_effect=flawed_response)
     def test_request_api_flawedresponse(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "EVE-API returned error code 404",
+        self.assertRaisesRegexp(APIError, "API returned error code 404",
                                 api.request_api, "TestURL")
 
 

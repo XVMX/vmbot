@@ -91,8 +91,8 @@ def request_api(url, params=None, timeout=3, method="GET"):
         else:
             r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
     except requests.exceptions.RequestException as e:
-        raise APIError("Error while connecting to EVE-API: {}".format(e))
+        raise APIError("Error while connecting to API: {}".format(e))
     if r.status_code != 200:
-        raise APIError("EVE-API returned error code {}".format(r.status_code))
+        raise APIError("API returned error code {}".format(r.status_code))
 
     return r
