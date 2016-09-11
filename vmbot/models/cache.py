@@ -66,7 +66,7 @@ class BaseCacheObject(db.Model):
 
 
 class HTTPCacheObject(BaseCacheObject):
-    """Cache an HTTP response using URL and parameters as key."""
+    """Cache an HTTP response using URL, parameters, and headers as key."""
 
     def __init__(self, url, doc, expiry=None, params=None, headers=None):
         url += json.dumps(params) if params else ""
