@@ -59,6 +59,27 @@ class TestAPI(unittest.TestCase):
     def test_get_tickers_none(self):
         self.assertTupleEqual(api.get_tickers(None, None), (None, None))
 
+    def test_zbot(self):
+        self.assertEquals(
+            api.zbot("54520379"),
+            ("Joker Gates [XVMX] <CONDI> | Hurricane (1 point(s)) | 91.14m ISK | "
+             "Saranen (Lonetrek) | 47 participants (23,723 damage) | 2016-06-10 02:09:38")
+        )
+
+    def test_zbot_int(self):
+        self.assertEquals(
+            api.zbot(54520379),
+            ("Joker Gates [XVMX] <CONDI> | Hurricane (1 point(s)) | 91.14m ISK | "
+             "Saranen (Lonetrek) | 47 participants (23,723 damage) | 2016-06-10 02:09:38")
+        )
+
+    def test_zbot_invalidid(self):
+        self.assertEquals(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
+
+    @mock.patch("vmbot.helpers.api.get_rest_endpoint", side_effect=APIError("TestException"))
+    def test_zbot_APIError(self, mock_request_endpoint):
+        self.assertEquals(api.zbot("54520379"), "TestException")
+
     def test_get_rest_endpoint(self):
         test_url = "https://crest-tq.eveonline.com/"
 
