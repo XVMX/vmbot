@@ -20,7 +20,7 @@ from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .helpers.exceptions import TimeoutError
 from .helpers import api
-from .helpers.decorators import timeout
+from .helpers.decorators import timeout, requires_admin, requires_dir_chat
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
 
 import config
@@ -251,24 +251,18 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
         return "/me has been running for {}".format(datetime.utcnow() - self.startup_time)
 
     @botcmd(hidden=True)
+    @requires_admin
     def reload(self, mess, args):
         """Kills the bot's process. Restarts the process if run in a while true loop."""
         if not args:
-            if self.get_uname_from_mess(mess) in config.ADMINS:
-                self.quit()
-                return "afk shower"
-            else:
-                return "You are not authorized to reload the bot, please go and DIAF!"
+            self.quit()
+            return "afk shower"
 
     @botcmd(hidden=True)
+    @requires_dir_chat
+    @requires_admin
     def gitpull(self, mess, args):
         """Pulls the latest commit from the active remote/branch"""
-        if mess.getFrom().getStripped() not in config.JABBER['director_chatrooms']:
-            return "git pull is only enabled in director chat"
-
-        if self.get_uname_from_mess(mess) not in config.ADMINS:
-            return "You are not allowed to git pull"
-
         p = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              cwd=path.abspath(path.join(path.dirname(__file__), pardir)))
         out, err = p.communicate()

@@ -8,6 +8,7 @@ import requests
 
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
+from .helpers.decorators import requires_dir, requires_dir_chat
 
 import config
 
@@ -44,6 +45,8 @@ class Director(object):
             raise APIError("Broadcast-API returned error code {}: {}".format(r.status_code, res))
 
     @botcmd
+    @requires_dir_chat
+    @requires_dir
     def bcast(self, mess, args):
         """vm <message> - Sends message as a broadcast to your corp
 
@@ -55,28 +58,19 @@ class Director(object):
             return None
         broadcast = args[3:]
 
-        if mess.getFrom().getStripped() not in config.JABBER['director_chatrooms']:
-            return "Broadcasting is only enabled in director chat"
-
-        sender = self.get_uname_from_mess(mess)
-        if sender not in config.DIRECTORS:
-            return "You don't have the rights to send broadcasts"
-
         if len(broadcast) > 10000:
             return "Please limit your broadcast to 10000 characters at once"
 
         try:
-            self._send_bcast(broadcast, sender + " via VMBot")
+            self._send_bcast(broadcast, self.get_uname_from_mess(mess) + " via VMBot")
             return "Your broadcast was sent to " + config.BCAST['target']
         except APIError as e:
             return unicode(e)
 
     @botcmd
+    @requires_dir
     def pingall(self, mess, args):
         """Pings everyone in the current chatroom"""
-        if self.get_uname_from_mess(mess) not in config.DIRECTORS:
-            return ":getout:"
-
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
         reply += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
         return reply

@@ -7,6 +7,8 @@ from functools import wraps
 
 from .exceptions import TimeoutError
 
+import config
+
 
 def timeout(seconds, error_message="Timer expired"):
     """Raise TimeoutError after timer expires."""
@@ -29,3 +31,30 @@ def timeout(seconds, error_message="Timer expired"):
         return wrapper
 
     return decorate
+
+
+def requires_dir(func):
+    @wraps(func)
+    def check_dir(self, mess, args):
+        if self.get_uname_from_mess(mess) in config.DIRECTORS:
+            return func(self, mess, args)
+
+    return check_dir
+
+
+def requires_admin(func):
+    @wraps(func)
+    def check_admin(self, mess, args):
+        if self.get_uname_from_mess(mess) in config.ADMINS:
+            return func(self, mess, args)
+
+    return check_admin
+
+
+def requires_dir_chat(func):
+    @wraps(func)
+    def check_dir_chat(self, mess, args):
+        if mess.getFrom().getStripped() in config.JABBER['director_chatrooms']:
+            return func(self, mess, args)
+
+    return check_dir_chat
