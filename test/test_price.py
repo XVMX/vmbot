@@ -91,7 +91,7 @@ class TestPrice(unittest.TestCase):
 
     @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
     @mock.patch("vmbot.utils.disambiguate", return_value="TestResponse")
-    def test_price_disambiguate(self, mock_price_volume, mock_disambiguate):
+    def test_price_disambiguate(self, mock_disambiguate, mock_price_volume):
         self.assertEqual(
             self.price.price(self.default_mess, "Tritanium@Hek"),
             (self.price_template.format("Tritanium", "Hek", 45.99, 1000, 45.99, 1000, 0) +
@@ -137,7 +137,7 @@ class TestPrice(unittest.TestCase):
         self.assertIsInstance(res[1][1], (int, long))
 
     @mock.patch("vmbot.helpers.api.request_rest", return_value={'items': []})
-    def test_get_market_orders_noorders(self, mock_request_endpoint):
+    def test_get_market_orders_noorders(self, mock_rest):
         # The Forge
         regionID = 10000002
         # Pyerite

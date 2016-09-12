@@ -77,7 +77,7 @@ class TestAPI(unittest.TestCase):
         self.assertEquals(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
 
     @mock.patch("vmbot.helpers.api.request_rest", side_effect=APIError("TestException"))
-    def test_zbot_APIError(self, mock_request_endpoint):
+    def test_zbot_APIError(self, mock_rest):
         self.assertEquals(api.zbot("54520379"), "TestException")
 
     def test_request_rest(self):
@@ -118,8 +118,7 @@ class TestAPI(unittest.TestCase):
 
     @mock.patch("requests.request", side_effect=flawed_response)
     def test_request_api_flawedresponse(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "API returned error code 404",
-                                api.request_api, "TestURL")
+        self.assertRaisesRegexp(APIError, "API returned error code 404", api.request_api, "TestURL")
 
 
 if __name__ == "__main__":

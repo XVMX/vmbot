@@ -156,7 +156,7 @@ class TestFun(unittest.TestCase):
                       self.fun.urban(self.default_mess, "API"))
 
     @mock.patch("requests.Response.json", return_value={'list': []})
-    def test_urban_unknown(self, mock_requests):
+    def test_urban_unknown(self, mock_json):
         self.assertEqual(self.fun.urban(self.default_mess, "API"),
                          'Failed to find any definitions for "API"')
 
