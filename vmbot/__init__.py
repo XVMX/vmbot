@@ -19,9 +19,11 @@ from .director import Director
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
 from .helpers.exceptions import TimeoutError
+from .helpers import database as db
 from .helpers import api
 from .helpers.decorators import timeout, requires_admin, requires_dir_chat
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
+from .models.messages import Message
 
 import config
 
@@ -115,6 +117,7 @@ class MUCJabberBot(JabberBot):
 class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
+        self.message_trigger = time.time() + 30 if kwargs.pop('feeds', False) else None
         self.km_feed_trigger = time.time() if kwargs.pop('km_feed', False) else None
         self.news_feed_trigger = time.time() if kwargs.pop('news_feed', False) else None
 
@@ -129,6 +132,17 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
 
     def idle_proc(self):
         """Execute asynchronous triggers."""
+        if self.message_trigger and self.message_trigger <= time.time():
+            sess = db.Session()
+
+            for mess in sess.query(Message).order_by(Message.message_id.asc()).all():
+                self.send(**mess.send_dict)
+                sess.delete(mess)
+
+            sess.commit()
+            sess.close()
+            self.message_trigger += 60
+
         if self.km_feed_trigger and self.km_feed_trigger <= time.time():
             self.km_feed()
             self.km_feed_trigger += 5 * 60

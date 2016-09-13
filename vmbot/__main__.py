@@ -30,7 +30,8 @@ if __name__ == "__main__":
     logger.addHandler(handler)
 
     jbc = config.JABBER
-    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], km_feed=True, news_feed=True)
+    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'],
+                       feeds=True, km_feed=True, news_feed=True)
     for room in jbc['chatrooms']:
         morgooglie.muc_join_room(room, jbc['nickname'])
 
