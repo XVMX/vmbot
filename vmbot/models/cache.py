@@ -51,7 +51,7 @@ class BaseCacheObject(db.Model):
         session.commit()
 
     @classmethod
-    def get(cls, key, session):
+    def get(cls, session, key):
         """Load cached data from the database."""
         cls.clear(session)
 
@@ -75,8 +75,8 @@ class HTTPCacheObject(BaseCacheObject):
         super(HTTPCacheObject, self).__init__(url, doc, expiry)
 
     @classmethod
-    def get(cls, url, session, params=None, headers=None):
+    def get(cls, session, url, params=None, headers=None):
         """Load cached HTTP response from the database."""
         url += json.dumps(params) if params else ""
         url += json.dumps(headers) if headers else ""
-        return super(HTTPCacheObject, cls).get(url, session)
+        return super(HTTPCacheObject, cls).get(session, url)

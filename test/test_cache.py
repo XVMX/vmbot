@@ -58,20 +58,20 @@ class TestCache(unittest.TestCase):
 
     def test_basic(self):
         HTTPCacheObject("abc", b"123").save(self.sess)
-        self.assertEqual(HTTPCacheObject.get("abc", self.sess), b"123")
+        self.assertEqual(HTTPCacheObject.get(self.sess, "abc"), b"123")
 
     def test_overwrite(self):
         HTTPCacheObject("abc", b"123").save(self.sess)
         HTTPCacheObject("abc", b"789").save(self.sess)
-        self.assertEqual(HTTPCacheObject.get("abc", self.sess), b"789")
+        self.assertEqual(HTTPCacheObject.get(self.sess, "abc"), b"789")
 
     def test_expired(self):
         HTTPCacheObject("abc", b"123",
                         expiry=datetime.utcnow() - timedelta(hours=1)).save(self.sess)
-        self.assertIsNone(HTTPCacheObject.get("abc", self.sess))
+        self.assertIsNone(HTTPCacheObject.get(self.sess, "abc"))
 
     def test_get_http_notfound(self):
-        self.assertIsNone(HTTPCacheObject.get("abc", self.sess))
+        self.assertIsNone(HTTPCacheObject.get(self.sess, "abc"))
 
 
 if __name__ == "__main__":

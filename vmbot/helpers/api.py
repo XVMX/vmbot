@@ -77,7 +77,7 @@ def zbot(killID):
 
 def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
     session = db.Session()
-    res = HTTPCacheObject.get(url, session, params=params, headers=headers)
+    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
 
     if res is None:
         r = request_api(url, params, headers, timeout, method)
@@ -96,7 +96,7 @@ def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
 
 def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
     session = db.Session()
-    res = HTTPCacheObject.get(url, session, params=params, headers=headers)
+    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
 
     if res is None:
         r = request_api(url, params, headers, timeout, method)
