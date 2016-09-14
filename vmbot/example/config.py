@@ -21,6 +21,9 @@ ADMINS = (
     "username3"
 )
 
+# CorporationID
+CORPORATION_ID = 1234567890
+
 # Jabber credentials
 # Primary chatrooms: main corp channel(s), feeds will be posted there
 # Director chatrooms: director channel(s), important data will be posted there

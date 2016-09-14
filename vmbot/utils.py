@@ -14,9 +14,8 @@ import requests
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError
-from .helpers import api, staticdata
+from .helpers import api
 from .helpers.format import format_affil, format_tickers, disambiguate
-from .models import ISK
 
 import config
 
@@ -142,8 +141,6 @@ class Price(object):
 
 
 class EVEUtils(object):
-    FEED_MIN_VAL = 5000000
-
     @botcmd
     def character(self, mess, args):
         """<character>[, ...] - Employment information of character(s)"""
@@ -243,52 +240,6 @@ class EVEUtils(object):
                 reply += ". The server is offline."
 
         return reply
-
-    def km_feed(self):
-        """Send a message to the primary chatroom with the latest losses."""
-        if self.km_feed_id is None:
-            try:
-                self.km_feed_id = requests.get(
-                    "https://zkillboard.com/api/losses/corporationID/2052404106/"
-                    "limit/1/no-items/no-attackers/",
-                    headers={'User-Agent': "XVMX JabberBot"}, timeout=3
-                ).json()[0]['killID']
-            except (requests.exceptions.RequestException, IndexError, ValueError):
-                pass
-            return
-
-        url = "https://zkillboard.com/api/corporationID/2052404106/losses/"
-        url += "afterKillID/{}/no-items/no-attackers/".format(self.km_feed_id)
-
-        try:
-            r = requests.get(url, headers={'User-Agent': "XVMX JabberBot"}, timeout=5)
-        except requests.exceptions.RequestException:
-            return
-        if r.status_code != 200:
-            return
-
-        losses = filter(lambda x: x['zkb']['totalValue'] >= self.FEED_MIN_VAL, r.json())
-        if not losses:
-            return
-
-        self.km_feed_id = losses[0]['killID']
-
-        reply = "{} new loss(es):".format(len(losses))
-        for loss in reversed(losses):
-            victim = loss['victim']
-            system = staticdata.solarSystemData(loss['solarSystemID'])
-
-            reply += "<br/>{} {} | {} | {:.2f} ISK | {} ({}) | {} | {}".format(
-                victim['characterName'] or victim['corporationName'],
-                format_tickers("XVMX", "CONDI"), staticdata.typeName(victim['shipTypeID']),
-                ISK(loss['zkb']['totalValue']),
-                system['solarSystemName'], system['regionName'],
-                loss['killTime'],
-                "https://zkillboard.com/kill/{}/".format(loss['killID'])
-            )
-
-        for room in config.JABBER['primary_chatrooms']:
-            self.send(room, reply, message_type="groupchat")
 
     def news_feed(self):
         """Send a message to the primary chatroom with the latest EVE news and devblogs."""
