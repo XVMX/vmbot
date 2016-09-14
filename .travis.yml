@@ -11,6 +11,7 @@ before_script:
    - python tools/init_bot.py
 script:
    - pep8 --max-line-length=100 --exclude=jabberbot.py vmbot/
+   - pep8 --max-line-length=100 tools/
    - pep8 --max-line-length=100 test/
    - coverage run -m unittest discover
 after_success: coveralls
