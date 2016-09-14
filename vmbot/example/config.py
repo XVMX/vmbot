@@ -21,9 +21,6 @@ ADMINS = (
     "username3"
 )
 
-# CorporationID
-CORPORATION_ID = 1234567890
-
 # Jabber credentials
 # Primary chatrooms: main corp channel(s), feeds will be posted there
 # Director chatrooms: director channel(s), important data will be posted there
@@ -45,7 +42,12 @@ JABBER = {
     )
 }
 
-# SSO credentials
+# Bot owner's corporationID
+CORPORATION_ID = 1234567890
+
+# EVE SSO credentials
+# Required scopes: characterNotificationsRead, corporationWalletRead,
+#                  corporationAssetsRead, corporationStructuresRead
 SSO = {
     'client_id': "",
     'client_secret': "",
