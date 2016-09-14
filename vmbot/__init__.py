@@ -118,16 +118,11 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
         self.message_trigger = time.time() + 30 if kwargs.pop('feeds', False) else None
-        self.news_feed_trigger = time.time() if kwargs.pop('news_feed', False) else None
 
         super(VMBot, self).__init__(*args, **kwargs)
 
-        # Initialize asynchronous commands
-        if self.news_feed_trigger:
-            self.news_feed_ids = {'news': None, 'devblog': None}
-
     def idle_proc(self):
-        """Execute asynchronous triggers."""
+        """Retrieve and send stored messages."""
         if self.message_trigger and self.message_trigger <= time.time():
             sess = db.Session()
 
@@ -138,10 +133,6 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
             sess.commit()
             sess.close()
             self.message_trigger += 60
-
-        if self.news_feed_trigger and self.news_feed_trigger <= time.time():
-            self.news_feed()
-            self.news_feed_trigger += 60 * 60
 
         return super(VMBot, self).idle_proc()
 
