@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 import requests
 
-from .exceptions import APIError, NoCacheError
+from .exceptions import NoCacheError, APIError
 from . import database as db
 from ..models.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
 from . import staticdata
@@ -21,10 +21,8 @@ def get_tickers(corporationID, allianceID):
     if corporationID:
         corp_ticker = "ERROR"
         try:
-            xml = request_xml(
-                "https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
-                params={'corporationID': corporationID}
-            )
+            xml = request_xml("https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
+                              params={'corporationID': corporationID})
 
             corp_ticker = xml.find("ticker").text
             if allianceID is None:
@@ -37,8 +35,7 @@ def get_tickers(corporationID, allianceID):
         alliance_ticker = "ERROR"
         try:
             alliance_ticker = request_xml(
-                "https://api.eveonline.com/eve/AllianceList.xml.aspx",
-                params={'version': 1}
+                "https://api.eveonline.com/eve/AllianceList.xml.aspx", params={'version': 1}
             ).find("rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
         except (APIError, AttributeError):
             pass
@@ -62,9 +59,8 @@ def zbot(killID):
     system = staticdata.solarSystemData(killdata['solarSystemID'])
     corp_ticker, alliance_ticker = get_tickers(victim['corporationID'], victim['allianceID'])
 
-    # Compact header
     return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
-            "{} ({}) | {} participants ({:,} damage) | {}").format(
+            "{} ({}) | {} participant(s) ({:,} damage) | {}").format(
         victim['characterName'] or victim['corporationName'],
         format_tickers(corp_ticker, alliance_ticker),
         staticdata.typeName(victim['shipTypeID']), killdata['zkb']['points'],
