@@ -67,3 +67,7 @@ class TestACL(unittest.TestCase):
 
     def test_requires_dir_chat_denied(self):
         self.assertIsNone(dir_acl(self, Message("TestArg"), self.default_args))
+
+
+if __name__ == "__main__":
+    unittest.main()
