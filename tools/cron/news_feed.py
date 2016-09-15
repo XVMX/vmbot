@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import time
 import xml.etree.ElementTree as ET
+import cgi
 
 from . import path
 from .models import Storage
@@ -78,7 +79,7 @@ def main(session):
 def read_feed(url, last_id):
     feed = ET.fromstring(api.request_api(url).content)
     entries = [{'id': entry.find("atom:id", FEED_NS).text,
-                'title': entry.find("atom:title", FEED_NS).text,
+                'title': cgi.escape(entry.find("atom:title", FEED_NS).text),
                 'author': entry.find("atom:author/atom:name", FEED_NS).text,
                 'url': entry.find("atom:link[@rel='alternate']", FEED_NS).attrib['href'],
                 'updated': entry.find("atom:updated", FEED_NS).text}
