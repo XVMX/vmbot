@@ -63,14 +63,14 @@ class TestAPI(unittest.TestCase):
         self.assertEquals(
             api.zbot("54520379"),
             ("Joker Gates [XVMX] <CONDI> | Hurricane (1 point(s)) | 91.14m ISK | "
-             "Saranen (Lonetrek) | 47 participants (23,723 damage) | 2016-06-10 02:09:38")
+             "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | 2016-06-10 02:09:38")
         )
 
     def test_zbot_int(self):
         self.assertEquals(
             api.zbot(54520379),
             ("Joker Gates [XVMX] <CONDI> | Hurricane (1 point(s)) | 91.14m ISK | "
-             "Saranen (Lonetrek) | 47 participants (23,723 damage) | 2016-06-10 02:09:38")
+             "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | 2016-06-10 02:09:38")
         )
 
     def test_zbot_invalidid(self):
