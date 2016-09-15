@@ -12,9 +12,9 @@ from vmbot.helpers import database as db
 # Initialize database tables
 db.init_db()
 
-# Initialize feeds
 session = db.Session()
 
+# Initialize feeds
 km_feed.init(session)
 news_feed.init(session)
 

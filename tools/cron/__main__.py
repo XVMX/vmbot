@@ -8,10 +8,13 @@ from . import news_feed
 
 from vmbot.helpers import database as db
 
+FEEDS = (km_feed, news_feed)
+
 if __name__ == "__main__":
     session = db.Session()
 
-    km_feed.main(session)
-    news_feed.main(session)
+    for feed in FEEDS:
+        if feed.needs_run(session):
+            feed.main(session)
 
     session.close()

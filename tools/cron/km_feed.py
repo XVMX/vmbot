@@ -37,9 +37,11 @@ def init(session):
     Storage.set(session, "km_feed_next_run", time.time())
 
 
+def needs_run(session):
+    return Storage.get(session, "km_feed_next_run") <= time.time()
+
+
 def main(session):
-    if Storage.get(session, "km_feed_next_run") > time.time():
-        return
     Storage.set(session, "km_feed_next_run", time.time() + 10 * 60)
 
     url = FEED_URL.format(config.CORPORATION_ID, Storage.get(session, "km_feed_id"))

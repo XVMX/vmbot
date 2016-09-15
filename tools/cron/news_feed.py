@@ -37,9 +37,11 @@ def init(session):
     Storage.set(session, "news_feed_next_run", time.time())
 
 
+def needs_run(session):
+    return Storage.get(session, "news_feed_next_run") <= time.time()
+
+
 def main(session):
-    if Storage.get(session, "news_feed_next_run") > time.time():
-        return
     Storage.set(session, "news_feed_next_run", time.time() + 10 * 60)
 
     news, devblogs = None, None
