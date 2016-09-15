@@ -21,11 +21,11 @@ class Storage(db.Model):
     @classmethod
     def get(cls, session, key):
         """Return value stored at key."""
-        res = session.query(cls).filter_by(key=key).first()
+        res = session.query(cls.value).filter_by(key=key).scalar()
         if res is None:
             raise KeyError
 
-        return res.value
+        return res
 
     @classmethod
     def set(cls, session, key, value):

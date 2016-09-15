@@ -55,8 +55,7 @@ class BaseCacheObject(db.Model):
         """Load cached data from the database."""
         cls.clear(session)
 
-        res = session.query(cls).filter_by(key=key).first()
-        return res.value if res is not None else None
+        return session.query(cls.value).filter_by(key=key).scalar()
 
     @classmethod
     def clear(cls, session):
