@@ -19,7 +19,7 @@ NEWS_FEED = "https://newsfeed.eveonline.com/en-US/44/articles/page/1/20"
 DEVBLOG_FEED = "https://newsfeed.eveonline.com/en-US/2/articles/page/1/20"
 FEED_NS = {'atom': "http://www.w3.org/2005/Atom", 'title': "http://ccp/custom",
            'media': "http://search.yahoo.com/mrss/"}
-FEED_FMT = "<b>{title}</b> by <i>{author}</i>: {url}"
+FEED_FMT = "<strong>{title}</strong> by <em>{author}</em>: {url}"
 
 
 def init(session):

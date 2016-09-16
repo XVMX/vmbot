@@ -116,9 +116,9 @@ class Price(object):
 
         (sell_price, sell_volume), (buy_price, buy_volume) = orders
 
-        reply = ("<b>{}</b> in <b>{}</b>:<br />"
-                 "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                 "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+        reply = ("<strong>{}</strong> in <strong>{}</strong>:<br />"
+                 "Sells: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
+                 "Buys: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                  "Spread: ").format(
             typeName, market_name, sell_price, sell_volume, buy_price, buy_volume
         )
@@ -192,7 +192,7 @@ class EVEUtils(object):
         except APIError as e:
             return "{}<br />{}".format(reply, e)
 
-        reply += "<br />Security status: <b>{:.2f}</b>".format(
+        reply += "<br />Security status: <strong>{:.2f}</strong>".format(
             float(xml.find("securityStatus").text)
         )
 
@@ -206,7 +206,7 @@ class EVEUtils(object):
 
         for record in corp_history[-10:]:
             corp_ticker, _ = api.get_tickers(int(record['corporationID']), None)
-            reply += "<br />From {} til {} in <b>{} {}</b>".format(
+            reply += "<br />From {} til {} in <strong>{} {}</strong>".format(
                 record['startDate'], record['endDate'] or "now",
                 record['corporationName'], cgi.escape(format_tickers(corp_ticker, None))
             )
@@ -249,6 +249,6 @@ class EVEUtils(object):
             except APIError:
                 results.append("Failed to load blacklist entry for " + character)
             else:
-                results.append("{} is <b>{}</b>".format(character, res[0]['output']))
+                results.append("{} is <strong>{}</strong>".format(character, res[0]['output']))
 
         return "<br />".join(results)

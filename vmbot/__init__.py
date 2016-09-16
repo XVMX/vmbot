@@ -174,9 +174,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
         except Exception as e:
             return "Failed to calculate your request: {}".format(e)
 
-        reply = '<font face="monospace">{}</font>'.format(
-            reply.replace('\n', '</font><br /><font face="monospace">')
-        )
+        reply = '<span style="font-family: monospace;">' + reply.replace('\n', "<br />") + "</span>"
         if "<br />" in reply:
             reply = "<br />" + reply
 

@@ -18,13 +18,13 @@ class TestPrice(unittest.TestCase):
     default_mess = ""
     default_args = ""
 
-    price_template = ("<b>{}</b> in <b>{}</b>:<br />"
-                      "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                      "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+    price_template = ("<strong>{}</strong> in <strong>{}</strong>:<br />"
+                      "Sells: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
+                      "Buys: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                       "Spread: {:,.2%}")
-    no_spread_template = ("<b>{}</b> in <b>{}</b>:<br />"
-                          "Sells: <b>{:,.2f}</b> ISK -- {:,} units<br />"
-                          "Buys: <b>{:,.2f}</b> ISK -- {:,} units<br />"
+    no_spread_template = ("<strong>{}</strong> in <strong>{}</strong>:<br />"
+                          "Sells: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
+                          "Buys: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                           "Spread: NaNNaNNaNNaNNaNBatman!")
 
     def setUp(self):

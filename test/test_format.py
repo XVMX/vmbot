@@ -8,9 +8,9 @@ from vmbot.helpers.format import format_affil, format_tickers, disambiguate
 
 
 class TestFormat(unittest.TestCase):
-    _base_affil_template = (" corporation <b>{} [{}]</b> in <b>{} &lt;{}&gt;</b> "
-                            "which is part of the <b>{}</b>")
-    char_affil_template = "<b>{}</b> is part of" + _base_affil_template
+    _base_affil_template = (" corporation <strong>{} [{}]</strong> in <strong>{} "
+                            "&lt;{}&gt;</strong> which is part of the <strong>{}</strong>")
+    char_affil_template = "<strong>{}</strong> is part of" + _base_affil_template
     structure_affil_template = "The structure is owned by" + _base_affil_template
 
     simple_disambiguate_template = 'Other {} like "{}": {}'

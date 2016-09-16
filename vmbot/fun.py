@@ -248,8 +248,9 @@ class Fun(object):
         except ValueError:
             return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
 
-        return "<b>{}</b> (<i>{}/{}/{}</i>): {}".format(comic['safe_title'], comic['year'],
-                                                        comic['month'], comic['day'], comic_url)
+        return "<strong>{}</strong> (<em>{}/{}/{}</em>): {}".format(
+            comic['safe_title'], comic['year'], comic['month'], comic['day'], comic_url
+        )
 
     @botcmd
     def rtud(self, mess, args):
@@ -299,7 +300,7 @@ class Fun(object):
         desc = re.sub("((?:\r|\n|\r\n)+)", "<br />", desc).rstrip("<br />")
         desc = re.sub("\[([\S ]+?)\]", urban_link, desc)
 
-        desc = "<b>{}</b> by <i>{}</i> rated {:+}: {}<br />{}".format(
+        desc = "<strong>{}</strong> by <em>{}</em> rated {:+}: {}<br />{}".format(
             entry['word'], entry['author'], entry['thumbs_up'] - entry['thumbs_down'],
             entry['permalink'], desc
         )
