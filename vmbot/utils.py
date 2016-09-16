@@ -2,14 +2,10 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-import time
 from datetime import datetime
 import cgi
 import urllib
-import xml.etree.ElementTree as ET
 import sqlite3
-
-import requests
 
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB

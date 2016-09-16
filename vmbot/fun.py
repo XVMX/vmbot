@@ -127,7 +127,7 @@ class Say(object):
     def pimpsay(self, mess, args):
         """Like fishsay but blacker"""
         if args:
-            return "{} {}".format(args, random.choice(PIMPISMS))
+            return args + ' ' + random.choice(PIMPISMS)
         else:
             return random.choice(PIMPISMS)
 
@@ -177,7 +177,7 @@ class Say(object):
     def jokersay(self, mess, args):
         """Like fishsay but german"""
         if args:
-            return "{} {}".format(args, random.choice(JOKERISMS))
+            return args + ' ' + random.choice(JOKERISMS)
         else:
             return random.choice(JOKERISMS)
 

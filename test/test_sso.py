@@ -55,5 +55,6 @@ class TestSSOToken(unittest.TestCase):
     def test_request_grant_invalid(self):
         self.assertRaises(NotImplementedError, SSOToken._request_grant, "abc123", "token")
 
+
 if __name__ == "__main__":
     unittest.main()

@@ -3,8 +3,8 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import time
-import xml.etree.ElementTree as ET
 import cgi
+import xml.etree.ElementTree as ET
 
 from . import path
 from .models import Storage

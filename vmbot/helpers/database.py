@@ -10,7 +10,7 @@ from sqlalchemy import func
 
 from .files import BOT_DB
 
-engine = create_engine("sqlite:///{}".format(BOT_DB))
+engine = create_engine("sqlite:///" + BOT_DB)
 Session = sessionmaker(bind=engine)
 Model = declarative_base()
 

@@ -39,7 +39,7 @@ class TestSay(unittest.TestCase):
     def test_pimpsay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.pimpsay(self.default_mess, test_arg),
-                      ["{} {}".format(test_arg, line) for line in PIMPISMS])
+                      [test_arg + ' ' + line for line in PIMPISMS])
 
     def test_arelesay(self):
         self.assertIn(self.say.arelesay(self.default_mess, self.default_args),
@@ -100,7 +100,7 @@ class TestSay(unittest.TestCase):
     def test_jokersay_args(self):
         test_arg = "TestArg"
         self.assertIn(self.say.jokersay(self.default_mess, test_arg),
-                      ["{} {}".format(test_arg, line) for line in JOKERISMS])
+                      [test_arg + ' ' + line for line in JOKERISMS])
 
     def test_8ball_noargs(self):
         self.assertEqual(self.say.bot_8ball(self.default_mess, self.default_args),
