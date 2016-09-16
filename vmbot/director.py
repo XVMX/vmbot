@@ -7,7 +7,7 @@ import cgi
 import xml.etree.ElementTree as ET
 
 import requests
-from terminaltables import SingleTable
+from terminaltables import AsciiTable
 
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
@@ -125,7 +125,7 @@ class Director(object):
                 row.append("{:,.2f} ISK".format(val))
             table.append(row)
 
-        table = SingleTable(table)
+        table = AsciiTable(table)
         table.outer_border = False
         table.inner_row_border = True
 
@@ -140,7 +140,7 @@ class Director(object):
             return unicode(e)
 
         table = [[types[type_id], "{:,.3f} ISK".format(ISK(total))] for type_id, total in res]
-        table = SingleTable(table)
+        table = AsciiTable(table)
         table.outer_border = False
         table.inner_heading_row_border = False
         table.inner_row_border = True
