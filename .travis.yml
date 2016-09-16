@@ -8,7 +8,7 @@ install:
    - pip install coveralls
 before_script:
    - cp vmbot/example/config.py ./
-   - python tools/init_bot.py
+   - python -c "from vmbot.helpers import database as db; db.init_db()"
 script:
    - pep8 --max-line-length=100 --exclude=jabberbot.py vmbot/
    - pep8 --max-line-length=100 tools/
