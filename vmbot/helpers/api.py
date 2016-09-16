@@ -43,6 +43,13 @@ def get_tickers(corporationID, allianceID):
     return corp_ticker, alliance_ticker
 
 
+def get_ref_types():
+    xml = request_xml("https://api.eveonline.com/eve/RefTypes.xml.aspx")
+    ref_types = [row.attrib for row in xml.findall("rowset/row")]
+
+    return {int(type_['refTypeID']): type_['refTypeName'] for type_ in ref_types}
+
+
 def zbot(killID):
     """Create a compact overview of a zKB killmail."""
     url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)

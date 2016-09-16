@@ -12,8 +12,9 @@ from terminaltables import SingleTable
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
 from .helpers import database as db
+from .helpers import api
 from .helpers.decorators import requires_dir, requires_dir_chat
-from .models import WalletJournalEntry
+from .models import ISK, WalletJournalEntry
 
 import config
 
@@ -92,6 +93,11 @@ class Director(object):
         reply += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
         return reply
 
+    @staticmethod
+    def _wallet_type_query(session):
+        query = session.query(WalletJournalEntry.type_id, db.func.sum(WalletJournalEntry.amount))
+        return query.group_by(WalletJournalEntry.type_id)
+
     @botcmd
     @requires_dir_chat
     def revenue(self, mess, args):
@@ -100,8 +106,7 @@ class Director(object):
             return {type_id: amount for type_id, amount in res}
 
         session = db.Session()
-        query = session.query(WalletJournalEntry.type_id, db.func.sum(WalletJournalEntry.amount))
-        query = query.filter(WalletJournalEntry.amount > 0).group_by(WalletJournalEntry.type_id)
+        query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
 
         now = datetime.utcnow()
         day = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=1)).all())
@@ -127,3 +132,46 @@ class Director(object):
         res = cgi.escape(table.table).replace('\n', "<br />")
         return '<br /><span style="font-family: monospace;">' + res + "</span>"
 
+    @staticmethod
+    def _type_overview(res):
+        try:
+            types = api.get_ref_types()
+        except APIError as e:
+            return unicode(e)
+
+        table = [[types[type_id], "{:,.3f} ISK".format(ISK(total))] for type_id, total in res]
+        table = SingleTable(table)
+        table.outer_border = False
+        table.inner_heading_row_border = False
+        table.inner_row_border = True
+
+        res = table.table.replace('\n', "<br />")
+        return '<br /><span style="font-family: monospace;">' + res + "</span>"
+
+    @botcmd
+    @requires_dir_chat
+    def income(self, mess, args):
+        """Income statistics for the last month"""
+        session = db.Session()
+        query = self._wallet_type_query(session)
+        query = query.filter(WalletJournalEntry.amount > 0,
+                             WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
+
+        res = sorted(query.all(), key=lambda x: x[1], reverse=True)
+        session.close()
+
+        return self._type_overview(res)
+
+    @botcmd
+    @requires_dir_chat
+    def expenses(self, mess, args):
+        """Expense statistics for the last month"""
+        session = db.Session()
+        query = self._wallet_type_query(session)
+        query = query.filter(WalletJournalEntry.amount < 0,
+                             WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
+
+        res = sorted(query.all(), key=lambda x: x[1])
+        session.close()
+
+        return self._type_overview(res)
