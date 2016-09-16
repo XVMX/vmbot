@@ -2,10 +2,11 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-from sqlalchemy import (create_engine, Column, Integer, String, Text,
-                        Enum, DateTime, LargeBinary, PickleType, ForeignKey)
+from sqlalchemy import (create_engine, Column, Integer, BigInteger, Float, String,
+                        Text, Enum, DateTime, LargeBinary, PickleType, ForeignKey)
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import func
 
 from .files import BOT_DB
 
