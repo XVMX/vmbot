@@ -9,7 +9,7 @@ class ISK(float):
         val = float(self)
 
         for unit in ["", 'k', 'm', 'b']:
-            if val < 1000:
+            if abs(val) < 1000:
                 return format(val, format_spec) + unit
             val /= 1000
 
