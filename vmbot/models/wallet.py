@@ -6,14 +6,6 @@ from datetime import datetime
 
 from ..helpers import database as db
 
-# See https://api.eveonline.com/eve/RefTypes.xml.aspx
-REF_REVENUE = {
-    'PvE': (17, 33, 34, 85, 99, 125),  # Bounties, Mission Rewards, Incursions, Project Discovery
-    'POCO': (96, 97),  # Planetary Import/Export Tax
-    'Reprocessing': (127,),  # Reprocessing Tax
-    'Services': (13, 14, 55, 128)  # Office Rental Fee, Factory Slot Rental Fee, Jump Clone Fees
-}
-
 
 class WalletJournalEntry(db.Model):
     """Store a wallet journal entry."""
