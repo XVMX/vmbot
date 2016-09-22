@@ -26,7 +26,7 @@ REF_REVENUE = (
     ("POCO", (96, 97)),
     # Reprocessing Tax
     ("Reprocessing", (127,)),
-    # Office Rental Fee, Factory Slot Rental Fee, # Jump Clone Fees
+    # Office Rental Fee, Factory Slot Rental Fee, Jump Clone Fees
     ("Citadel Services", (13, 14, 55, 128))
 )
 

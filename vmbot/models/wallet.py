@@ -12,7 +12,7 @@ class WalletJournalEntry(db.Model):
     __tablename__ = "corp_wallet"
 
     ref_id = db.Column(db.BigInteger, nullable=False, primary_key=True, autoincrement=False)
-    type_id = db.Column(db.Integer, nullable=False)
+    type_id = db.Column(db.Integer, nullable=False, index=True)
     amount = db.Column(db.Float, nullable=False)
     date = db.Column(db.DateTime, nullable=False)
 
