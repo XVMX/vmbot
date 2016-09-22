@@ -32,6 +32,12 @@ class TestStaticdata(unittest.TestCase):
              'regionID': 0, 'regionName': "{Failed to load}"}
         )
 
+    def test_itemName(self):
+        self.assertEquals(staticdata.itemName(40009082), "Jita IV")
+
+    def test_itemName_invaliditem(self):
+        self.assertEquals(staticdata.itemName(-1), "{Failed to load}")
+
 
 if __name__ == "__main__":
     unittest.main()

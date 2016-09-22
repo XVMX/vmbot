@@ -47,3 +47,19 @@ def solarSystemData(solarSystemID):
     return {'solarSystemID': system[0], 'solarSystemName': system[1],
             'constellationID': system[2], 'constellationName': system[3],
             'regionID': system[4], 'regionName': system[5]}
+
+
+def itemName(itemID):
+    """Resolve an itemID to its name."""
+    conn = sqlite3.connect(STATICDATA_DB)
+    item = conn.execute(
+        """SELECT itemID, itemName
+           FROM invNames
+           WHERE itemID = :id;""",
+        {'id': itemID}
+    ).fetchone()
+    conn.close()
+
+    if not item:
+        return "{Failed to load}"
+    return item[1]

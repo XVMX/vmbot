@@ -30,6 +30,7 @@ echo "***"
 sqlite3 sqlite-latest.sqlite ".dump mapRegions" > dump.sql
 sqlite3 sqlite-latest.sqlite ".dump mapConstellations" >> dump.sql
 sqlite3 sqlite-latest.sqlite ".dump mapSolarSystems" >> dump.sql
+sqlite3 sqlite-latest.sqlite ".dump invNames" >> dump.sql
 sqlite3 sqlite-latest.sqlite ".dump invTypes" >> dump.sql
 sqlite3 staticdata.sqlite < dump.sql
 
