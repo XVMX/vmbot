@@ -2,30 +2,46 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+import json
+
+from sqlalchemy.ext.hybrid import hybrid_property
+
 from . import path
 
 import vmbot.helpers.database as db
 
 
 class Storage(db.Model):
-    """Store arbitrary Python objects persistently."""
+    """Store JSON-compatible Python objects persistently."""
     __tablename__ = "cron_storage"
 
     key = db.Column(db.String, nullable=False, primary_key=True)
-    value = db.Column(db.PickleType, nullable=False)
+    _value = db.Column("value", db.Text, nullable=False)
 
     def __init__(self, key, value):
         self.key = key
         self.value = value
 
+    @hybrid_property
+    def value(self):
+        return json.loads(self._value)
+
+    @value.setter
+    def value(self, value):
+        self._value = json.dumps(value)
+
+    @value.expression
+    def value(self):
+        return self._value
+
     @classmethod
     def get(cls, session, key):
         """Return value stored at key."""
-        res = session.query(cls.value).filter_by(key=key).scalar()
+        res = session.query(cls).filter_by(key=key).scalar()
         if res is None:
             raise KeyError
 
-        return res
+        return res.value
 
     @classmethod
     def set(cls, session, key, value):
