@@ -15,8 +15,7 @@ ACCOUNT_KEY = 1000
 
 
 def init(session, token):
-    walk_journal(session, token)
-    Storage.set(session, "wallet_update_next_run", time.time())
+    return main(session, token)
 
 
 def needs_run(session):
