@@ -112,13 +112,14 @@ class Director(object):
         day = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=1)).all())
         week = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(weeks=1)).all())
         month = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=30)).all())
+        genesis = to_dict(query.filter(WalletJournalEntry.date > datetime.date(2016, 9, 1).all())
 
         session.close()
 
-        table = [["Type", "< 24h", "< 1 week", "< 30 days"]]
+        table = [["Type", "< 24h", "< 1 week", "< 30 days", "Since 2016-09-01"]]
         for name, types in REF_REVENUE:
             row = [name]
-            for col in (day, week, month):
+            for col in (day, week, month, genesis):
                 val = 0.0
                 for type_id in types:
                     val += col.get(type_id, 0.0)
