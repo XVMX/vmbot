@@ -19,9 +19,7 @@ PUBBIETALK = (
     "yolo",
     "swag",
     "wewlad",
-    "rofl",
-    "2?stronk",
-    "lmao"
+    "2?stronk"
 )
 
 PUBBIE_REGEX = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(PUBBIETALK)), re.IGNORECASE)
