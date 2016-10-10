@@ -112,7 +112,7 @@ class Director(object):
         day = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=1)).all())
         week = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(weeks=1)).all())
         month = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=30)).all())
-        genesis = to_dict(query.filter(WalletJournalEntry.date > datetime.date(2016, 9, 1)).all())
+        genesis = to_dict(query.filter(WalletJournalEntry.date > datetime(2016, 9, 1)).all())
 
         session.close()
 
