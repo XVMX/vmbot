@@ -27,6 +27,9 @@ from .models.messages import Message
 
 import config
 
+# See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
+XEP_0203_DELAY = "urn:xmpp:delay"
+
 
 class MUCJabberBot(JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
@@ -89,6 +92,9 @@ class MUCJabberBot(JabberBot):
         if mess.getType() != "groupchat":
             return
 
+        if XEP_0203_DELAY in mess.getProperties():
+            return
+
         # Discard messages from myself
         if self.get_uname_from_mess(mess, full_jid=True) == self.jid:
             return
@@ -139,9 +145,8 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
 
-        # See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
         if (self.get_uname_from_mess(mess, full_jid=True) == self.jid or
-                mess.getType() != "groupchat" or "urn:xmpp:delay" in mess.getProperties()):
+                mess.getType() != "groupchat" or XEP_0203_DELAY in mess.getProperties()):
             return reply
 
         msg = mess.getBody()
