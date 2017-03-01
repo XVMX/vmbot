@@ -35,7 +35,8 @@ class MUCJabberBot(JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
-    MAX_CHAT_CHARS = 1000
+    MAX_CHAT_CHARS = 2000
+    MAX_CHAT_LINES = 10
     PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
@@ -64,7 +65,9 @@ class MUCJabberBot(JabberBot):
         cmd = mess.getBody().split(' ', 1)[0].lower()
         cmd = self.commands.get(cmd, None)
 
-        if len(text) > self.MAX_CHAT_CHARS or getattr(cmd, "_vmbot_forcepm", False):
+        lines = text.count('\n') + text.count("<br/>") + text.count("<br />")
+        if (len(text) > self.MAX_CHAT_CHARS or lines > self.MAX_CHAT_LINES or
+                getattr(cmd, "_vmbot_forcepm", False)):
             self.send_message(self.build_reply(mess, text, private=True))
             text = "Private message sent"
 
