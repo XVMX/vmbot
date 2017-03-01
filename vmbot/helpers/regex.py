@@ -15,11 +15,12 @@ PUBBIETALK = (
     "rekt",
     "toon(?:ies)?",
     "iskies",
-    "thann(?:y|ies)",
+    "(?:thann?|chimm?|nidd?)(?:y|ies)",
     "yolo",
     "swag",
     "wewlad",
-    "2?stronk"
+    "2?stronk",
+    "linky"
 )
 
 PUBBIE_REGEX = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(PUBBIETALK)), re.IGNORECASE)

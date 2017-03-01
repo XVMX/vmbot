@@ -100,23 +100,25 @@ JOKERISMS = (
 )
 
 PUBBIESMACK = (
-    "go back to reddit fam",
-    "What are you, a fuckin alpha clone? :frogout:",
-    "Ascendance is that way ---->",
-    ":commissar:",
-    ":frogbarf:",
-    "sup m8 baited on free iskies",
-    "Too bad I can't kick you for that anymore :argh:",
+    "{nick}: go back to reddit fam",
+    "{nick}: What are you, a fuckin alpha clone? :frogout:",
+    "{nick}: Ascendance is that way ---->",
+    "{nick}: :commissar:",
+    "{nick}: :frogbarf:",
+    "{nick}: sup m8 baited on free iskies",
+    "{nick}: Too bad I can't kick you for that anymore :argh:",
+    "{nick}: Dreddit is recruiting!",
+    "Andail, is that you?",
     "Me right now: :smithicide:",
-    "Dreddit is recruiting",
-    "Andail, is that you?"
+    "kick {nick}, MAKE XVMX GREAT AGAIN!",
+    "This is worse than the zKB comment section :cripes:"
 )
 
 
 class Say(object):
     def pubbiesmack(self, mess):
         """Smack that pubbie."""
-        return "{}: {}".format(self.get_sender_username(mess), random.choice(PUBBIESMACK))
+        return random.choice(PUBBIESMACK).format(nick=self.get_sender_username(mess))
 
     @botcmd
     def fishsay(self, mess, args):

@@ -28,7 +28,7 @@ class TestSay(unittest.TestCase):
 
     def test_pubbiesmack(self):
         self.assertIn(self.say.pubbiesmack(self.default_mess),
-                      ["{}: {}".format(self.default_mess, line) for line in PUBBIESMACK])
+                      [line.format(nick=self.default_mess) for line in PUBBIESMACK])
 
     def test_fishsay(self):
         self.assertIn(self.say.fishsay(self.default_mess, self.default_args), FISHISMS)
