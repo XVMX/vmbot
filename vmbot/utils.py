@@ -203,12 +203,50 @@ class EVEUtils(object):
         for i in xrange(num_records):
             corp_history[i]['endDate'] = (corp_history[i + 1]['startDate']
                                           if i + 1 < num_records else None)
+        corp_history = corp_history[-10:]
 
-        for record in corp_history[-10:]:
+        # Corporation Alliance history
+        ally_hist = {}
+        for corp in {rec['corporationID'] for rec in corp_history}:
+            hist = api.request_rest(
+                "https://esi.tech.ccp.is/latest/corporations/{}/alliancehistory/".format(corp),
+                params={'datasource': "tranquility"}
+            )
+            hist.sort(key=lambda x: x['record_id'])
+            ally_hist[corp] = hist
+
+        for i in xrange(len(corp_history)):
+            record = corp_history[i]
+            hist = ally_hist[record['corporationID']]
+            date_hist = [datetime.strptime(ally['start_date'], "%Y-%m-%dT%H:%M:%SZ")
+                         for ally in hist]
+            start_date = datetime.strptime(record['startDate'], "%Y-%m-%d %H:%M:%S")
+            end_date = (datetime.strptime(record['endDate'], "%Y-%m-%d %H:%M:%S")
+                        if record['endDate'] is not None else datetime.now())
+
+            j, k = 0, len(date_hist) - 1
+            while j <= k:
+                if date_hist[j] < start_date:
+                    j += 1
+                elif date_hist[k] > end_date:
+                    k -= 1
+                else:
+                    break
+            j -= 1
+            k += 1
+
+            allyIDs = [rec['alliance']['alliance_id']
+                       for rec in hist[j:k] if 'alliance' in rec]
+            ally_tickers = {_id: api.get_tickers(None, _id)[1] for _id in set(allyIDs)}
+            corp_history[i]['alliances'] = [ally_tickers[_id] for _id in allyIDs]
+
+        for record in corp_history:
             corp_ticker, _ = api.get_tickers(int(record['corporationID']), None)
-            reply += "<br />From {} til {} in <strong>{} {}</strong>".format(
+            ally_ticker = "/".join(format_tickers(None, ticker) for ticker in record['alliances'])
+            reply += "<br />From {} til {} in <strong>{} {}{}</strong>".format(
                 record['startDate'], record['endDate'] or "now",
-                record['corporationName'], cgi.escape(format_tickers(corp_ticker, None))
+                record['corporationName'], cgi.escape(format_tickers(corp_ticker, None)),
+                (" " + cgi.escape(ally_ticker) if ally_ticker else "")
             )
 
         if num_records > 10:

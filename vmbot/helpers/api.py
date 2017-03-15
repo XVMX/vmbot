@@ -9,7 +9,7 @@ import requests
 
 from .exceptions import NoCacheError, APIError
 from . import database as db
-from ..models.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
+from ..models.cache import parse_http_cache, parse_xml_cache, HTTPCacheObject
 from . import staticdata
 from .format import format_tickers
 from ..models import ISK
@@ -87,8 +87,8 @@ def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
         res = r.content
 
         try:
-            expiry = parse_cache_control(r.headers['Cache-Control'])
-        except (KeyError, NoCacheError):
+            expiry = parse_http_cache(r.headers)
+        except NoCacheError:
             pass
         else:
             HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)

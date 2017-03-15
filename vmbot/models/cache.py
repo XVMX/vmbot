@@ -10,17 +10,21 @@ from ..helpers.exceptions import NoCacheError
 from ..helpers import database as db
 
 
-def parse_cache_control(cache_control):
-    """Parse Cache-Control HTTP header."""
-    cc_lower = cache_control.lower()
-    if "no-cache" in cc_lower or "no-store" in cc_lower:
+def parse_http_cache(headers):
+    """Parse HTTP caching headers."""
+    if 'Cache-Control' not in headers:
         raise NoCacheError
 
-    try:
-        return datetime.utcnow() + timedelta(seconds=int(
-            re.search("max-age=(\d+)", cache_control, re.IGNORECASE).group(1)
-        ))
-    except AttributeError:
+    cache_control = headers['Cache-Control'].lower()
+    if "no-cache" in cache_control or "no-store" in cache_control:
+        raise NoCacheError
+
+    timer = re.search("max-age=(\d+)", cache_control, re.IGNORECASE)
+    if timer is not None:
+        return datetime.utcnow() + timedelta(seconds=int(timer.group(1)))
+    elif 'Expires' in headers:
+        return datetime.strptime(headers['Expires'], "%a, %d %b %Y %H:%M:%S %Z")
+    else:
         raise NoCacheError
 
 
