@@ -87,7 +87,7 @@ class TestAPI(unittest.TestCase):
         test_url = "https://crest-tq.eveonline.com/"
 
         # Test without cache
-        with mock.patch("vmbot.helpers.api.parse_cache_control", side_effect=NoCacheError):
+        with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
             res_nocache = api.request_rest(test_url)
             self.assertIsInstance(res_nocache, dict)
 
