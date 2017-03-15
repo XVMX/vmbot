@@ -12,7 +12,7 @@ from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import NoCacheError
 import vmbot.helpers.database as db
 
-from vmbot.models.cache import parse_cache_control, parse_xml_cache, HTTPCacheObject
+from vmbot.models.cache import parse_http_cache, parse_xml_cache, HTTPCacheObject
 
 
 class TestCache(unittest.TestCase):
@@ -32,14 +32,24 @@ class TestCache(unittest.TestCase):
         self.sess.close()
         self.setUpClass()
 
-    def test_parse_cache_control(self):
-        self.assertIsInstance(parse_cache_control("max-age=60"), datetime)
+    def test_parse_http_cache(self):
+        self.assertIsInstance(parse_http_cache({'Cache-Control': "max-age=60"}), datetime)
 
-    def test_parse_cache_control_empty(self):
-        self.assertRaises(NoCacheError, parse_cache_control, "")
+    def test_parse_http_cache_expires(self):
+        self.assertIsInstance(parse_http_cache(
+            {'Cache-Control': "public",
+             'Expires': "Thu, 01 Dec 2020 16:00:00 GMT"}
+            ), datetime
+        )
 
-    def test_parse_cache_control_nocache(self):
-        self.assertRaises(NoCacheError, parse_cache_control, "no-cache")
+    def test_parse_http_cache_empty(self):
+        self.assertRaises(NoCacheError, parse_http_cache, {})
+
+    def test_parse_http_cache_nocache(self):
+        self.assertRaises(NoCacheError, parse_http_cache, {'Cache-Control': "no-cache"})
+
+    def test_parse_http_cache_notime(self):
+        self.assertRaises(NoCacheError, parse_http_cache, {'Cache-Control': ""})
 
     def test_parse_xml_cache(self):
         api_sample = """<?xml version='1.0' encoding='UTF-8'?>
