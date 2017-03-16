@@ -27,6 +27,10 @@ def flawed_response(*args, **kwargs):
 
 
 class TestAPI(unittest.TestCase):
+    zbot_regex = ("Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
+                  "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | "
+                  "2016-06-10 02:09:38")
+
     @classmethod
     def setUpClass(cls):
         try:
@@ -60,18 +64,10 @@ class TestAPI(unittest.TestCase):
         self.assertTupleEqual(api.get_tickers(None, None), (None, None))
 
     def test_zbot(self):
-        self.assertEquals(
-            api.zbot("54520379"),
-            ("Joker Gates [XVMX] <CONDI> | Hurricane (2 point(s)) | 91.14m ISK | "
-             "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | 2016-06-10 02:09:38")
-        )
+        self.assertRegexpMatches(api.zbot("54520379"), self.zbot_regex)
 
     def test_zbot_int(self):
-        self.assertEquals(
-            api.zbot(54520379),
-            ("Joker Gates [XVMX] <CONDI> | Hurricane (2 point(s)) | 91.14m ISK | "
-             "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | 2016-06-10 02:09:38")
-        )
+        self.assertRegexpMatches(api.zbot(54520379), self.zbot_regex)
 
     def test_zbot_invalidid(self):
         self.assertEquals(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
