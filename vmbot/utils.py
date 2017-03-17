@@ -246,11 +246,12 @@ class EVEUtils(object):
 
         for record in corp_history:
             corp_ticker, _ = api.get_tickers(int(record['corporationID']), None)
-            ally_ticker = "/".join(format_tickers(None, ticker) for ticker in record['alliances'])
+            ally_ticker = "</strong>/<strong>".join(cgi.escape(format_tickers(None, ticker))
+                                                    for ticker in record['alliances'])
             reply += "<br />From {} til {} in <strong>{} {}{}</strong>".format(
                 record['startDate'], record['endDate'] or "now",
                 record['corporationName'], cgi.escape(format_tickers(corp_ticker, None)),
-                (" " + cgi.escape(ally_ticker) if ally_ticker else "")
+                (" " + ally_ticker if ally_ticker else "")
             )
 
         if num_records > 10:
