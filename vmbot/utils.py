@@ -208,10 +208,14 @@ class EVEUtils(object):
         # Corporation Alliance history
         ally_hist = {}
         for corp in {rec['corporationID'] for rec in corp_history}:
-            hist = api.request_rest(
-                "https://esi.tech.ccp.is/latest/corporations/{}/alliancehistory/".format(corp),
-                params={'datasource': "tranquility"}
-            )
+            try:
+                hist = api.request_rest(
+                    "https://esi.tech.ccp.is/latest/corporations/{}/alliancehistory/".format(corp),
+                    params={'datasource': "tranquility"}
+                )
+            except APIError:
+                ally_hist[corp] = []
+                continue
             hist.sort(key=lambda x: x['record_id'])
             ally_hist[corp] = hist
 
