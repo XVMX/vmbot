@@ -232,8 +232,8 @@ class EVEUtils(object):
                     k -= 1
                 else:
                     break
-            j -= 1
-            k += 1
+            j = max(0, j - 1)
+            k = min(len(date_hist), k + 1)
 
             allyIDs = [rec['alliance']['alliance_id']
                        for rec in hist[j:k] if 'alliance' in rec]
