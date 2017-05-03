@@ -230,9 +230,9 @@ class EVEUtils(object):
 
             j, k = 0, len(date_hist) - 1
             while j <= k:
-                if date_hist[j] < start_date:
+                if date_hist[j] <= start_date:
                     j += 1
-                elif date_hist[k] > end_date:
+                elif date_hist[k] >= end_date:
                     k -= 1
                 else:
                     break
