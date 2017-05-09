@@ -68,14 +68,6 @@ class TestPrice(unittest.TestCase):
         )
 
     @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
-    def test_price_plex_nosystem(self, mock_price_volume):
-        self.assertEqual(
-            self.price.price(self.default_mess, "Plex"),
-            self.price_template.format("30 Day Pilot's License Extension (PLEX)",
-                                       "Jita", 45.99, 1000, 45.99, 1000, 0)
-        )
-
-    @mock.patch("vmbot.utils.Price._get_market_orders", return_value=((45.99, 1000), (45.99, 1000)))
     def test_price_system(self, mock_price_volume):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite@Amarr"),

@@ -59,12 +59,6 @@ class Price(object):
         except IndexError:
             system_or_region = "Jita"
 
-        # PLEX aliases
-        if item.lower() in ("plex", "pilot license",
-                            "pilot license extension",
-                            "pilot's license extension"):
-            item = "30 Day Pilot's License Extension (PLEX)"
-
         conn = sqlite3.connect(STATICDATA_DB)
 
         region = conn.execute(
