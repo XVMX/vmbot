@@ -141,6 +141,20 @@ class TestPrice(unittest.TestCase):
         self.assertEqual(res[1][0], 0)
         self.assertEqual(res[1][1], 0)
 
+    @mock.patch("vmbot.helpers.api.request_rest",
+                side_effect=[{'items': [], 'next': {'href': ""}}, {'items': []}])
+    def test_get_market_orders_paginated(self, mock_rest):
+        # The Forge
+        regionID = 10000002
+        # Mexallon
+        item_typeID = 36
+
+        res = Price._get_market_orders(regionID, "Jita", item_typeID)
+        self.assertEqual(res[0][0], 0)
+        self.assertEqual(res[0][1], 0)
+        self.assertEqual(res[1][0], 0)
+        self.assertEqual(res[1][1], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,13 +27,20 @@ class Price(object):
         url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
         type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
 
+        orders = []
         res = api.request_rest(url, params={'type': type_}, timeout=5)
+        orders.extend(order for order in res['items']
+                      if order['location']['name'].startswith(system))
+
+        while 'next' in res:
+            res = api.request_rest(res['next']['href'], timeout=5)
+            orders.extend(order for order in res['items']
+                          if order['location']['name'].startswith(system))
 
         sell = {'volume': 0, 'price': None}
         buy = {'volume': 0, 'price': None}
 
-        for order in (order for order in res['items']
-                      if order['location']['name'].startswith(system)):
+        for order in orders:
             if order['buy']:
                 buy['volume'] += order['volume']
                 if buy['price'] is None or order['price'] > buy['price']:
