@@ -250,8 +250,17 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
 
     @botcmd
     def uptime(self, mess, args):
-        """Bot's current uptime"""
-        return "/me has been running for {}".format(datetime.utcnow() - self.startup_time)
+        """Bot's current uptime and git revision"""
+        p = subprocess.Popen(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE,
+                             cwd=path.abspath(path.join(path.dirname(__file__), pardir)))
+        out, _ = p.communicate()
+
+        res = "/me has been running for {}".format(datetime.utcnow() - self.startup_time)
+        if p.returncode == 0:
+            res += (" (<em>Revision "
+                    '<a href="https://github.com/XVMX/vmbot/tree/{0}">{0}</a></em>)'.format(out))
+
+        return res
 
     @botcmd(hidden=True)
     @requires_admin
