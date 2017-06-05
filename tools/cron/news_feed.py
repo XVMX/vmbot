@@ -30,11 +30,13 @@ def init(session):
         print(unicode(e))
         return
 
-    news = news.find("atom:entry[1]/atom:id", FEED_NS).text
-    devblog = devblog.find("atom:entry[1]/atom:id", FEED_NS).text
+    news_id = news.find("atom:entry[1]/atom:id", FEED_NS).text
+    news_updated = news.find("atom:entry[1]/atom:updated", FEED_NS).text
+    devblog_id = devblog.find("atom:entry[1]/atom:id", FEED_NS).text
+    devblog_updated = devblog.find("atom:entry[1]/atom:updated", FEED_NS).text
 
-    Storage.set(session, "news_feed_news_id", news)
-    Storage.set(session, "news_feed_devblog_id", devblog)
+    Storage.set(session, "news_feed_last_news", (news_id, news_updated))
+    Storage.set(session, "news_feed_last_devblog", (devblog_id, devblog_updated))
     Storage.set(session, "news_feed_next_run", time.time())
 
 
@@ -47,11 +49,11 @@ def main(session):
 
     news, devblogs = None, None
     try:
-        news = read_feed(NEWS_FEED, Storage.get(session, "news_feed_news_id"))
+        news = read_feed(NEWS_FEED, Storage.get(session, "news_feed_last_news"))
     except APIError:
         pass
     try:
-        devblogs = read_feed(DEVBLOG_FEED, Storage.get(session, "news_feed_devblog_id"))
+        devblogs = read_feed(DEVBLOG_FEED, Storage.get(session, "news_feed_last_devblog"))
     except APIError:
         pass
 
@@ -63,7 +65,7 @@ def main(session):
             session.add(Message(room, "<br />".join(reply), "groupchat"))
         session.commit()
 
-        Storage.set(session, "news_feed_news_id", news[0]['id'])
+        Storage.set(session, "news_feed_last_news", (news[0]['id'], news[0]['updated']))
 
     if devblogs:
         reply = ["{} new EVE devblog(s):".format(len(devblogs))]
@@ -73,10 +75,13 @@ def main(session):
             session.add(Message(room, "<br />".join(reply), "groupchat"))
         session.commit()
 
-        Storage.set(session, "news_feed_devblog_id", devblogs[0]['id'])
+        Storage.set(session, "news_feed_last_devblog",
+                    (devblogs[0]['id'], devblogs[0]['updated']))
 
 
-def read_feed(url, last_id):
+def read_feed(url, last_entry):
+    last_id, last_update = last_entry
+
     feed = ET.fromstring(api.request_api(url).content)
     entries = [{'id': entry.find("atom:id", FEED_NS).text,
                 'title': cgi.escape(entry.find("atom:title", FEED_NS).text),
@@ -89,4 +94,10 @@ def read_feed(url, last_id):
     entries.sort(key=lambda x: time.strptime(x['updated'], "%Y-%m-%dT%H:%M:%SZ"), reverse=True)
 
     idx = next((idx for idx, entry in enumerate(entries) if entry['id'] == last_id), None)
+    if idx is None:
+        # Fallback in case CCP deletes the last entry
+        last_update = time.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ")
+        idx = next((idx for idx, entry in enumerate(entries)
+                    if time.strptime(entry['updated'], "%Y-%m-%dT%H:%M:%SZ") <= last_update), 0)
+
     return entries[:idx]
