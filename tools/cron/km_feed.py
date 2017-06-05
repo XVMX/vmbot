@@ -17,23 +17,11 @@ from vmbot.models import ISK
 import config
 
 KM_MIN_VAL = 5000000
-BASE_URL = "https://zkillboard.com/api/losses/corporationID/{}/no-items/no-attackers/"
-INIT_URL = BASE_URL + "limit/1/"
-FEED_URL = BASE_URL + "afterKillID/{}/"
+REDISQ_URL = "https://redisq.zkillboard.com/listen.php"
 FEED_FMT = "\n{} {} | {} | {:.2f} ISK | {} ({}) | {} | https://zkillboard.com/kill/{}/"
 
 
 def init(session):
-    url = INIT_URL.format(config.CORPORATION_ID)
-    try:
-        res = api.request_rest(url)
-    except APIError as e:
-        print(unicode(e))
-        return
-
-    # res is empty if corporation didn't loose any ships yet
-    killID = res[0]['killID'] if res else 0
-    Storage.set(session, "km_feed_id", killID)
     Storage.set(session, "km_feed_next_run", time.time())
 
 
@@ -44,35 +32,40 @@ def needs_run(session):
 def main(session):
     Storage.set(session, "km_feed_next_run", time.time() + 10 * 60)
 
-    url = FEED_URL.format(config.CORPORATION_ID, Storage.get(session, "km_feed_id"))
-    try:
-        res = api.request_rest(url)
-    except APIError:
-        return
+    losses = []
+    while True:
+        try:
+            res = api.request_rest(REDISQ_URL, params={'ttw': 3}, timeout=5)['package']
+        except APIError:
+            break
 
-    losses = [km for km in res if km['zkb']['totalValue'] >= KM_MIN_VAL]
+        if res is None:
+            break
+        if (res['killmail']['victim']['corporation']['id'] == config.CORPORATION_ID
+                and res['zkb']['totalValue'] >= KM_MIN_VAL):
+            losses.append(res)
+
     if not losses:
         return
 
     reply = "{} new loss(es):".format(len(losses))
-    for loss in reversed(losses):
-        victim = loss['victim']
-        system = staticdata.solarSystemData(loss['solarSystemID'])
-        corp_ticker, alliance_ticker = api.get_tickers(victim['corporationID'],
-                                                       victim['allianceID'])
+    for loss in losses:
+        km, zkb = loss['killmail'], loss['zkb']
+        victim = km['victim']
+        system = staticdata.solarSystemData(km['solarSystem']['id'])
+        corp_ticker, alliance_ticker = api.get_tickers(
+            victim['corporation']['id'],
+            victim['alliance']['id'] if 'alliance' in victim else None
+        )
 
         reply += FEED_FMT.format(
-            victim['characterName'] or victim['corporationName'],
+            victim['character']['name'] if 'character' in victim else victim['corporation']['name'],
             format_tickers(corp_ticker, alliance_ticker),
-            staticdata.typeName(victim['shipTypeID']),
-            ISK(loss['zkb']['totalValue']),
+            victim['shipType']['name'], ISK(zkb['totalValue']),
             system['solarSystemName'], system['regionName'],
-            loss['killTime'], loss['killID']
+            km['killTime'], km['killID']
         )
 
     for room in config.JABBER['primary_chatrooms']:
         session.add(Message(room, reply, "groupchat"))
     session.commit()
-
-    if res:
-        Storage.set(session, "km_feed_id", res[0]['killID'])
