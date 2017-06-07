@@ -7,6 +7,7 @@ import mock
 
 import re
 
+from vmbot.helpers.files import HANDY_QUOTES
 from vmbot.fun import (EBALL_ANSWERS, FISHISMS, PIMPISMS, ARELEISMS, NICKISMS,
                        KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS, PUBBIESMACK)
 
@@ -101,6 +102,12 @@ class TestSay(unittest.TestCase):
         test_arg = "TestArg"
         self.assertIn(self.say.jokersay(self.default_mess, test_arg),
                       [test_arg + ' ' + line for line in JOKERISMS])
+
+    def test_handysay(self):
+        with open(HANDY_QUOTES, 'r') as says_file:
+            says = says_file.read()
+
+        self.assertIn(self.say.handysay(self.default_mess, self.default_args), says)
 
     def test_8ball_noargs(self):
         self.assertEqual(self.say.bot_8ball(self.default_mess, self.default_args),
