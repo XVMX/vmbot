@@ -98,6 +98,6 @@ def read_feed(url, last_entry):
         # Fallback in case CCP deletes the last entry
         last_update = time.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ")
         idx = next((idx for idx, entry in enumerate(entries)
-                    if time.strptime(entry['updated'], "%Y-%m-%dT%H:%M:%SZ") <= last_update), 0)
+                    if time.strptime(entry['updated'], "%Y-%m-%dT%H:%M:%SZ") >= last_update), None)
 
     return entries[:idx]
