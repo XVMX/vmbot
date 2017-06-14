@@ -4,7 +4,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import cron.path
-from cron import km_feed
 from cron import news_feed
 from cron import wallet_update
 
@@ -19,7 +18,6 @@ db.init_db()
 session = db.Session()
 
 # Initialize feeds
-km_feed.init(session)
 news_feed.init(session)
 
 # Initialize API updates

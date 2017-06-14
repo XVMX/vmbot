@@ -18,6 +18,7 @@ from .botcmd import botcmd
 from .director import Director
 from .fun import Say, Fun, Chains
 from .utils import Price, EVEUtils
+from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
@@ -126,13 +127,24 @@ class MUCJabberBot(JabberBot):
 class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
-        self.message_trigger = time.time() + 30 if kwargs.pop('feeds', False) else None
+        self.message_trigger = None
+
+        if kwargs.pop('feeds', False):
+            self.message_trigger = time.time() + 30
+            self.km_feed = KMFeed(config.CORPORATION_ID)
 
         super(VMBot, self).__init__(*args, **kwargs)
 
     def idle_proc(self):
         """Retrieve and send stored messages."""
         if self.message_trigger and self.message_trigger <= time.time():
+            # KM feed
+            km_res = self.km_feed.process()
+            if km_res:
+                for room in config.JABBER['primary_chatrooms']:
+                    self.send(user=room, text=km_res, message_type="groupchat")
+
+            # Cron messages
             sess = db.Session()
 
             for mess in sess.query(Message).order_by(Message.message_id.asc()).all():
@@ -167,6 +179,12 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
                 super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
 
         return reply
+
+    def shutdown(self):
+        if self.message_trigger:
+            self.km_feed.close()
+
+        return super(VMBot, self).shutdown()
 
     @botcmd
     def math(self, mess, args):

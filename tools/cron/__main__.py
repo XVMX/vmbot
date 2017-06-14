@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from . import path
-from . import km_feed
 from . import news_feed
 from . import wallet_update
 
@@ -12,7 +11,7 @@ from vmbot.helpers.sso import SSOToken
 
 import config
 
-FEEDS = (km_feed, news_feed)
+FEEDS = (news_feed,)
 API_UPDATES = (wallet_update,)
 
 if __name__ == "__main__":

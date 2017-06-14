@@ -3,6 +3,7 @@ source = vmbot
 omit =
     vmbot/jabberbot.py
     vmbot/__main__.py
+    vmbot/async/km_feed.py
 
 [report]
 show_missing = True
