@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from .botcmd import botcmd
 from .helpers.files import EMOTES, HANDY_QUOTES
 
-# 8ball answers like the original, as per http://en.wikipedia.org/wiki/Magic_8-Ball
+# 8ball answers like the original, as per https://en.wikipedia.org/wiki/Magic_8-Ball
 EBALL_ANSWERS = (
     "It is certain",
     "It is decidedly so",
@@ -270,7 +270,7 @@ class Fun(object):
     @botcmd
     def urban(self, mess, args):
         """[word] - Urban Dictionary's definition of word or, if missing, of a random word"""
-        url = "http://api.urbandictionary.com/v0/"
+        url = "https://api.urbandictionary.com/v0/"
         url += "random" if not args else "define"
         params = None if not args else {'term': args}
 

@@ -34,7 +34,7 @@ REF_REVENUE = (
 class Director(object):
     @staticmethod
     def _send_bcast(broadcast, author):
-        # API docs: http://goo.gl/cTYPzg
+        # API docs: https://goo.gl/cTYPzg
         messaging = ET.Element("messaging")
         messages = ET.SubElement(messaging, "messages")
 

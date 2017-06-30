@@ -28,7 +28,7 @@ from .models.messages import Message
 
 import config
 
-# See XEP-0203: Delayed Delivery (http://xmpp.org/extensions/xep-0203.html)
+# See XEP-0203: Delayed Delivery (https://xmpp.org/extensions/xep-0203.html)
 XEP_0203_DELAY = "urn:xmpp:delay"
 
 
