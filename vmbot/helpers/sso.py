@@ -15,6 +15,7 @@ _SSO_B64 = base64.b64encode(config.SSO['client_id'] + ':' + config.SSO['client_s
 
 class SSOToken(object):
     """Store and manage an EVE Online SSO token."""
+
     def __init__(self, access_token, token_type, expires_in, refresh_token=None):
         self._access_token = access_token
         self._type = token_type

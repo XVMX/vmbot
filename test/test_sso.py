@@ -25,7 +25,7 @@ class TestSSOToken(unittest.TestCase):
     def setUp(self, mock_crest):
         self.token = SSOToken("test_token", "test", 1200, "test_refresh_token")
 
-    def test(self):
+    def tearDown(self):
         del self.token
 
     @mock.patch("vmbot.helpers.api.request_api", return_value=requests.Response())
