@@ -139,8 +139,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
         """Retrieve and send stored messages."""
         if self.message_trigger and self.message_trigger <= time.time():
             # KM feed
-            km_res = self.km_feed.process()
-            if km_res:
+            for km_res in (res for res in self.km_feed.process() if res):
                 for room in config.JABBER['primary_chatrooms']:
                     self.send(user=room, text=km_res, message_type="groupchat")
 
