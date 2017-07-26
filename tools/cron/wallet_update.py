@@ -45,7 +45,7 @@ def walk_journal(session, token):
     session.commit()
 
     while len(entries) == 2560:
-        min_id = min(entries, key=lambda x: x.ref_id)
+        min_id = min(entries, key=lambda x: x.ref_id).ref_id
         entries = filter_known_entries(session, get_entries(token, from_id=min_id))
         session.add_all(entries)
         session.commit()
