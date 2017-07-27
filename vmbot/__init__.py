@@ -30,6 +30,7 @@ import config
 
 # See XEP-0203: Delayed Delivery (https://xmpp.org/extensions/xep-0203.html)
 XEP_0203_DELAY = "urn:xmpp:delay"
+MESSAGE_INTERVAL = 60
 
 
 class MUCJabberBot(JabberBot):
@@ -152,7 +153,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
 
             sess.commit()
             sess.close()
-            self.message_trigger += 60
+            self.message_trigger += MESSAGE_INTERVAL
 
         return super(VMBot, self).idle_proc()
 

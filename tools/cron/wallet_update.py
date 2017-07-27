@@ -10,6 +10,7 @@ from .models import Storage
 from vmbot.helpers.exceptions import APIError
 from vmbot.models import WalletJournalEntry
 
+WALLET_UPDATE_INTERVAL = 30 * 60
 WALLET_JOURNAL_URL = "https://api.eveonline.com/corp/WalletJournal.xml.aspx"
 ACCOUNT_KEY = 1000
 
@@ -23,7 +24,7 @@ def needs_run(session):
 
 
 def main(session, token):
-    Storage.set(session, "wallet_update_next_run", time.time() + 30 * 60)
+    Storage.set(session, "wallet_update_next_run", time.time() + WALLET_UPDATE_INTERVAL)
     walk_journal(session, token)
 
 

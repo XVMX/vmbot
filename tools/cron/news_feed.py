@@ -15,6 +15,7 @@ from vmbot.models.messages import Message
 
 import config
 
+FEED_INTERVAL = 10 * 60
 NEWS_FEED = "https://newsfeed.eveonline.com/en-US/44/articles/page/1/20"
 DEVBLOG_FEED = "https://newsfeed.eveonline.com/en-US/2/articles/page/1/20"
 FEED_NS = {'atom': "http://www.w3.org/2005/Atom", 'title': "http://ccp/custom",
@@ -45,7 +46,7 @@ def needs_run(session):
 
 
 def main(session):
-    Storage.set(session, "news_feed_next_run", time.time() + 10 * 60)
+    Storage.set(session, "news_feed_next_run", time.time() + FEED_INTERVAL)
 
     news, devblogs = None, None
     try:
