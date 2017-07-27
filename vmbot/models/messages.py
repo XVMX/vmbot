@@ -6,7 +6,7 @@ from ..helpers import database as db
 
 
 class Message(db.Model):
-    """Store a message to be sent to a Jabber channel upon retrieval."""
+    """Store a message to be sent to a Jabber entity upon retrieval."""
     __tablename__ = "messages"
 
     message_id = db.Column(db.Integer, nullable=False, primary_key=True, autoincrement=True)
