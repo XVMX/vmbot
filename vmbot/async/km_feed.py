@@ -15,7 +15,7 @@ from ..models import ISK
 KM_MIN_VAL = 5000000
 REDISQ_URL = "https://redisq.zkillboard.com/listen.php"
 FEED_FMT = "{} {} | {} | {:.2f} ISK | {} ({}) | {} | https://zkillboard.com/kill/{}/"
-KILL_SPOOL = 20 * 60
+KILL_SPOOL = 30 * 60
 KILL_FMT = "{} new kill(s) worth {:.2f} ISK: https://zkillboard.com/corporation/{}/kills/"
 
 
