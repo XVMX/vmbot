@@ -82,7 +82,8 @@ class KMFeed(object):
 
     def process_kills(self):
         with self.kill_lock:
-            if self.kills == 0 or (self.kill_timer and self.kill_timer > time.time()):
+            if (self.kills == 0 or self.kill_value < KM_MIN_VAL or
+                    (self.kill_timer and self.kill_timer > time.time())):
                 return
 
             res = KILL_FMT.format(self.kills, ISK(self.kill_value), self.corp_id)
