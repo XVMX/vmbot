@@ -26,3 +26,5 @@ PUBBIETALK = (
 PUBBIE_REGEX = re.compile("(?:^|\s)(?:{})(?:$|\s)".format('|'.join(PUBBIETALK)), re.IGNORECASE)
 
 ZKB_REGEX = re.compile("https?://zkillboard\.com/kill/(-?\d+)/?", re.IGNORECASE)
+
+TIME_OFFSET_REGEX = re.compile("(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:$|\s)", re.IGNORECASE)

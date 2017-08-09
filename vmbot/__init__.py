@@ -17,6 +17,7 @@ import pint
 from .botcmd import botcmd
 from .director import Director
 from .fun import Say, Fun, Chains
+from .pager import Pager
 from .utils import Price, EVEUtils
 from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
@@ -25,6 +26,7 @@ from .helpers import api
 from .helpers.decorators import timeout, requires_admin, requires_dir_chat
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
 from .models.messages import Message
+from .models import Note
 
 import config
 
@@ -125,7 +127,7 @@ class MUCJabberBot(JabberBot):
             super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
 
 
-class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
+class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
         self.message_trigger = None
@@ -144,12 +146,16 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Price, EVEUtils):
                 for room in config.JABBER['primary_chatrooms']:
                     self.send(user=room, text=km_res, message_type="groupchat")
 
-            # Cron messages
             sess = db.Session()
 
+            # Cron messages
             for mess in sess.query(Message).order_by(Message.message_id.asc()).all():
                 self.send(**mess.send_dict)
                 sess.delete(mess)
+
+            # Notes
+            for mess in Note.process_notes(self.nick_dict, sess):
+                self.send(**mess.send_dict)
 
             sess.commit()
             sess.close()
