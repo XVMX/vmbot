@@ -38,7 +38,7 @@ class TestSSOToken(unittest.TestCase):
     @mock.patch("vmbot.helpers.sso.SSOToken._request_grant", return_value=GRANT_RES)
     def test_token_update(self, mock_grant):
         self.token._expiry = datetime.utcnow() - timedelta(hours=1)
-        self.assertEquals(self.token.access_token, "abc123")
+        self.assertEqual(self.token.access_token, "abc123")
 
     def test_token_update_invalid(self):
         self.token._refresh_token = None

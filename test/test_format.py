@@ -17,13 +17,13 @@ class TestFormat(unittest.TestCase):
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
 
     def test_format_character(self):
-        self.assertEquals(
+        self.assertEqual(
             format_affil("A", "B", "C", "D", "E", "F"),
             self.char_affil_template.format("A", "B", "E", "C", "F", "D")
         )
 
     def test_format_structure(self):
-        self.assertEquals(
+        self.assertEqual(
             format_affil("", "B", "C", "D", "E", "F"),
             self.structure_affil_template.format("B", "E", "C", "F", "D")
         )

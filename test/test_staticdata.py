@@ -33,10 +33,10 @@ class TestStaticdata(unittest.TestCase):
         )
 
     def test_itemName(self):
-        self.assertEquals(staticdata.itemName(40009082), "Jita IV")
+        self.assertEqual(staticdata.itemName(40009082), "Jita IV")
 
     def test_itemName_invaliditem(self):
-        self.assertEquals(staticdata.itemName(-1), "{Failed to load}")
+        self.assertEqual(staticdata.itemName(-1), "{Failed to load}")
 
 
 if __name__ == "__main__":

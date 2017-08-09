@@ -70,14 +70,14 @@ class TestAPI(unittest.TestCase):
         self.assertRegexpMatches(api.zbot(54520379), self.zbot_regex)
 
     def test_zbot_invalidid(self):
-        self.assertEquals(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
+        self.assertEqual(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
 
     @mock.patch("vmbot.helpers.api.request_rest", side_effect=APIError("TestException"))
     def test_zbot_APIError(self, mock_rest):
-        self.assertEquals(api.zbot("54520379"), "TestException")
+        self.assertEqual(api.zbot("54520379"), "TestException")
 
     def test_get_ref_types(self):
-        self.assertEquals(api.get_ref_types()[85], "Bounty Prizes")
+        self.assertEqual(api.get_ref_types()[85], "Bounty Prizes")
 
     def test_request_rest(self):
         test_url = "https://crest-tq.eveonline.com/"
