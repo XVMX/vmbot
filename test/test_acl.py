@@ -5,6 +5,8 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
+from xmpp.protocol import JID, Message
+
 from vmbot.helpers.decorators import requires_dir, requires_admin, requires_dir_chat
 
 
@@ -19,22 +21,11 @@ def admin_acl(self, mess, args):
     return True
 
 
-class Message(object):
-    def __init__(self, val):
-        self.val = val
-
-    def getFrom(self):
-        return self
-
-    def getStripped(self):
-        return self.val
-
-
 @mock.patch("config.DIRECTORS", ("Dir1",))
 @mock.patch("config.ADMINS", ("Admin1",))
 @mock.patch.dict("config.JABBER", {'director_chatrooms': ("DirRoom1",)})
 class TestACL(unittest.TestCase):
-    default_mess = Message("DirRoom1")
+    default_mess = Message(frm=JID("DirRoom1"))
     default_args = ""
 
     def setUp(self):
@@ -66,7 +57,7 @@ class TestACL(unittest.TestCase):
         self.assertTrue(dir_acl(self, self.default_mess, self.default_args))
 
     def test_requires_dir_chat_denied(self):
-        self.assertIsNone(dir_acl(self, Message("TestArg"), self.default_args))
+        self.assertIsNone(dir_acl(self, Message(frm=JID("TestArg")), self.default_args))
 
 
 if __name__ == "__main__":
