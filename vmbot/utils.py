@@ -240,8 +240,7 @@ class EVEUtils(object):
             j = max(0, j - 1)
             k = min(len(date_hist), k + 1)
 
-            allyIDs = [rec['alliance']['alliance_id']
-                       for rec in hist[j:k] if 'alliance' in rec]
+            allyIDs = [rec['alliance_id'] for rec in hist[j:k] if 'alliance_id' in rec]
             ally_tickers = {_id: api.get_tickers(None, _id)[1] for _id in set(allyIDs)}
             corp_history[i]['alliances'] = [ally_tickers[_id] for _id in allyIDs]
 
