@@ -227,7 +227,7 @@ class EVEUtils(object):
                          for ally in hist]
             start_date = datetime.strptime(record['startDate'], "%Y-%m-%d %H:%M:%S")
             end_date = (datetime.strptime(record['endDate'], "%Y-%m-%d %H:%M:%S")
-                        if record['endDate'] is not None else datetime.now())
+                        if record['endDate'] is not None else datetime.utcnow())
 
             j, k = 0, len(date_hist) - 1
             while j <= k:
