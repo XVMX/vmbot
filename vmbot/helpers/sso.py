@@ -22,7 +22,7 @@ class SSOToken(object):
         self._expiry = datetime.utcnow() + timedelta(seconds=expires_in)
         self._refresh_token = refresh_token
 
-        res = self.request_crest("https://login.eveonline.com/oauth/verify")
+        res = self.request_crest(config.SSO['base_url'] + "/oauth/verify")
         self.scopes = res['Scopes'].split()
 
     @classmethod
@@ -63,7 +63,7 @@ class SSOToken(object):
 
     @staticmethod
     def _request_grant(token, type_="authorization_code"):
-        url = "https://login.eveonline.com/oauth/token"
+        url = config.SSO['base_url'] + "/oauth/token"
         headers = {'Authorization': "Basic " + _SSO_B64}
         payload = {'grant_type': type_}
         if type_ == "authorization_code":

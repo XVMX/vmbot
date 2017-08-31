@@ -45,10 +45,21 @@ JABBER = {
 # Bot owner's corporationID
 CORPORATION_ID = 1234567890
 
-# EVE SSO credentials
+# ESI
+# Data sources: tranquility, singularity
+# Languages: en-us, de, fr, ja, ru, zh
+ESI = {
+    'base_url': "https://esi.tech.ccp.is",
+    'datasource': "tranquility",
+    'lang': "en-us"
+}
+
+# EVE SSO
+# Base URLs: https://login.eveonline.com (TQ), https://sisilogin.testeveonline.com (Sisi)
 # Required scopes: characterNotificationsRead, corporationWalletRead,
 #                  corporationAssetsRead, corporationStructuresRead
 SSO = {
+    'base_url': "https://login.eveonline.com",
     'client_id': "",
     'client_secret': "",
     'refresh_token': ""
