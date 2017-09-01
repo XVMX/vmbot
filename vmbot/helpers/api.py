@@ -14,6 +14,8 @@ from . import staticdata
 from .format import format_tickers
 from ..models import ISK
 
+import config
+
 
 def get_tickers(corporationID, allianceID):
     """Resolve corporationID/allianceID to their respective ticker(s)."""
@@ -95,6 +97,15 @@ def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
 
     session.close()
     return json.loads(res.decode("utf-8"))
+
+
+def request_esi(url, params=None, headers=None, timeout=3, method="GET"):
+    if params is None:
+        params = {}
+    params['datasource'] = config.ESI['datasource']
+    params['language'] = config.ESI['lang']
+
+    return request_rest(url, params, headers, timeout, method)
 
 
 def request_xml(url, params=None, headers=None, timeout=3, method="POST"):

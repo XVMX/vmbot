@@ -22,7 +22,8 @@ class SSOToken(object):
         self._expiry = datetime.utcnow() + timedelta(seconds=expires_in)
         self._refresh_token = refresh_token
 
-        res = self.request_crest(config.SSO['base_url'] + "/oauth/verify")
+        # See https://github.com/ccpgames/esi-issues/issues/198#issuecomment-318818318
+        res = self.request_esi(config.ESI['base_url'] + "/verify/")
         self.scopes = res['Scopes'].split()
 
     @classmethod
@@ -49,6 +50,12 @@ class SSOToken(object):
         self._access_token = res['access_token']
         self._type = res['token_type']
         self._expiry = datetime.utcnow() + timedelta(seconds=res['expires_in'])
+
+    def request_esi(self, url, params=None, headers=None, timeout=3, method="GET"):
+        if headers is None:
+            headers = {}
+        headers['Authorization'] = self._type + ' ' + self.access_token
+        return api.request_esi(url, params, headers, timeout, method)
 
     def request_crest(self, url, params=None, timeout=3, method="GET"):
         headers = {'Authorization': self._type + ' ' + self.access_token}
