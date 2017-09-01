@@ -23,9 +23,11 @@ import config
 if __name__ == "__main__":
     logger = logging.getLogger("vmbot")
     logger.setLevel(logging.DEBUG)
+
     handler = TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
                                        backupCount=3, encoding="utf-8")
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
+                                           "%Y-%m-%d %H:%M:%S"))
     handler.setLevel(config.LOGLEVEL)
     logger.addHandler(handler)
 

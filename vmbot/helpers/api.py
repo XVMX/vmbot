@@ -2,8 +2,10 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+import urlparse
 import json
 import xml.etree.ElementTree as ET
+import logging
 
 import requests
 
@@ -105,7 +107,31 @@ def request_esi(url, params=None, headers=None, timeout=3, method="GET"):
     params['datasource'] = config.ESI['datasource']
     params['language'] = config.ESI['lang']
 
-    return request_rest(url, params, headers, timeout, method)
+    session = db.Session()
+    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
+
+    if res is None:
+        r = request_api(url, params, headers, timeout, method)
+        res = r.content
+
+        if 'warning' in r.headers:
+            # Versioned endpoint is outdated (199) or deprecated (299)
+            kw = "outdated" if r.headers['warning'][:3] == "199" else "deprecated"
+            route = urlparse.urlparse(url).path
+
+            warn = 'Route "{}" is {}'.format(route, kw)
+            warn += "\nResponse header: warning: " + r.headers['warning']
+            logging.getLogger(__name__ + ".esi").warning(warn)
+
+        try:
+            expiry = parse_http_cache(r.headers)
+        except NoCacheError:
+            pass
+        else:
+            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
+
+    session.close()
+    return json.loads(res.decode("utf-8"))
 
 
 def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
