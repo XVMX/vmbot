@@ -2,10 +2,10 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-import urlparse
 import json
 import xml.etree.ElementTree as ET
 import logging
+import traceback
 
 import requests
 
@@ -101,7 +101,9 @@ def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
     return json.loads(res.decode("utf-8"))
 
 
-def request_esi(url, params=None, headers=None, timeout=3, method="GET"):
+def request_esi(route, fmt=(), params=None, headers=None, timeout=3, method="GET"):
+    url = (config.ESI['base_url'] if route.startswith('/') else "") + route.format(*fmt)
+
     if params is None:
         params = {}
     params['datasource'] = config.ESI['datasource']
@@ -117,11 +119,12 @@ def request_esi(url, params=None, headers=None, timeout=3, method="GET"):
         if 'warning' in r.headers:
             # Versioned endpoint is outdated (199) or deprecated (299)
             kw = "outdated" if r.headers['warning'][:3] == "199" else "deprecated"
-            route = urlparse.urlparse(url).path
+            trace = "".join(traceback.format_stack(limit=3)[:-1])
 
             warn = 'Route "{}" is {}'.format(route, kw)
             warn += "\nResponse header: warning: " + r.headers['warning']
-            logging.getLogger(__name__ + ".esi").warning(warn)
+            warn += "\nTraceback (most recent call last):\n" + trace
+            logging.getLogger(__name__ + ".esi").warning(warn, extra={'gh_labels': ["esi-warning"]})
 
         try:
             expiry = parse_http_cache(r.headers)
