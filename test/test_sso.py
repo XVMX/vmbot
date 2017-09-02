@@ -21,8 +21,8 @@ VERIFY_RES = {'Scopes': " "}
 
 
 class TestSSOToken(unittest.TestCase):
-    @mock.patch("vmbot.helpers.sso.SSOToken.request_crest", return_value=VERIFY_RES)
-    def setUp(self, mock_crest):
+    @mock.patch("vmbot.helpers.sso.SSOToken.request_esi", return_value=VERIFY_RES)
+    def setUp(self, mock_esi):
         self.token = SSOToken("test_token", "test", 1200, "test_refresh_token")
 
     def tearDown(self):
@@ -30,8 +30,8 @@ class TestSSOToken(unittest.TestCase):
 
     @mock.patch("vmbot.helpers.api.request_api", return_value=requests.Response())
     @mock.patch("requests.Response.json", return_value=GRANT_RES)
-    @mock.patch("vmbot.helpers.sso.SSOToken.request_crest", return_value=VERIFY_RES)
-    def test_factories(self, mock_crest, mock_json, mock_api):
+    @mock.patch("vmbot.helpers.sso.SSOToken.request_esi", return_value=VERIFY_RES)
+    def test_factories(self, mock_esi, mock_json, mock_api):
         self.assertIsInstance(SSOToken.from_authorization_code("abc123"), SSOToken)
         self.assertIsInstance(SSOToken.from_refresh_token("xyz789"), SSOToken)
 
@@ -46,9 +46,11 @@ class TestSSOToken(unittest.TestCase):
         with self.assertRaises(TokenExpiredError):
             self.token.access_token
 
+    @mock.patch("vmbot.helpers.api.request_esi", return_value={'res': True})
     @mock.patch("vmbot.helpers.api.request_rest", return_value={'res': True})
     @mock.patch("vmbot.helpers.api.request_xml", return_value=ET.Element("res"))
-    def test_token_request(self, mock_xml, mock_rest):
+    def test_token_request(self, mock_xml, mock_rest, mock_esi):
+        self.assertDictEqual(self.token.request_esi("TestURL"), {'res': True})
         self.assertDictEqual(self.token.request_crest("TestURL"), {'res': True})
         self.assertIsInstance(self.token.request_xml("TestURL"), ET.Element)
 
