@@ -6,7 +6,9 @@ import unittest
 import mock
 
 import os
+import StringIO
 import xml.etree.ElementTree as ET
+import logging
 
 import requests
 
@@ -22,6 +24,16 @@ def flawed_response(*args, **kwargs):
     res = requests.Response()
     res.status_code = 404
     res._content = b"ASCII text"
+    res.encoding = "ascii"
+    return res
+
+
+def esi_warning_response(*args, **kwargs):
+    """Return a requests.Response with a deprecation warning header."""
+    res = requests.Response()
+    res.status_code = 200
+    res.headers['warning'] = "299 - This endpoint is deprecated."
+    res._content = b'{"res": true}'
     res.encoding = "ascii"
     return res
 
@@ -93,6 +105,33 @@ class TestAPI(unittest.TestCase):
 
         # Test cached response
         self.assertDictEqual(api.request_rest(test_url), res_cache)
+
+    def test_request_esi(self):
+        test_route = "/v1/status/"
+
+        # Test without cache
+        with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
+            res_nocache = api.request_esi(test_route)
+            self.assertIsInstance(res_nocache, dict)
+
+        # Test with cache
+        res_cache = api.request_esi(test_route)
+        self.assertIsInstance(res_cache, dict)
+
+        # Test cached response
+        self.assertDictEqual(api.request_esi(test_route), res_cache)
+
+    @mock.patch("vmbot.helpers.api.request_api", side_effect=esi_warning_response)
+    def test_request_esi_warning(self, mock_esi):
+        log = StringIO.StringIO()
+        handler = logging.StreamHandler(log)
+        logger = logging.getLogger("vmbot.helpers.api.esi")
+        logger.addHandler(handler)
+
+        self.assertDictEqual(api.request_esi("TestURL"), {'res': True})
+        self.assertTrue(log.getvalue().startswith('Route "TestURL" is deprecated'))
+
+        logger.removeHandler(handler)
 
     def test_request_xml(self):
         test_url = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
