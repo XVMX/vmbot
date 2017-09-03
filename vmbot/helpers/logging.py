@@ -34,7 +34,7 @@ class GitHubIssueHandler(logging.Handler):
                 r = requests.get(r.links['next']['url'], headers=self.headers)
                 r.raise_for_status()
                 issues.extend(i['title'] for i in r.json())
-        except requests.exceptions.RequestException:
+        except requests.RequestException:
             pass
 
         self.known_issues.update(issues)
@@ -57,7 +57,7 @@ class GitHubIssueHandler(logging.Handler):
 
         try:
             r = requests.post(self.url, json=payload, auth=self.auth, headers=self.headers)
-        except requests.exceptions.RequestException:
+        except requests.RequestException:
             self.handleError(record)
         else:
             if r.status_code == 201:

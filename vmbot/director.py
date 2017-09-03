@@ -55,7 +55,7 @@ class Director(object):
 
         try:
             r = requests.post(config.BCAST['url'], data=result, headers=headers, timeout=5)
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             raise APIError("Error while connecting to Broadcast-API: {}".format(e))
 
         if r.status_code != 200:

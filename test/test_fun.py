@@ -42,7 +42,7 @@ class TestFun(unittest.TestCase):
 
         try:
             r = requests.get(quote_url, timeout=5)
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             self.skipTest("Error while connecting to http://bash.org in test_rtq: {}".format(e))
         soup = BeautifulSoup(r.text, "html.parser")
 
@@ -55,7 +55,7 @@ class TestFun(unittest.TestCase):
 
         self.assertEqual(res, "{} ({:+})\n{}".format(quote_url, quote_rating, quote))
 
-    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
+    @mock.patch("requests.get", side_effect=requests.RequestException)
     def test_rtq_RequestException(self, mock_requests):
         self.assertRegexpMatches(self.fun.rtq(self.default_mess, self.default_args),
                                  "Error while connecting to http://bash.org: .*")
@@ -75,7 +75,7 @@ class TestFun(unittest.TestCase):
 
         try:
             comic = requests.get(comic_url + "info.0.json", timeout=5).json()
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             self.skipTest("Error while connecting to https://xkcd.com in test_rtxkcd: {}".format(e))
         except ValueError:
             self.skipTest("Failed to load xkcd from {} in test_rtxkcd".format(comic_url))
@@ -93,7 +93,7 @@ class TestFun(unittest.TestCase):
             requests_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
-            except requests.exceptions.RequestException as e:
+            except requests.RequestException as e:
                 self.skipTest(
                     "Error while emulating request in test_rtxkcd_RequestException: {}".format(e)
                 )
@@ -101,8 +101,7 @@ class TestFun(unittest.TestCase):
             return r
 
         # Exception at first request
-        requests_patcher = mock.patch("requests.get",
-                                      side_effect=requests.exceptions.RequestException(desc))
+        requests_patcher = mock.patch("requests.get", side_effect=requests.RequestException(desc))
         mock_requests = requests_patcher.start()
 
         self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), exception_text)
@@ -120,7 +119,7 @@ class TestFun(unittest.TestCase):
             requests_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
-            except requests.exceptions.RequestException as e:
+            except requests.RequestException as e:
                 self.skipTest(
                     "Error while emulating request in test_rtxkcd_flawedresponse: {}".format(e)
                 )
@@ -162,7 +161,7 @@ class TestFun(unittest.TestCase):
         self.assertEqual(self.fun.urban(self.default_mess, "API"),
                          'Failed to find any definitions for "API"')
 
-    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException)
+    @mock.patch("requests.get", side_effect=requests.RequestException)
     def test_urban_RequestException(self, mock_requests):
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
                                  "Error while connecting to https://www.urbandictionary.com: .*")

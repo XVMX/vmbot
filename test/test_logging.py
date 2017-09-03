@@ -37,7 +37,7 @@ class TestGitHubIssueHandler(unittest.TestCase):
         self.handler.known_issues.add("TestTitle")
         self.assertTrue(self.handler._detect_duplicate("TestTitle"))
 
-    @mock.patch("requests.get", side_effect=requests.exceptions.RequestException("TestException"))
+    @mock.patch("requests.get", side_effect=requests.RequestException)
     def test_detect_duplicate_RequestException(self, mock_requests):
         self.assertFalse(self.handler._detect_duplicate("TestTitle"))
 
@@ -60,7 +60,7 @@ class TestGitHubIssueHandler(unittest.TestCase):
         self.handler.emit(rec)
         mock_handler.assert_called()
 
-    @mock.patch("requests.post", side_effect=requests.exceptions.RequestException("TestException"))
+    @mock.patch("requests.post", side_effect=requests.RequestException)
     @mock.patch("logging.Handler.handleError")
     def test_emit_RequestException(self, mock_handler, mock_requests):
         rec = logging.makeLogRecord({'msg': "TestTitle"})

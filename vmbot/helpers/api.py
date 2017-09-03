@@ -168,7 +168,7 @@ def request_api(url, params=None, headers=None, timeout=3, method="GET"):
             r = requests.request(method, url, params=params, headers=headers, timeout=timeout)
         else:
             r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
-    except requests.exceptions.RequestException as e:
+    except requests.RequestException as e:
         raise APIError("Error while connecting to API: {}".format(e))
     if r.status_code != 200:
         raise APIError("API returned error code {}".format(r.status_code))

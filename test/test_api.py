@@ -148,8 +148,7 @@ class TestAPI(unittest.TestCase):
         # Test cached response
         self.assertEqual(ET.tostring(api.request_xml(test_url)), ET.tostring(res_cache))
 
-    @mock.patch("requests.request",
-                side_effect=requests.exceptions.RequestException("TestException"))
+    @mock.patch("requests.request", side_effect=requests.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):
         self.assertRaisesRegexp(APIError, "Error while connecting to API: TestException",
                                 api.request_api, "TestURL")
