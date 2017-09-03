@@ -9,7 +9,7 @@ import traceback
 
 import requests
 
-from .exceptions import NoCacheError, APIError
+from .exceptions import NoCacheError, APIError, APIStatusError, APIRequestError
 from . import database as db
 from ..models.cache import parse_http_cache, parse_xml_cache, HTTPCacheObject
 from . import staticdata
@@ -168,9 +168,10 @@ def request_api(url, params=None, headers=None, timeout=3, method="GET"):
             r = requests.request(method, url, params=params, headers=headers, timeout=timeout)
         else:
             r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        raise APIStatusError("API returned error code {}".format(e.response.status_code))
     except requests.RequestException as e:
-        raise APIError("Error while connecting to API: {}".format(e))
-    if r.status_code != 200:
-        raise APIError("API returned error code {}".format(r.status_code))
+        raise APIRequestError("Error while connecting to API: {}".format(e))
 
     return r

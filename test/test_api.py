@@ -13,7 +13,7 @@ import logging
 import requests
 
 from vmbot.helpers.files import BOT_DB
-from vmbot.helpers.exceptions import APIError, NoCacheError
+from vmbot.helpers.exceptions import APIError, APIStatusError, APIRequestError, NoCacheError
 import vmbot.helpers.database as db
 
 from vmbot.helpers import api
@@ -150,12 +150,13 @@ class TestAPI(unittest.TestCase):
 
     @mock.patch("requests.request", side_effect=requests.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "Error while connecting to API: TestException",
+        self.assertRaisesRegexp(APIRequestError, "Error while connecting to API: TestException",
                                 api.request_api, "TestURL")
 
     @mock.patch("requests.request", side_effect=flawed_response)
     def test_request_api_flawedresponse(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "API returned error code 404", api.request_api, "TestURL")
+        self.assertRaisesRegexp(APIStatusError, "API returned error code 404",
+                                api.request_api, "TestURL")
 
 
 if __name__ == "__main__":

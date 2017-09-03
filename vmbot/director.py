@@ -55,12 +55,13 @@ class Director(object):
 
         try:
             r = requests.post(config.BCAST['url'], data=result, headers=headers, timeout=5)
-        except requests.RequestException as e:
-            raise APIError("Error while connecting to Broadcast-API: {}".format(e))
-
-        if r.status_code != 200:
+            r.raise_for_status()
+        except requests.HTTPError as e:
+            r = e.response
             res = ET.fromstring(r.content).find(".//response").text
             raise APIError("Broadcast-API returned error code {}: {}".format(r.status_code, res))
+        except requests.RequestException as e:
+            raise APIError("Error while connecting to Broadcast-API: {}".format(e))
 
     @botcmd
     @requires_dir_chat
