@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import re
 import json
 
+import requests
+
 from ..helpers.exceptions import NoCacheError
 from ..helpers import database as db
 
@@ -83,3 +85,23 @@ class HTTPCacheObject(BaseCacheObject):
         url += json.dumps(params) if params else ""
         url += json.dumps(headers) if headers else ""
         return super(HTTPCacheObject, cls).get(session, url)
+
+
+class ESICacheObject(HTTPCacheObject):
+    """Cache an ESI response."""
+
+    def __init__(self, url, r, expiry=None, params=None, headers=None):
+        doc = json.dumps(dict(r.headers)) + b'\0' + r.content
+        super(ESICacheObject, self).__init__(url, doc, expiry, params, headers)
+
+    @classmethod
+    def get(cls, session, url, params=None, headers=None):
+        """Load cached ESI response from the database."""
+        doc = super(ESICacheObject, cls).get(session, url, params, headers)
+        if doc is None:
+            return None
+
+        r = requests.Response()
+        head, r._content = doc.split(b'\0', 1)
+        r.headers.update(json.loads(head))
+        return r

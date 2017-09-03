@@ -51,11 +51,12 @@ class SSOToken(object):
         self._type = res['token_type']
         self._expiry = datetime.utcnow() + timedelta(seconds=res['expires_in'])
 
-    def request_esi(self, route, fmt=(), params=None, headers=None, timeout=3, method="GET"):
+    def request_esi(self, route, fmt=(), params=None, headers=None,
+                    timeout=3, method="GET", with_head=False):
         if headers is None:
             headers = {}
         headers['Authorization'] = self._type + ' ' + self.access_token
-        return api.request_esi(route, fmt, params, headers, timeout, method)
+        return api.request_esi(route, fmt, params, headers, timeout, method, with_head)
 
     def request_crest(self, url, params=None, timeout=3, method="GET"):
         headers = {'Authorization': self._type + ' ' + self.access_token}

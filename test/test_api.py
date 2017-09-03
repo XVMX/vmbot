@@ -115,11 +115,13 @@ class TestAPI(unittest.TestCase):
             self.assertIsInstance(res_nocache, dict)
 
         # Test with cache
-        res_cache = api.request_esi(test_route)
-        self.assertIsInstance(res_cache, dict)
+        res, res_head = api.request_esi(test_route, with_head=True)
+        self.assertIsInstance(res, dict)
 
         # Test cached response
-        self.assertDictEqual(api.request_esi(test_route), res_cache)
+        res_cache, res_cache_head = api.request_esi(test_route, with_head=True)
+        self.assertDictEqual(res_cache, res)
+        self.assertDictEqual(dict(res_cache_head), dict(res_head))
 
     @mock.patch("vmbot.helpers.api.request_api", side_effect=esi_warning_response)
     def test_request_esi_warning(self, mock_esi):
