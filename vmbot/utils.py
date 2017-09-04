@@ -9,7 +9,7 @@ import sqlite3
 
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
-from .helpers.exceptions import APIError
+from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
 from .helpers.format import format_affil, format_tickers, disambiguate
 
@@ -267,16 +267,16 @@ class EVEUtils(object):
         reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(datetime.utcnow())
 
         try:
-            xml = api.request_xml("https://api.eveonline.com/server/ServerStatus.xml.aspx")
+            stat = api.request_esi("/v1/status/")
+        except APIStatusError:
+            reply += ". The server is offline."
         except APIError:
             pass
         else:
-            if xml.find("serverOpen").text == "True":
-                reply += ". The server is online and {:,} players are playing.".format(
-                    int(xml.find("onlinePlayers").text)
-                )
-            else:
-                reply += ". The server is offline."
+            reply += ". The server is online"
+            if stat.get('vip', False):
+                reply += " (VIP mode)"
+            reply += " and {:,} players are playing.".format(stat['players'])
 
         return reply
 
