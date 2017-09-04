@@ -18,35 +18,40 @@ import config
 
 class Price(object):
     @staticmethod
-    def _get_market_orders(region, system, item):
+    def _get_market_orders(regionID, systemID, typeID):
         """Collect buy and sell order stats for item in system.
 
-        Empty system name means data for all systems in region is collected.
+        If systemID is None, data for all systems in region will be collected.
         Output format: ((sell_price, sell_volume), (buy_price, buy_volume))
         """
-        url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
-        type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
+        # Get valid locations
+        locs = set()
+        if systemID is not None:
+            sys = api.request_esi("/v3/universe/systems/{}/", (systemID,))
+            locs.update(sys.get('stations', []))
 
-        orders = []
-        res = api.request_rest(url, params={'type': type_}, timeout=5)
-        orders.extend(order for order in res['items']
-                      if order['location']['name'].startswith(system))
+        # Collect matching orders
+        params = {'page': 1, 'type_id': typeID}
+        res, head = api.request_esi("/v1/markets/{}/orders/", (regionID,),
+                                    params=params, with_head=True)
+        orders = [o for o in res if systemID is None or o['location_id'] in locs]
+        max_page = int(head.get('X-Pages', 1))
 
-        while 'next' in res:
-            res = api.request_rest(res['next']['href'], timeout=5)
-            orders.extend(order for order in res['items']
-                          if order['location']['name'].startswith(system))
+        while params['page'] < max_page:
+            params['page'] += 1
+            res = api.request_esi("/v1/markets/{}/orders/", (regionID,), params=params)
+            orders.extend(o for o in res if systemID is None or o['location_id'] in locs)
 
         sell = {'volume': 0, 'price': None}
         buy = {'volume': 0, 'price': None}
 
         for order in orders:
-            if order['buy']:
-                buy['volume'] += order['volume']
+            if order['is_buy_order']:
+                buy['volume'] += order['volume_remain']
                 if buy['price'] is None or order['price'] > buy['price']:
                     buy['price'] = order['price']
             else:
-                sell['volume'] += order['volume']
+                sell['volume'] += order['volume_remain']
                 if sell['price'] is None or order['price'] < sell['price']:
                     sell['price'] = order['price']
 
@@ -77,7 +82,7 @@ class Price(object):
 
         # Sort by length of name so that the most similar system is first
         systems = conn.execute(
-            """SELECT regionID, solarSystemName
+            """SELECT regionID, solarSystemID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name
                ORDER BY LENGTH(solarSystemName) ASC;""",
@@ -103,15 +108,14 @@ class Price(object):
 
         typeID, typeName = items.pop(0)
         if region:
-            # Empty systemName matches every system in Price._get_market_orders
+            # Price._get_market_orders returns regional data if systemID is None
             regionID, market_name = region
-            systemName = ""
+            systemID = None
         else:
-            regionID, systemName = systems.pop(0)
-            market_name = systemName
+            regionID, systemID, market_name = systems.pop(0)
 
         try:
-            orders = self._get_market_orders(regionID, systemName, typeID)
+            orders = self._get_market_orders(regionID, systemID, typeID)
         except APIError as e:
             return unicode(e)
 
@@ -131,8 +135,8 @@ class Price(object):
 
         if items:
             reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) == 2 and systems and systemName:
-            reply += "<br />" + disambiguate(args[1], zip(*systems)[1], "systems")
+        if len(args) == 2 and systems and systemID:
+            reply += "<br />" + disambiguate(args[1], zip(*systems)[2], "systems")
 
         return reply
 
