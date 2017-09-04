@@ -25,24 +25,22 @@ def get_tickers(corporationID, allianceID):
     if corporationID:
         corp_ticker = "ERROR"
         try:
-            xml = request_xml("https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
-                              params={'corporationID': corporationID})
-
-            corp_ticker = xml.find("ticker").text
-            if allianceID is None:
-                allianceID = int(xml.find("allianceID").text) or None
-        except (APIError, AttributeError):
+            corp = request_esi("/v3/corporations/{}/", (corporationID,))
+        except APIError:
             pass
+        else:
+            corp_ticker = corp['ticker']
+            allianceID = allianceID or corp.get('alliance_id', None)
 
     alliance_ticker = None
     if allianceID:
         alliance_ticker = "ERROR"
         try:
-            alliance_ticker = request_xml(
-                "https://api.eveonline.com/eve/AllianceList.xml.aspx", params={'version': 1}
-            ).find("rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
-        except (APIError, AttributeError):
+            ally = request_esi("/v2/alliances/{}/", (allianceID,))
+        except APIError:
             pass
+        else:
+            alliance_ticker = ally['ticker']
 
     return corp_ticker, alliance_ticker
 
