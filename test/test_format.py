@@ -31,6 +31,9 @@ class TestFormat(unittest.TestCase):
     def test_format_tickers(self):
         self.assertEqual(format_tickers("CORP", "ALLIANCE"), "[CORP] <ALLIANCE>")
 
+    def test_format_tickers_html(self):
+        self.assertEqual(format_tickers("CORP", "ALLIANCE", html=True), "[CORP] &lt;ALLIANCE&gt;")
+
     def test_disambiguate_simple(self):
         self.assertEqual(
             disambiguate("Default", ["Test1", "Test2"], "Cat"),

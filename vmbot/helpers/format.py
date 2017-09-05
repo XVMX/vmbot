@@ -26,16 +26,17 @@ def format_affil(characterName, corporationName, allianceName,
     return reply
 
 
-def format_tickers(corporation_ticker, alliance_ticker):
+def format_tickers(corp_ticker, alliance_ticker, html=False):
     """Format ticker(s) like the default EVE client does."""
     tickers = []
 
-    if corporation_ticker:
-        tickers.append("[{}]".format(corporation_ticker))
+    if corp_ticker:
+        tickers.append("[{}]".format(corp_ticker))
     if alliance_ticker:
         tickers.append("<{}>".format(alliance_ticker))
 
-    return ' '.join(tickers)
+    esc = cgi.escape if html else lambda x: x
+    return esc(' '.join(tickers))
 
 
 def disambiguate(given, like, category):
