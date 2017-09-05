@@ -5,23 +5,23 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import cgi
 
 
-def format_affil(characterName, corporationName, allianceName,
-                 factionName, corp_ticker, alliance_ticker):
+def format_affil(char_name, sec_status, corp_name, ally_name,
+                 fac_name, corp_ticker, alliance_ticker):
     """Represent character or structure data in a common format."""
-    reply = ("<strong>{}</strong> is part of ".format(characterName)
-             if characterName else "The structure is owned by ")
+    reply = ("<strong>{} ({:+.2f})</strong> is part of ".format(char_name, sec_status)
+             if char_name else "The structure is owned by ")
 
     reply += "corporation <strong>{} {}</strong>".format(
-            corporationName, cgi.escape(format_tickers(corp_ticker, None))
+            corp_name, format_tickers(corp_ticker, None, html=True)
     )
 
-    if allianceName:
+    if ally_name:
         reply += " in <strong>{} {}</strong>".format(
-            allianceName, cgi.escape(format_tickers(None, alliance_ticker))
+            ally_name, format_tickers(None, alliance_ticker, html=True)
         )
 
-    if factionName:
-        reply += " which is part of the <strong>{}</strong>".format(factionName)
+    if fac_name:
+        reply += " which is part of the <strong>{}</strong>".format(fac_name)
 
     return reply
 

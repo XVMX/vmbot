@@ -10,7 +10,7 @@ from vmbot.helpers.format import format_affil, format_tickers, disambiguate
 class TestFormat(unittest.TestCase):
     _base_affil_template = (" corporation <strong>{} [{}]</strong> in <strong>{} "
                             "&lt;{}&gt;</strong> which is part of the <strong>{}</strong>")
-    char_affil_template = "<strong>{}</strong> is part of" + _base_affil_template
+    char_affil_template = "<strong>{} ({:+.2f})</strong> is part of" + _base_affil_template
     structure_affil_template = "The structure is owned by" + _base_affil_template
 
     simple_disambiguate_template = 'Other {} like "{}": {}'
@@ -18,13 +18,13 @@ class TestFormat(unittest.TestCase):
 
     def test_format_character(self):
         self.assertEqual(
-            format_affil("A", "B", "C", "D", "E", "F"),
-            self.char_affil_template.format("A", "B", "E", "C", "F", "D")
+            format_affil("A", 2.3, "B", "C", "D", "E", "F"),
+            self.char_affil_template.format("A", 2.3, "B", "E", "C", "F", "D")
         )
 
     def test_format_structure(self):
         self.assertEqual(
-            format_affil("", "B", "C", "D", "E", "F"),
+            format_affil("", None, "B", "C", "D", "E", "F"),
             self.structure_affil_template.format("B", "E", "C", "F", "D")
         )
 
