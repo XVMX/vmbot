@@ -58,10 +58,6 @@ class SSOToken(object):
         headers['Authorization'] = self._type + ' ' + self.access_token
         return api.request_esi(route, fmt, params, headers, timeout, method, with_head)
 
-    def request_crest(self, url, params=None, timeout=3, method="GET"):
-        headers = {'Authorization': self._type + ' ' + self.access_token}
-        return api.request_rest(url, params, headers, timeout, method)
-
     def request_xml(self, url, params=None, timeout=3, method="POST"):
         # Docs: https://community.eveonline.com/news/patch-notes/patch-notes-for-eve-online-citadel
         if params is None:
