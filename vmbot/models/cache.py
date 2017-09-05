@@ -71,18 +71,20 @@ class BaseCacheObject(db.Model):
 
 
 class HTTPCacheObject(BaseCacheObject):
-    """Cache an HTTP response using URL, parameters, and headers as key."""
+    """Cache an HTTP response using URL, parameters, body, and headers as key."""
 
-    def __init__(self, url, doc, expiry=None, params=None, headers=None):
+    def __init__(self, url, doc, expiry=None, params=None, data=None, headers=None):
         url += json.dumps(params) if params else ""
+        url += json.dumps(data) if data else ""
         url += json.dumps(headers) if headers else ""
         expiry = expiry or datetime.utcnow() + timedelta(hours=1)
         super(HTTPCacheObject, self).__init__(url, doc, expiry)
 
     @classmethod
-    def get(cls, session, url, params=None, headers=None):
+    def get(cls, session, url, params=None, data=None, headers=None):
         """Load cached HTTP response from the database."""
         url += json.dumps(params) if params else ""
+        url += json.dumps(data) if data else ""
         url += json.dumps(headers) if headers else ""
         return super(HTTPCacheObject, cls).get(session, url)
 
@@ -90,14 +92,14 @@ class HTTPCacheObject(BaseCacheObject):
 class ESICacheObject(HTTPCacheObject):
     """Cache an ESI response."""
 
-    def __init__(self, url, r, expiry=None, params=None, headers=None):
+    def __init__(self, url, r, expiry=None, params=None, data=None, headers=None):
         doc = json.dumps(dict(r.headers)) + b'\0' + r.content
-        super(ESICacheObject, self).__init__(url, doc, expiry, params, headers)
+        super(ESICacheObject, self).__init__(url, doc, expiry, params, data, headers)
 
     @classmethod
-    def get(cls, session, url, params=None, headers=None):
+    def get(cls, session, url, params=None, data=None, headers=None):
         """Load cached ESI response from the database."""
-        doc = super(ESICacheObject, cls).get(session, url, params, headers)
+        doc = super(ESICacheObject, cls).get(session, url, params, data, headers)
         if doc is None:
             return None
 
