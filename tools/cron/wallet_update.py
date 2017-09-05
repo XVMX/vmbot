@@ -56,11 +56,11 @@ def get_entries(token, from_id=None, limit=2560):
     if "corporationWalletRead" not in token.scopes:
         return []
 
-    params = {'accessType': "corporation", 'accountKey': ACCOUNT_KEY, 'rowCount': limit}
+    payload = {'accessType': "corporation", 'accountKey': ACCOUNT_KEY, 'rowCount': limit}
     if from_id:
-        params['fromID'] = from_id
+        payload['fromID'] = from_id
     try:
-        xml = token.request_xml(WALLET_JOURNAL_URL, params=params)
+        xml = token.request_xml(WALLET_JOURNAL_URL, data=payload)
     except APIError:
         return []
 

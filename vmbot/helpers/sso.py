@@ -51,19 +51,19 @@ class SSOToken(object):
         self._type = res['token_type']
         self._expiry = datetime.utcnow() + timedelta(seconds=res['expires_in'])
 
-    def request_esi(self, route, fmt=(), params=None, headers=None,
+    def request_esi(self, route, fmt=(), params=None, data=None, headers=None,
                     timeout=3, method="GET", with_head=False):
         if headers is None:
             headers = {}
         headers['Authorization'] = self._type + ' ' + self.access_token
-        return api.request_esi(route, fmt, params, headers, timeout, method, with_head)
+        return api.request_esi(route, fmt, params, data, headers, timeout, method, with_head)
 
-    def request_xml(self, url, params=None, timeout=3, method="POST"):
+    def request_xml(self, url, params=None, data=None, timeout=3, method="POST"):
         # Docs: https://community.eveonline.com/news/patch-notes/patch-notes-for-eve-online-citadel
         if params is None:
             params = {}
         params['accessToken'] = self.access_token
-        return api.request_xml(url, params, None, timeout, method)
+        return api.request_xml(url, params, data, None, timeout, method)
 
     @staticmethod
     def _request_grant(token, type_="authorization_code"):

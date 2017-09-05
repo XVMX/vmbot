@@ -80,12 +80,12 @@ def zbot(killID):
     )
 
 
-def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
+def request_rest(url, params=None, data=None, headers=None, timeout=3, method="GET"):
     session = db.Session()
-    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
+    res = HTTPCacheObject.get(session, url, params=params, data=data, headers=headers)
 
     if res is None:
-        r = request_api(url, params, headers, timeout, method)
+        r = request_api(url, params, data, headers, timeout, method)
         res = r.content
 
         try:
@@ -93,13 +93,15 @@ def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
+            HTTPCacheObject(url, r.content, expiry, params=params,
+                            data=data, headers=headers).save(session)
 
     session.close()
     return json.loads(res.decode("utf-8"))
 
 
-def request_esi(route, fmt=(), params=None, headers=None, timeout=3, method="GET", with_head=False):
+def request_esi(route, fmt=(), params=None, data=None, headers=None,
+                timeout=3, method="GET", with_head=False):
     url = (config.ESI['base_url'] if route.startswith('/') else "") + route.format(*fmt)
 
     if params is None:
@@ -108,10 +110,10 @@ def request_esi(route, fmt=(), params=None, headers=None, timeout=3, method="GET
     params['language'] = config.ESI['lang']
 
     session = db.Session()
-    r = ESICacheObject.get(session, url, params=params, headers=headers)
+    r = ESICacheObject.get(session, url, params=params, data=data, headers=headers)
 
     if r is None:
-        r = request_api(url, params, headers, timeout, method)
+        r = request_api(url, params, data, headers, timeout, method)
 
         if 'warning' in r.headers:
             # Versioned endpoint is outdated (199) or deprecated (299)
@@ -128,7 +130,7 @@ def request_esi(route, fmt=(), params=None, headers=None, timeout=3, method="GET
         except NoCacheError:
             pass
         else:
-            ESICacheObject(url, r, expiry, params=params, headers=headers).save(session)
+            ESICacheObject(url, r, expiry, params=params, data=data, headers=headers).save(session)
 
     session.close()
     if with_head:
@@ -136,12 +138,12 @@ def request_esi(route, fmt=(), params=None, headers=None, timeout=3, method="GET
     return r.json()
 
 
-def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
+def request_xml(url, params=None, data=None, headers=None, timeout=3, method="POST"):
     session = db.Session()
-    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
+    res = HTTPCacheObject.get(session, url, params=params, data=data, headers=headers)
 
     if res is None:
-        r = request_api(url, params, headers, timeout, method)
+        r = request_api(url, params, data, headers, timeout, method)
         res = ET.fromstring(r.content)
 
         try:
@@ -149,7 +151,8 @@ def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
+            HTTPCacheObject(url, r.content, expiry, params=params,
+                            data=data, headers=headers).save(session)
     else:
         res = ET.fromstring(res)
 
@@ -157,16 +160,14 @@ def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
     return res.find("result")
 
 
-def request_api(url, params=None, headers=None, timeout=3, method="GET"):
+def request_api(url, params=None, data=None, headers=None, timeout=3, method="GET"):
     if headers is None:
         headers = {}
     headers['User-Agent'] = "XVMX JabberBot"
 
     try:
-        if method in ("GET", "HEAD"):
-            r = requests.request(method, url, params=params, headers=headers, timeout=timeout)
-        else:
-            r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
+        r = requests.request(method, url, params=params, data=data,
+                             headers=headers, timeout=timeout)
         r.raise_for_status()
     except requests.HTTPError as e:
         raise APIStatusError("API returned error code {}".format(e.response.status_code))
