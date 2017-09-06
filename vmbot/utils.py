@@ -2,15 +2,16 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-from datetime import datetime
-import cgi
+from datetime import datetime, timedelta
 import urllib
+import json
 import sqlite3
 
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
+from .helpers import staticdata
 from .helpers.format import format_affil, format_tickers, disambiguate
 
 import config
@@ -144,94 +145,81 @@ class Price(object):
 class EVEUtils(object):
     @botcmd
     def character(self, mess, args):
-        """<character>[, ...] - Employment information of character(s)"""
+        """<character> - Employment information for a single character"""
+        args = args.strip()
         if not args:
-            return "Please provide character name(s), separated by commas"
+            return "Please provide a character name"
 
-        args = [item.strip() for item in args.split(',')]
-        if len(args) > 10:
-            return "Please limit your search to 10 characters at once"
-
+        params = {'search': args, 'categories': "character", 'strict': "true"}
         try:
-            xml = api.request_xml("https://api.eveonline.com/eve/CharacterID.xml.aspx",
-                                  params={'names': ','.join(args)}).find("rowset")
+            res = api.request_esi("/v1/search/", params=params)
+            char_id = res['character'][0]
+        except APIError as e:
+            return unicode(e)
+        except KeyError:
+            return "This character doesn't exist"
+
+        # Load character data
+        try:
+            data = api.request_esi("/v4/characters/{}/", (char_id,))
         except APIError as e:
             return unicode(e)
 
-        charIDs = [int(character.attrib['characterID']) for character in xml
-                   if int(character.attrib['characterID'])]
-
-        if not charIDs:
-            return "None of these character(s) exist"
-
+        faction_id = None
+        payload = json.dumps([char_id])
         try:
-            xml = api.request_xml(
-                "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
-                params={'ids': ','.join(map(unicode, charIDs))}, timeout=5
-            ).find("rowset")
-        except APIError as e:
-            return unicode(e)
+            affil = api.request_esi("/v1/characters/affiliation/", data=payload, method="POST")[0]
+            faction_id = affil.get('faction_id', None)
+        except APIError:
+            pass
 
-        # Basic multi-character information
-        descriptions = []
-        for row in xml:
-            characterName = row.attrib['characterName']
-            corporationName = row.attrib['corporationName']
-            allianceName = row.attrib['allianceName']
-            factionName = row.attrib['factionName']
-            corp_ticker, alliance_ticker = api.get_tickers(int(row.attrib['corporationID']),
-                                                           int(row.attrib['allianceID']))
-
-            descriptions.append(format_affil(characterName, corporationName, allianceName,
-                                             factionName, corp_ticker, alliance_ticker))
-
-        reply = "<br />".join(descriptions)
-
-        if len(charIDs) > 1:
-            return reply
-
-        # Detailed single-character information
+        corp_hist = []
         try:
-            xml = api.request_xml("https://api.eveonline.com/eve/CharacterInfo.xml.aspx",
-                                  params={'characterID': charIDs[0]})
-        except APIError as e:
-            return "{}<br />{}".format(reply, e)
+            corp_hist = api.request_esi("/v1/characters/{}/corporationhistory/", (char_id,))
+        except APIError:
+            pass
 
-        reply += "<br />Security status: <strong>{:.2f}</strong>".format(
-            float(xml.find("securityStatus").text)
-        )
+        # Process corporation history
+        num_recs = len(corp_hist)
+        corp_hist.sort(key=lambda x: x['record_id'])
+        for i in reversed(xrange(num_recs)):
+            rec = corp_hist[i]
+            rec['start_date'] = datetime.strptime(rec['start_date'], "%Y-%m-%dT%H:%M:%SZ")
+            rec['end_date'] = corp_hist[i + 1]['start_date'] if i + 1 < num_recs else None
 
-        # /eve/CharacterInfo.xml.aspx returns corp history from latest to earliest
-        corp_history = [row.attrib for row in reversed(xml.findall("rowset/row"))]
-        num_records = len(corp_history)
-        # Add endDate based on next startDate
-        for i in xrange(num_records):
-            corp_history[i]['endDate'] = (corp_history[i + 1]['startDate']
-                                          if i + 1 < num_records else None)
-        corp_history = corp_history[-10:]
+        # Show all entries from the last 5 years (min 10) or the 25 most recent entries
+        min_age = datetime.utcnow() - timedelta(days=5 * 365)
+        max_hist = max(-25, -len(corp_hist))
+        while max_hist < -10 and corp_hist[max_hist + 1]['start_date'] < min_age:
+            max_hist += 1
+        corp_hist = corp_hist[max_hist:]
+
+        # Load corporation data
+        corp_ids = {data['corporation_id']}
+        corp_ids.update(rec['corporation_id'] for rec in corp_hist)
+
+        corps = {}
+        ally_hist = {}
+        for id_ in corp_ids:
+            try:
+                corps[id_] = api.request_esi("/v3/corporations/{}/", (id_,))
+            except APIError:
+                corps[id_] = {'corporation_name': "ERROR", 'ticker': "ERROR"}
+
+            try:
+                ally_hist[id_] = api.request_esi("/v2/corporations/{}/alliancehistory/", (id_,))
+                ally_hist[id_].sort(key=lambda x: x['record_id'])
+            except APIError:
+                ally_hist[id_] = []
 
         # Corporation Alliance history
-        ally_hist = {}
-        for corp in {rec['corporationID'] for rec in corp_history}:
-            try:
-                hist = api.request_rest(
-                    "https://esi.tech.ccp.is/latest/corporations/{}/alliancehistory/".format(corp),
-                    params={'datasource': "tranquility"}
-                )
-            except APIError:
-                ally_hist[corp] = []
-                continue
-            hist.sort(key=lambda x: x['record_id'])
-            ally_hist[corp] = hist
-
-        for i in xrange(len(corp_history)):
-            record = corp_history[i]
-            hist = ally_hist[record['corporationID']]
+        ally_ids = {data['alliance_id']} if 'alliance_id' in data else set()
+        for rec in corp_hist:
+            hist = ally_hist[rec['corporation_id']]
             date_hist = [datetime.strptime(ally['start_date'], "%Y-%m-%dT%H:%M:%SZ")
                          for ally in hist]
-            start_date = datetime.strptime(record['startDate'], "%Y-%m-%d %H:%M:%S")
-            end_date = (datetime.strptime(record['endDate'], "%Y-%m-%d %H:%M:%S")
-                        if record['endDate'] is not None else datetime.utcnow())
+            start_date = rec['start_date']
+            end_date = rec['end_date'] or datetime.utcnow()
 
             j, k = 0, len(date_hist) - 1
             while j <= k:
@@ -244,23 +232,44 @@ class EVEUtils(object):
             j = max(0, j - 1)
             k = min(len(date_hist), k + 1)
 
-            allyIDs = [rec['alliance_id'] for rec in hist[j:k] if 'alliance_id' in rec]
-            ally_tickers = {_id: api.get_tickers(None, _id)[1] for _id in set(allyIDs)}
-            corp_history[i]['alliances'] = [ally_tickers[_id] for _id in allyIDs]
+            rec['alliances'] = [ent['alliance_id'] for ent in hist[j:k] if 'alliance_id' in ent]
+            ally_ids.update(rec['alliances'])
 
-        for record in corp_history:
-            corp_ticker, _ = api.get_tickers(int(record['corporationID']), None)
-            ally_ticker = "</strong>/<strong>".join(cgi.escape(format_tickers(None, ticker))
-                                                    for ticker in record['alliances'])
-            reply += "<br />From {} til {} in <strong>{} {}{}</strong>".format(
-                record['startDate'], record['endDate'] or "now",
-                record['corporationName'], cgi.escape(format_tickers(corp_ticker, None)),
-                (" " + ally_ticker if ally_ticker else "")
+        # Load alliance data
+        allys = {}
+        for id_ in ally_ids:
+            try:
+                allys[id_] = api.request_esi("/v2/alliances/{}/", (id_,))
+            except APIError:
+                allys[id_] = {'alliance_name': "ERROR", 'ticker': "ERROR"}
+
+        # Format output
+        corp = corps[data['corporation_id']]
+        ally = allys[data['alliance_id']] if 'alliance_id' in data else {}
+        fac_name = staticdata.faction_name(faction_id) if faction_id is not None else None
+
+        reply = format_affil(data['name'], data.get('security_status', 0),
+                             corp['corporation_name'], ally.get('alliance_name', None),
+                             fac_name, corp['ticker'], ally.get('ticker', None))
+
+        for rec in corp_hist:
+            end = ("{:%Y-%m-%d %H:%M:%S}".format(rec['end_date'])
+                   if rec['end_date'] is not None else "now")
+            corp = corps[rec['corporation_id']]
+            corp_ticker = corp['ticker']
+            ally_ticker = "</strong>/<strong>".join(
+                format_tickers(None, allys[id_]['ticker'], html=True) for id_ in rec['alliances']
+            )
+            ally_ticker = " " + ally_ticker if ally_ticker else ""
+
+            reply += "<br />From {:%Y-%m-%d %H:%M:%S} til {} in <strong>{} {}{}</strong>".format(
+                rec['start_date'], end, corp['corporation_name'],
+                format_tickers(corp_ticker, None, html=True), ally_ticker
             )
 
-        if num_records > 10:
+        if len(corp_hist) < num_recs:
             reply += "<br />The full history is available at https://evewho.com/pilot/{}/".format(
-                urllib.quote_plus(xml.find("characterName").text)
+                urllib.quote_plus(data['name'])
             )
 
         return reply
