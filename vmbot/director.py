@@ -18,16 +18,14 @@ from .models import ISK, WalletJournalEntry
 
 import config
 
-# See https://api.eveonline.com/eve/RefTypes.xml.aspx
-REF_REVENUE = (
-    # Bounties, Mission Rewards, Incursions, Project Discovery
-    ("PVE", (17, 33, 34, 85, 99, 125)),
-    # Planetary Import/Export Tax
-    ("POCO", (96, 97)),
-    # Reprocessing Tax
-    ("Reprocessing", (127,)),
-    # Office Rental Fee, Factory Slot Rental Fee, Jump Clone Fees
-    ("Citadel Services", (13, 14, 55, 128))
+# See https://esi.tech.ccp.is/latest/#!/Wallet
+REVENUE_ROWS = (
+    ("PVE", ("bounty_prize", "agent_mission_reward", "agent_mission_time_bonus_reward",
+             "bounty_prizes", "corporate_reward_payout", "project_discovery_reward")),
+    ("POCO", ("planetary_import_tax", "planetary_export_tax")),
+    ("Reprocessing", ("reprocessing_tax",)),
+    ("Citadel Services", ("office_rental_fee", "factory_slot_rental_fee",
+                          "jump_clone_installation_fee", "jump_clone_activation_fee"))
 )
 
 
@@ -104,7 +102,7 @@ class Director(object):
     def revenue(self, mess, args):
         """Revenue statistics for the last day/week/month"""
         def to_dict(res):
-            return {type_id: amount for type_id, amount in res}
+            return {ref_type: amount for ref_type, amount in res}
 
         session = db.Session()
         query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
@@ -118,12 +116,12 @@ class Director(object):
         session.close()
 
         table = [["Type", "< 24h", "< 1 week", "< 30 days", "Since 2016-09-01"]]
-        for name, types in REF_REVENUE:
+        for name, types in REVENUE_ROWS:
             row = [name]
             for col in (day, week, month, genesis):
                 val = 0.0
-                for type_id in types:
-                    val += col.get(type_id, 0.0)
+                for ref_type in types:
+                    val += col.get(ref_type, 0.0)
                 row.append("{:,.2f} ISK".format(val))
             table.append(row)
 
