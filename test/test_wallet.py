@@ -5,24 +5,20 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 
 from datetime import datetime
-import xml.etree.ElementTree as ET
 
 from vmbot.models.wallet import WalletJournalEntry
 
-XML_ROW = ('<row date="2016-09-13 12:13:52" refID="13046672950" refTypeID="17" '
-           'ownerName1="CONCORD" ownerID1="1000125" ownerName2="ABC" '
-           'ownerID2="0" argName1="EVE System" argID1="1" amount="0.99" '
-           'balance="1.99" reason="" owner1TypeID="2" owner2TypeID="1373" />')
-
 
 class TestWalletEntry(unittest.TestCase):
-    def test_from_xml_row(self):
-        entry = WalletJournalEntry.from_xml_row(ET.fromstring(XML_ROW))
+    def test_from_esi_record(self):
+        rec = {"ref_id": 14541533899, "ref_type": "bounty_prizes",
+               "amount": 1754495.63, "date": "2017-09-07T20:43:22Z"}
+        entry = WalletJournalEntry.from_esi_record(rec)
 
-        self.assertEqual(entry.ref_id, 13046672950)
-        self.assertEqual(entry.type_id, 17)
-        self.assertEqual(entry.amount, 0.99)
-        self.assertEqual(entry.date, datetime(2016, 9, 13, 12, 13, 52))
+        self.assertEqual(entry.ref_id, 14541533899)
+        self.assertEqual(entry.ref_type, "bounty_prizes")
+        self.assertEqual(entry.amount, 1754495.63)
+        self.assertEqual(entry.date, datetime(2017, 9, 7, 20, 43, 22))
 
 
 if __name__ == "__main__":

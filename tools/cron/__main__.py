@@ -12,7 +12,7 @@ from vmbot.helpers.sso import SSOToken
 import config
 
 FEEDS = (news_feed,)
-API_UPDATES = (wallet_update,)
+ESI_UPDATES = (wallet_update,)
 
 if __name__ == "__main__":
     session = db.Session()
@@ -21,9 +21,9 @@ if __name__ == "__main__":
         if feed.needs_run(session):
             feed.main(session)
 
-    if any(update.needs_run(session) for update in API_UPDATES):
+    if any(update.needs_run(session) for update in ESI_UPDATES):
         token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
-        for update in API_UPDATES:
+        for update in ESI_UPDATES:
             if update.needs_run(session):
                 update.main(session, token)
 

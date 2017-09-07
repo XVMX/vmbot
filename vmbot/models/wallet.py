@@ -12,20 +12,17 @@ class WalletJournalEntry(db.Model):
     __tablename__ = "corp_wallet"
 
     ref_id = db.Column(db.BigInteger, nullable=False, primary_key=True, autoincrement=False)
-    type_id = db.Column(db.Integer, nullable=False, index=True)
+    ref_type = db.Column(db.String, nullable=False, index=True)
     amount = db.Column(db.Float, nullable=False)
     date = db.Column(db.DateTime, nullable=False)
 
-    def __init__(self, ref_id, type_id, amount, date):
+    def __init__(self, ref_id, ref_type, amount, date):
         self.ref_id = ref_id
-        self.type_id = type_id
+        self.ref_type = ref_type
         self.amount = amount
         self.date = date
 
     @classmethod
-    def from_xml_row(cls, row):
-        row = row.attrib
-        ref_id, type_id, amount = int(row['refID']), int(row['refTypeID']), float(row['amount'])
-        date = datetime.strptime(row['date'], "%Y-%m-%d %H:%M:%S")
-
-        return cls(ref_id, type_id, amount, date)
+    def from_esi_record(cls, record):
+        date = datetime.strptime(record['date'], "%Y-%m-%dT%H:%M:%SZ")
+        return cls(record['ref_id'], record['ref_type'], record.get('amount', 0.0), date)

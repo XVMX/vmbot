@@ -56,8 +56,7 @@ ESI = {
 
 # EVE SSO
 # Base URLs: https://login.eveonline.com (TQ), https://sisilogin.testeveonline.com (Sisi)
-# Required scopes: characterNotificationsRead, corporationWalletRead,
-#                  corporationAssetsRead, corporationStructuresRead
+# Required scopes: esi-wallet.read_corporation_wallets.v1
 SSO = {
     'base_url': "https://login.eveonline.com",
     'client_id': "",
