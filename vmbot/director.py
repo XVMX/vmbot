@@ -12,8 +12,8 @@ from terminaltables import AsciiTable
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
 from .helpers import database as db
-from .helpers import api
 from .helpers.decorators import requires_dir, requires_dir_chat
+from .helpers.format import format_ref_type
 from .models import ISK, WalletJournalEntry
 
 import config
@@ -96,8 +96,8 @@ class Director(object):
 
     @staticmethod
     def _wallet_type_query(session):
-        query = session.query(WalletJournalEntry.type_id, db.func.sum(WalletJournalEntry.amount))
-        return query.group_by(WalletJournalEntry.type_id)
+        query = session.query(WalletJournalEntry.ref_type, db.func.sum(WalletJournalEntry.amount))
+        return query.group_by(WalletJournalEntry.ref_type)
 
     @botcmd
     @requires_dir_chat
@@ -136,12 +136,8 @@ class Director(object):
 
     @staticmethod
     def _type_overview(res):
-        try:
-            types = api.get_ref_types()
-        except APIError as e:
-            return unicode(e)
-
-        table = [[types[type_id], "{:,.3f} ISK".format(ISK(total))] for type_id, total in res]
+        table = [[format_ref_type(ref_type), "{:,.3f} ISK".format(ISK(total))]
+                 for ref_type, total in res]
         table = AsciiTable(table)
         table.outer_border = False
         table.inner_heading_row_border = False

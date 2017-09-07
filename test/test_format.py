@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import unittest
 
-from vmbot.helpers.format import format_affil, format_tickers, disambiguate
+from vmbot.helpers.format import format_ref_type, format_affil, format_tickers, disambiguate
 
 
 class TestFormat(unittest.TestCase):
@@ -15,6 +15,9 @@ class TestFormat(unittest.TestCase):
 
     simple_disambiguate_template = 'Other {} like "{}": {}'
     extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
+
+    def test_format_ref_type(self):
+        self.assertEqual(format_ref_type("abc_def"), "Abc Def")
 
     def test_format_character(self):
         self.assertEqual(

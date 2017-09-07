@@ -5,6 +5,10 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import cgi
 
 
+def format_ref_type(ref_type):
+    return ref_type.replace('_', ' ').title()
+
+
 def format_affil(char_name, sec_status, corp_name, ally_name,
                  fac_name, corp_ticker, alliance_ticker):
     """Represent character or structure data in a common format."""
