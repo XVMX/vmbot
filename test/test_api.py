@@ -88,9 +88,6 @@ class TestAPI(unittest.TestCase):
     def test_zbot_APIError(self, mock_rest):
         self.assertEqual(api.zbot("54520379"), "TestException")
 
-    def test_get_ref_types(self):
-        self.assertEqual(api.get_ref_types()[85], "Bounty Prizes")
-
     def test_request_rest(self):
         test_url = "https://crest-tq.eveonline.com/"
 
