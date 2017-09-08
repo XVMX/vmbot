@@ -7,7 +7,6 @@ import mock
 
 import os
 import StringIO
-import xml.etree.ElementTree as ET
 import logging
 
 import requests
@@ -131,21 +130,6 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(log.getvalue().startswith('Route "TestURL" is deprecated'))
 
         logger.removeHandler(handler)
-
-    def test_request_xml(self):
-        test_url = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
-
-        # Test without cache
-        with mock.patch("vmbot.helpers.api.parse_xml_cache", side_effect=NoCacheError):
-            res_nocache = api.request_xml(test_url)
-            self.assertIsInstance(res_nocache, ET.Element)
-
-        # Test with cache
-        res_cache = api.request_xml(test_url)
-        self.assertIsInstance(res_cache, ET.Element)
-
-        # Test cached response
-        self.assertEqual(ET.tostring(api.request_xml(test_url)), ET.tostring(res_cache))
 
     @mock.patch("requests.request", side_effect=requests.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):

@@ -30,14 +30,6 @@ def parse_http_cache(headers):
         raise NoCacheError
 
 
-def parse_xml_cache(xml):
-    """Parse EVE Online XML-API cache value."""
-    try:
-        return datetime.strptime(xml.find("cachedUntil").text, "%Y-%m-%d %H:%M:%S")
-    except AttributeError:
-        raise NoCacheError
-
-
 class BaseCacheObject(db.Model):
     """Cache arbitrary data."""
     __tablename__ = "cache"

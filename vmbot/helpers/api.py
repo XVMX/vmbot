@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import json
-import xml.etree.ElementTree as ET
 import logging
 import traceback
 
@@ -11,7 +10,7 @@ import requests
 
 from .exceptions import NoCacheError, APIError, APIStatusError, APIRequestError
 from . import database as db
-from ..models.cache import parse_http_cache, parse_xml_cache, HTTPCacheObject, ESICacheObject
+from ..models.cache import parse_http_cache, HTTPCacheObject, ESICacheObject
 from . import staticdata
 from .format import format_tickers
 from ..models import ISK
@@ -129,28 +128,6 @@ def request_esi(route, fmt=(), params=None, data=None, headers=None,
     if with_head:
         return r.json(), r.headers
     return r.json()
-
-
-def request_xml(url, params=None, data=None, headers=None, timeout=3, method="POST"):
-    session = db.Session()
-    res = HTTPCacheObject.get(session, url, params=params, data=data, headers=headers)
-
-    if res is None:
-        r = request_api(url, params, data, headers, timeout, method)
-        res = ET.fromstring(r.content)
-
-        try:
-            expiry = parse_xml_cache(res)
-        except NoCacheError:
-            pass
-        else:
-            HTTPCacheObject(url, r.content, expiry, params=params,
-                            data=data, headers=headers).save(session)
-    else:
-        res = ET.fromstring(res)
-
-    session.close()
-    return res.find("result")
 
 
 def request_api(url, params=None, data=None, headers=None, timeout=3, method="GET"):

@@ -6,7 +6,6 @@ import unittest
 import mock
 
 from datetime import datetime, timedelta
-import xml.etree.ElementTree as ET
 
 import requests
 
@@ -47,10 +46,8 @@ class TestSSOToken(unittest.TestCase):
             self.token.access_token
 
     @mock.patch("vmbot.helpers.api.request_esi", return_value={'res': True})
-    @mock.patch("vmbot.helpers.api.request_xml", return_value=ET.Element("res"))
-    def test_token_request(self, mock_xml, mock_esi):
+    def test_token_request_esi(self, mock_esi):
         self.assertDictEqual(self.token.request_esi("TestURL"), {'res': True})
-        self.assertIsInstance(self.token.request_xml("TestURL"), ET.Element)
 
     def test_request_grant_invalid(self):
         self.assertRaises(NotImplementedError, SSOToken._request_grant, "abc123", "token")

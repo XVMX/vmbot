@@ -6,7 +6,6 @@ import unittest
 
 from datetime import datetime, timedelta
 import os
-import xml.etree.ElementTree as ET
 
 import requests
 
@@ -14,7 +13,7 @@ from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import NoCacheError
 import vmbot.helpers.database as db
 
-from vmbot.models.cache import parse_http_cache, parse_xml_cache, HTTPCacheObject, ESICacheObject
+from vmbot.models.cache import parse_http_cache, HTTPCacheObject, ESICacheObject
 
 
 class TestCache(unittest.TestCase):
@@ -52,21 +51,6 @@ class TestCache(unittest.TestCase):
 
     def test_parse_http_cache_notime(self):
         self.assertRaises(NoCacheError, parse_http_cache, {'Cache-Control': ""})
-
-    def test_parse_xml_cache(self):
-        api_sample = """<?xml version='1.0' encoding='UTF-8'?>
-                        <eveapi version="2">
-                          <currentTime>2016-09-05 16:56:32</currentTime>
-                          <result>
-                            <serverOpen>True</serverOpen>
-                            <onlinePlayers>28084</onlinePlayers>
-                          </result>
-                          <cachedUntil>2016-09-05 16:58:19</cachedUntil>
-                        </eveapi>"""
-        self.assertIsInstance(parse_xml_cache(ET.fromstring(api_sample)), datetime)
-
-    def test_parse_xml_cache_nocache(self):
-        self.assertRaises(NoCacheError, parse_xml_cache, ET.fromstring("<empty />"))
 
     def test_basic(self):
         HTTPCacheObject("abc", b"123").save(self.sess)
