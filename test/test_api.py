@@ -89,7 +89,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(api.zbot("54520379"), "TestException")
 
     def test_request_rest(self):
-        test_url = "https://crest-tq.eveonline.com/"
+        test_url = "https://httpbin.org/cache/60"
 
         # Test without cache
         with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
