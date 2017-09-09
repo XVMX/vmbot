@@ -55,6 +55,14 @@ class TestAPI(unittest.TestCase):
     def tearDownClass(cls):
         return cls.setUpClass()
 
+    def test_get_db_session(self):
+        sess = api._get_db_session()
+        self.assertIs(api._get_db_session(), sess)
+
+    def test_get_requests_session(self):
+        sess = api._get_requests_session()
+        self.assertIs(api._get_requests_session(), sess)
+
     def test_get_tickers(self):
         # corporationID: 1164409536 [OTHER]
         # allianceID: 159826257 <OTHER>
@@ -131,12 +139,12 @@ class TestAPI(unittest.TestCase):
 
         logger.removeHandler(handler)
 
-    @mock.patch("requests.request", side_effect=requests.RequestException("TestException"))
+    @mock.patch("requests.Session.request", side_effect=requests.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):
         self.assertRaisesRegexp(APIRequestError, "Error while connecting to API: TestException",
                                 api.request_api, "TestURL")
 
-    @mock.patch("requests.request", side_effect=flawed_response)
+    @mock.patch("requests.Session.request", side_effect=flawed_response)
     def test_request_api_flawedresponse(self, mock_requests):
         self.assertRaisesRegexp(APIStatusError, "API returned error code 404",
                                 api.request_api, "TestURL")

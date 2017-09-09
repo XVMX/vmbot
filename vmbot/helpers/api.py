@@ -2,6 +2,8 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+import copy
+import threading
 import json
 import logging
 import traceback
@@ -16,6 +18,26 @@ from .format import format_tickers
 from ..models import ISK
 
 import config
+
+_API_REG = threading.local()
+
+
+def _get_db_session():
+    """Retrieve or create a thread-local SQLAlchemy session."""
+    try:
+        return _API_REG.db_sess
+    except AttributeError:
+        _API_REG.db_sess = db.Session()
+        return _API_REG.db_sess
+
+
+def _get_requests_session():
+    """Retrieve or create a thread-local requests session."""
+    try:
+        return _API_REG.req_sess
+    except AttributeError:
+        _API_REG.req_sess = requests.Session()
+        return _API_REG.req_sess
 
 
 def get_tickers(corporationID, allianceID):
@@ -73,7 +95,10 @@ def zbot(killID):
 
 
 def request_rest(url, params=None, data=None, headers=None, timeout=3, method="GET"):
-    session = db.Session()
+    # url, timeout, and method are immutable
+    params, data, headers = copy.copy(params), copy.copy(data), copy.copy(headers)
+
+    session = _get_db_session()
     res = HTTPCacheObject.get(session, url, params=params, data=data, headers=headers)
 
     if res is None:
@@ -96,12 +121,14 @@ def request_esi(route, fmt=(), params=None, data=None, headers=None,
                 timeout=3, method="GET", with_head=False):
     url = (config.ESI['base_url'] if route.startswith('/') else "") + route.format(*fmt)
 
-    if params is None:
-        params = {}
+    # url (route + fmt), timeout, and method are immutable
+    params = {} if params is None else copy.copy(params)
+    data, headers = copy.copy(data), copy.copy(headers)
+
     params['datasource'] = config.ESI['datasource']
     params['language'] = config.ESI['lang']
 
-    session = db.Session()
+    session = _get_db_session()
     r = ESICacheObject.get(session, url, params=params, data=data, headers=headers)
 
     if r is None:
@@ -136,8 +163,8 @@ def request_api(url, params=None, data=None, headers=None, timeout=3, method="GE
     headers['User-Agent'] = "XVMX JabberBot"
 
     try:
-        r = requests.request(method, url, params=params, data=data,
-                             headers=headers, timeout=timeout)
+        r = _get_requests_session().request(method, url, params=params, data=data,
+                                            headers=headers, timeout=timeout)
         r.raise_for_status()
     except requests.HTTPError as e:
         raise APIStatusError("API returned error code {}".format(e.response.status_code))
