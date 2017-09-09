@@ -108,16 +108,10 @@ class Note(db.Model):
         cls._queue_update = time.time() + QUEUE_UPDATE_INTERVAL
 
     @classmethod
-    def add_note(cls, note, session=None):
-        session_from_param = session is not None
-        session = session or db.Session()
-
+    def add_note(cls, note, session):
         session.add(note)
         session.commit()
 
         # Update note queue
         if note.offset_time <= datetime.utcnow() + QUEUE_MAX_OFFSET:
             cls._note_queue.add((note.offset_time, (note.note_id, note.receiver, note.room)))
-
-        if not session_from_param:
-            session.close()
