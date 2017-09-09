@@ -6,6 +6,7 @@ import signal
 from functools import wraps
 
 from .exceptions import TimeoutError
+from . import database as db
 
 import config
 
@@ -58,3 +59,15 @@ def requires_dir_chat(func):
             return func(self, mess, args)
 
     return check_dir_chat
+
+
+def inject_db(func):
+    @wraps(func)
+    def pass_db(*args, **kwargs):
+        sess = db.Session()
+        res = func(*args, session=sess, **kwargs)
+        sess.close()
+
+        return res
+
+    return pass_db

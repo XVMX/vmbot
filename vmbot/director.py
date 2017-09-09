@@ -12,7 +12,7 @@ from terminaltables import AsciiTable
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
 from .helpers import database as db
-from .helpers.decorators import requires_dir, requires_dir_chat
+from .helpers.decorators import requires_dir, requires_dir_chat, inject_db
 from .helpers.format import format_ref_type
 from .models import ISK, WalletJournalEntry
 
@@ -99,21 +99,18 @@ class Director(object):
 
     @botcmd
     @requires_dir_chat
-    def revenue(self, mess, args):
+    @inject_db
+    def revenue(self, mess, args, session):
         """Revenue statistics for the last day/week/month"""
         def to_dict(res):
             return {ref_type: amount for ref_type, amount in res}
 
-        session = db.Session()
-        query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
-
         now = datetime.utcnow()
+        query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
         day = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=1)).all())
         week = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(weeks=1)).all())
         month = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=30)).all())
         genesis = to_dict(query.filter(WalletJournalEntry.date > datetime(2016, 9, 1)).all())
-
-        session.close()
 
         table = [["Type", "< 24h", "< 1 week", "< 30 days", "Since 2016-09-01"]]
         for name, types in REVENUE_ROWS:
@@ -146,28 +143,24 @@ class Director(object):
 
     @botcmd
     @requires_dir_chat
-    def income(self, mess, args):
+    @inject_db
+    def income(self, mess, args, session):
         """Income statistics for the last month"""
-        session = db.Session()
         query = self._wallet_type_query(session)
         query = query.filter(WalletJournalEntry.amount > 0,
                              WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
 
         res = sorted(query.all(), key=lambda x: x[1], reverse=True)
-        session.close()
-
         return self._type_overview(res)
 
     @botcmd
     @requires_dir_chat
-    def expenses(self, mess, args):
+    @inject_db
+    def expenses(self, mess, args, session):
         """Expense statistics for the last month"""
-        session = db.Session()
         query = self._wallet_type_query(session)
         query = query.filter(WalletJournalEntry.amount < 0,
                              WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
 
         res = sorted(query.all(), key=lambda x: x[1])
-        session.close()
-
         return self._type_overview(res)
