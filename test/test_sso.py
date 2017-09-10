@@ -16,7 +16,7 @@ from vmbot.helpers.sso import SSOToken
 
 GRANT_RES = {'access_token': "abc123", 'token_type': "test",
              'expires_in': 1200, 'refresh_token': "xyz789"}
-VERIFY_RES = {'Scopes': " "}
+VERIFY_RES = {'Scopes': " ", 'CharacterID': 123456}
 
 
 class TestSSOToken(unittest.TestCase):

@@ -27,6 +27,7 @@ class SSOToken(object):
 
         # See https://github.com/ccpgames/esi-issues/issues/198#issuecomment-318818318
         res = self.request_esi("/verify/")
+        self.character_id = res['CharacterID']
         self.scopes = res['Scopes'].split()
 
     @classmethod
