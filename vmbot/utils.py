@@ -7,6 +7,8 @@ import urllib
 import json
 import sqlite3
 
+from concurrent import futures
+
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError, APIStatusError
@@ -165,17 +167,24 @@ class EVEUtils(object):
         except APIError as e:
             return unicode(e)
 
-        faction_id = None
+        # Process ESI lookups in parallel
+        pool = futures.ThreadPoolExecutor(max_workers=10)
+
         payload = json.dumps([char_id])
+        affil_fut = pool.submit(api.request_esi, "/v1/characters/affiliation/",
+                                data=payload, method="POST")
+        hist_fut = pool.submit(api.request_esi, "/v1/characters/{}/corporationhistory/", (char_id,))
+
+        faction_id = None
         try:
-            affil = api.request_esi("/v1/characters/affiliation/", data=payload, method="POST")[0]
+            affil = affil_fut.result()[0]
             faction_id = affil.get('faction_id', None)
         except APIError:
             pass
 
         corp_hist = []
         try:
-            corp_hist = api.request_esi("/v1/characters/{}/corporationhistory/", (char_id,))
+            corp_hist = hist_fut.result()
         except APIError:
             pass
 
@@ -198,19 +207,32 @@ class EVEUtils(object):
         corp_ids = {data['corporation_id']}
         corp_ids.update(rec['corporation_id'] for rec in corp_hist)
 
-        corps = {}
-        ally_hist = {}
-        for id_ in corp_ids:
-            try:
-                corps[id_] = api.request_esi("/v3/corporations/{}/", (id_,))
-            except APIError:
-                corps[id_] = {'corporation_name': "ERROR", 'ticker': "ERROR"}
+        corp_futs = []
+        hist_futs = []
 
+        for id_ in corp_ids:
+            f = pool.submit(api.request_esi, "/v3/corporations/{}/", (id_,))
+            f.req_id = id_
+            corp_futs.append(f)
+
+            f = pool.submit(api.request_esi, "/v2/corporations/{}/alliancehistory/", (id_,))
+            f.req_id = id_
+            hist_futs.append(f)
+
+        corps = {}
+        for f in futures.as_completed(corp_futs):
             try:
-                ally_hist[id_] = api.request_esi("/v2/corporations/{}/alliancehistory/", (id_,))
-                ally_hist[id_].sort(key=lambda x: x['record_id'])
+                corps[f.req_id] = f.result()
             except APIError:
-                ally_hist[id_] = []
+                corps[f.req_id] = {'corporation_name': "ERROR", 'ticker': "ERROR"}
+
+        ally_hist = {}
+        for f in futures.as_completed(hist_futs):
+            try:
+                ally_hist[f.req_id] = f.result()
+                ally_hist[f.req_id].sort(key=lambda x: x['record_id'])
+            except APIError:
+                ally_hist[f.req_id] = []
 
         # Corporation Alliance history
         ally_ids = {data['alliance_id']} if 'alliance_id' in data else set()
@@ -236,12 +258,18 @@ class EVEUtils(object):
             ally_ids.update(rec['alliances'])
 
         # Load alliance data
-        allys = {}
+        ally_futs = []
         for id_ in ally_ids:
+            f = pool.submit(api.request_esi, "/v2/alliances/{}/", (id_,))
+            f.req_id = id_
+            ally_futs.append(f)
+
+        allys = {}
+        for f in futures.as_completed(ally_futs):
             try:
-                allys[id_] = api.request_esi("/v2/alliances/{}/", (id_,))
+                allys[f.req_id] = f.result()
             except APIError:
-                allys[id_] = {'alliance_name': "ERROR", 'ticker': "ERROR"}
+                allys[f.req_id] = {'alliance_name': "ERROR", 'ticker': "ERROR"}
 
         # Format output
         corp = corps[data['corporation_id']]
