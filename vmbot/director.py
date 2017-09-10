@@ -49,7 +49,7 @@ class Director(object):
         text.text = broadcast
 
         result = b'<?xml version="1.0"?>' + ET.tostring(messaging)
-        headers = {'User-Agent': "XVMX JabberBot",
+        headers = {'User-Agent': "XVMX VMBot (JabberBot)",
                    'X-SourceID': config.BCAST['id'],
                    'X-SharedKey': config.BCAST['key']}
 

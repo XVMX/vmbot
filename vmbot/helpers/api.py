@@ -121,7 +121,7 @@ def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
 def request_api(url, params=None, headers=None, timeout=3, method="GET"):
     if headers is None:
         headers = {}
-    headers['User-Agent'] = "XVMX JabberBot"
+    headers['User-Agent'] = "XVMX VMBot (JabberBot)"
 
     try:
         if method in ("GET", "HEAD"):
