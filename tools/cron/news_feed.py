@@ -76,8 +76,7 @@ def main(session):
             session.add(Message(room, "<br />".join(reply), "groupchat"))
         session.commit()
 
-        Storage.set(session, "news_feed_last_devblog",
-                    (devblogs[0]['id'], devblogs[0]['updated']))
+        Storage.set(session, "news_feed_last_devblog", (devblogs[0]['id'], devblogs[0]['updated']))
 
 
 def read_feed(url, last_entry):

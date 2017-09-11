@@ -223,7 +223,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
 
         try:
             return unicode(ureg(src).to(dest))
-        except pint.unit.DimensionalityError as e:
+        except pint.DimensionalityError as e:
             return unicode(e)
         except Exception as e:
             return "Failed to convert your request: {}".format(e)
