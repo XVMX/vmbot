@@ -94,17 +94,19 @@ class Note(db.Model):
         query = session.query(cls.note_id, cls.receiver, cls.room, cls.offset_time)
         query = query.filter(cls.offset_time <= max_offset)
 
-        expired_ids = []
+        expired = []
         cls._note_queue.clear()
         for note in query.all():
             if cur_time - note[-1] > NOTE_DELIVERY_FRAME:
-                expired_ids.append(note[0])
+                expired.append(note[0])
             else:
                 cls._note_queue.add((note[-1], note[:-1]))
 
-        # Session is synchronized after commit
-        session.query(cls).filter(cls.note_id.in_(expired_ids)).delete(synchronize_session=False)
-        session.commit()
+        if expired:
+            # Session is synchronized after commit
+            session.query(cls).filter(cls.note_id.in_(expired)).delete(synchronize_session=False)
+            session.commit()
+
         cls._queue_update = time.time() + QUEUE_UPDATE_INTERVAL
 
     @classmethod
