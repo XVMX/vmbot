@@ -59,21 +59,21 @@ def main(session):
         pass
 
     if news:
-        reply = ["{} new EVE news:".format(len(news))]
-        reply += [FEED_FMT.format(**entry) for entry in news]
+        reply = "{} new EVE news:".format(len(news))
+        reply += "<br />".join(FEED_FMT.format(**entry) for entry in news)
 
         for room in config.JABBER['primary_chatrooms']:
-            session.add(Message(room, "<br />".join(reply), "groupchat"))
+            session.add(Message(room, reply, "groupchat"))
         session.commit()
 
         Storage.set(session, "news_feed_last_news", (news[0]['id'], news[0]['updated']))
 
     if devblogs:
-        reply = ["{} new EVE devblog(s):".format(len(devblogs))]
-        reply += [FEED_FMT.format(**entry) for entry in devblogs]
+        reply = "{} new EVE devblog(s):".format(len(devblogs))
+        reply += "<br />".join(FEED_FMT.format(**entry) for entry in devblogs)
 
         for room in config.JABBER['primary_chatrooms']:
-            session.add(Message(room, "<br />".join(reply), "groupchat"))
+            session.add(Message(room, reply, "groupchat"))
         session.commit()
 
         Storage.set(session, "news_feed_last_devblog", (devblogs[0]['id'], devblogs[0]['updated']))
