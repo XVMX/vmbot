@@ -17,6 +17,10 @@ WALLET_DIVISION = 1
 
 
 def init(session, token):
+    if "esi-wallet.read_corporation_wallets.v1" not in token.scopes:
+        print('SSO token is missing "esi-wallet.read_corporation_wallets.v1" scope')
+        return
+
     return main(session, token)
 
 
@@ -29,17 +33,6 @@ def main(session, token):
     walk_journal(session, token)
 
 
-def filter_known_entries(known_ids, entries):
-    new_entries = []
-
-    for entry in entries:
-        if entry.ref_id not in known_ids:
-            known_ids.add(entry.ref_id)
-            new_entries.append(entry)
-
-    return new_entries
-
-
 def walk_journal(session, token):
     known_ids = {res[0] for res in session.query(WalletJournalEntry.ref_id).all()}
 
@@ -49,7 +42,7 @@ def walk_journal(session, token):
 
     # ESI returns up to 500 journal entries at once
     while len(entries) == 500:
-        min_id = min(entries, key=lambda x: x.ref_id).ref_id
+        min_id = min(entry.ref_id for entry in entries)
         entries = filter_known_entries(known_ids, get_entries(token, from_id=min_id))
         session.add_all(entries)
         session.commit()
@@ -67,3 +60,14 @@ def get_entries(token, from_id=None):
         return []
 
     return [WalletJournalEntry.from_esi_record(rec) for rec in recs]
+
+
+def filter_known_entries(known_ids, entries):
+    new_entries = []
+
+    for entry in entries:
+        if entry.ref_id not in known_ids:
+            known_ids.add(entry.ref_id)
+            new_entries.append(entry)
+
+    return new_entries
