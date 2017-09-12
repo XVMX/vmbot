@@ -59,7 +59,7 @@ def main(session):
         pass
 
     if news:
-        reply = "{} new EVE news:".format(len(news))
+        reply = "{} new EVE news:<br />".format(len(news))
         reply += "<br />".join(FEED_FMT.format(**entry) for entry in news)
 
         for room in config.JABBER['primary_chatrooms']:
@@ -69,7 +69,7 @@ def main(session):
         Storage.set(session, "news_feed_last_news", (news[0]['id'], news[0]['updated']))
 
     if devblogs:
-        reply = "{} new EVE devblog(s):".format(len(devblogs))
+        reply = "{} new EVE devblog(s):<br />".format(len(devblogs))
         reply += "<br />".join(FEED_FMT.format(**entry) for entry in devblogs)
 
         for room in config.JABBER['primary_chatrooms']:
