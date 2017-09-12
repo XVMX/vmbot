@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from datetime import datetime, timedelta
+import threading
 import base64
 
 from .exceptions import TokenExpiredError
@@ -22,7 +23,11 @@ class SSOToken(object):
         self._expiry = datetime.utcnow() + timedelta(seconds=expires_in)
         self._refresh_token = refresh_token
 
-        res = self.request_crest("https://login.eveonline.com/oauth/verify")
+        self._refresh_lock = threading.Lock()
+
+        # See https://github.com/ccpgames/esi-issues/issues/198#issuecomment-318818318
+        res = self.request_esi("/verify/")
+        self.character_id = res['CharacterID']
         self.scopes = res['Scopes'].split()
 
     @classmethod
@@ -34,13 +39,14 @@ class SSOToken(object):
         return cls(**cls._request_grant(refresh_token, type_="refresh_token"))
 
     @property
-    def access_token(self):
-        if self._expiry < datetime.utcnow():
-            self.update_token()
+    def auth(self):
+        with self._refresh_lock:
+            if self._expiry < datetime.utcnow():
+                self._update_token()
 
-        return self._access_token
+            return self._type + ' ' + self._access_token
 
-    def update_token(self):
+    def _update_token(self):
         """Refresh access token using refresh token if available."""
         if self._refresh_token is None:
             raise TokenExpiredError
@@ -50,20 +56,15 @@ class SSOToken(object):
         self._type = res['token_type']
         self._expiry = datetime.utcnow() + timedelta(seconds=res['expires_in'])
 
-    def request_crest(self, url, params=None, timeout=3, method="GET"):
-        headers = {'Authorization': self._type + ' ' + self.access_token}
-        return api.request_rest(url, params, headers, timeout, method)
-
-    def request_xml(self, url, params=None, timeout=3, method="POST"):
-        # Docs: https://community.eveonline.com/news/patch-notes/patch-notes-for-eve-online-citadel
-        if params is None:
-            params = {}
-        params['accessToken'] = self.access_token
-        return api.request_xml(url, params, None, timeout, method)
+    def request_esi(self, route, fmt=(), params=None, data=None, headers=None,
+                    timeout=3, method="GET", with_head=False):
+        headers = {} if headers is None else headers.copy()
+        headers['Authorization'] = self.auth
+        return api.request_esi(route, fmt, params, data, headers, timeout, method, with_head)
 
     @staticmethod
     def _request_grant(token, type_="authorization_code"):
-        url = "https://login.eveonline.com/oauth/token"
+        url = config.SSO['base_url'] + "/oauth/token"
         headers = {'Authorization': "Basic " + _SSO_B64}
         payload = {'grant_type': type_}
         if type_ == "authorization_code":

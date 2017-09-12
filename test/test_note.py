@@ -64,7 +64,7 @@ class TestNote(unittest.TestCase):
 
     def test_add_note(self):
         for note in self.notes:
-            Note.add_note(note)
+            Note.add_note(note, self.sess)
             self.assertIsNotNone(note.note_id)
 
         for note in ((note.offset_time, (note.note_id, note.receiver, note.room))

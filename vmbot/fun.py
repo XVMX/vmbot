@@ -223,7 +223,7 @@ class Fun(object):
         """Like a box of chocolates, but without emotes this time"""
         try:
             r = requests.get("http://bash.org/?random", timeout=5)
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             return "Error while connecting to http://bash.org: {}".format(e)
         soup = BeautifulSoup(r.text, "html.parser")
 
@@ -243,7 +243,7 @@ class Fun(object):
         """Like a box of chocolates, but with xkcds"""
         try:
             res = requests.get("https://xkcd.com/info.0.json", timeout=3).json()
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
         except ValueError:
             return "Error while parsing response from https://xkcd.com"
@@ -253,7 +253,7 @@ class Fun(object):
 
         try:
             comic = requests.get(comic_url + "info.0.json", timeout=3).json()
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             return "Error while connecting to https://xkcd.com: {}".format(e)
         except ValueError:
             return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
@@ -276,7 +276,7 @@ class Fun(object):
 
         try:
             res = requests.get(url, params=params, timeout=3).json()
-        except requests.exceptions.RequestException as e:
+        except requests.RequestException as e:
             return "Error while connecting to https://www.urbandictionary.com: {}".format(e)
         except ValueError:
             return "Error while parsing response from https://www.urbandictionary.com"

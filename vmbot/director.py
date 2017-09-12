@@ -12,22 +12,20 @@ from terminaltables import AsciiTable
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
 from .helpers import database as db
-from .helpers import api
-from .helpers.decorators import requires_dir, requires_dir_chat
+from .helpers.decorators import requires_dir, requires_dir_chat, inject_db
+from .helpers.format import format_ref_type
 from .models import ISK, WalletJournalEntry
 
 import config
 
-# See https://api.eveonline.com/eve/RefTypes.xml.aspx
-REF_REVENUE = (
-    # Bounties, Mission Rewards, Incursions, Project Discovery
-    ("PVE", (17, 33, 34, 85, 99, 125)),
-    # Planetary Import/Export Tax
-    ("POCO", (96, 97)),
-    # Reprocessing Tax
-    ("Reprocessing", (127,)),
-    # Office Rental Fee, Factory Slot Rental Fee, Jump Clone Fees
-    ("Citadel Services", (13, 14, 55, 128))
+# See https://esi.tech.ccp.is/latest/#!/Wallet
+REVENUE_ROWS = (
+    ("PVE", ("bounty_prize", "agent_mission_reward", "agent_mission_time_bonus_reward",
+             "bounty_prizes", "corporate_reward_payout", "project_discovery_reward")),
+    ("POCO", ("planetary_import_tax", "planetary_export_tax")),
+    ("Reprocessing", ("reprocessing_tax",)),
+    ("Citadel Services", ("office_rental_fee", "factory_slot_rental_fee",
+                          "jump_clone_installation_fee", "jump_clone_activation_fee"))
 )
 
 
@@ -55,12 +53,13 @@ class Director(object):
 
         try:
             r = requests.post(config.BCAST['url'], data=result, headers=headers, timeout=5)
-        except requests.exceptions.RequestException as e:
-            raise APIError("Error while connecting to Broadcast-API: {}".format(e))
-
-        if r.status_code != 200:
+            r.raise_for_status()
+        except requests.HTTPError as e:
+            r = e.response
             res = ET.fromstring(r.content).find(".//response").text
             raise APIError("Broadcast-API returned error code {}: {}".format(r.status_code, res))
+        except requests.RequestException as e:
+            raise APIError("Error while connecting to Broadcast-API: {}".format(e))
 
     @botcmd
     @requires_dir_chat
@@ -95,34 +94,31 @@ class Director(object):
 
     @staticmethod
     def _wallet_type_query(session):
-        query = session.query(WalletJournalEntry.type_id, db.func.sum(WalletJournalEntry.amount))
-        return query.group_by(WalletJournalEntry.type_id)
+        query = session.query(WalletJournalEntry.ref_type, db.func.sum(WalletJournalEntry.amount))
+        return query.group_by(WalletJournalEntry.ref_type)
 
     @botcmd
     @requires_dir_chat
-    def revenue(self, mess, args):
+    @inject_db
+    def revenue(self, mess, args, session):
         """Revenue statistics for the last day/week/month"""
         def to_dict(res):
-            return {type_id: amount for type_id, amount in res}
-
-        session = db.Session()
-        query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
+            return {ref_type: amount for ref_type, amount in res}
 
         now = datetime.utcnow()
+        query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
         day = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=1)).all())
         week = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(weeks=1)).all())
         month = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=30)).all())
         genesis = to_dict(query.filter(WalletJournalEntry.date > datetime(2016, 9, 1)).all())
 
-        session.close()
-
         table = [["Type", "< 24h", "< 1 week", "< 30 days", "Since 2016-09-01"]]
-        for name, types in REF_REVENUE:
+        for name, types in REVENUE_ROWS:
             row = [name]
             for col in (day, week, month, genesis):
                 val = 0.0
-                for type_id in types:
-                    val += col.get(type_id, 0.0)
+                for ref_type in types:
+                    val += col.get(ref_type, 0.0)
                 row.append("{:,.2f} ISK".format(val))
             table.append(row)
 
@@ -135,12 +131,8 @@ class Director(object):
 
     @staticmethod
     def _type_overview(res):
-        try:
-            types = api.get_ref_types()
-        except APIError as e:
-            return unicode(e)
-
-        table = [[types[type_id], "{:,.3f} ISK".format(ISK(total))] for type_id, total in res]
+        table = [[format_ref_type(ref_type), "{:,.3f} ISK".format(ISK(total))]
+                 for ref_type, total in res]
         table = AsciiTable(table)
         table.outer_border = False
         table.inner_heading_row_border = False
@@ -151,28 +143,24 @@ class Director(object):
 
     @botcmd
     @requires_dir_chat
-    def income(self, mess, args):
+    @inject_db
+    def income(self, mess, args, session):
         """Income statistics for the last month"""
-        session = db.Session()
         query = self._wallet_type_query(session)
         query = query.filter(WalletJournalEntry.amount > 0,
                              WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
 
         res = sorted(query.all(), key=lambda x: x[1], reverse=True)
-        session.close()
-
         return self._type_overview(res)
 
     @botcmd
     @requires_dir_chat
-    def expenses(self, mess, args):
+    @inject_db
+    def expenses(self, mess, args, session):
         """Expense statistics for the last month"""
-        session = db.Session()
         query = self._wallet_type_query(session)
         query = query.filter(WalletJournalEntry.amount < 0,
                              WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
 
         res = sorted(query.all(), key=lambda x: x[1])
-        session.close()
-
         return self._type_overview(res)

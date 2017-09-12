@@ -119,37 +119,46 @@ class TestPrice(unittest.TestCase):
     def test_get_market_orders(self):
         # The Forge
         regionID = 10000002
+        # Jita
+        systemID = 30000142
         # Tritanium
         item_typeID = 34
 
-        res = Price._get_market_orders(regionID, "Jita", item_typeID)
-        self.assertIsInstance(res[0][0], float)
-        self.assertIsInstance(res[0][1], (int, long))
-        self.assertIsInstance(res[1][0], float)
-        self.assertIsInstance(res[1][1], (int, long))
+        # Regional data
+        res_r = Price._get_market_orders(regionID, None, item_typeID)
+        self.assertIsInstance(res_r[0][0], float)
+        self.assertIsInstance(res_r[0][1], (int, long))
+        self.assertIsInstance(res_r[1][0], float)
+        self.assertIsInstance(res_r[1][1], (int, long))
 
-    @mock.patch("vmbot.helpers.api.request_rest", return_value={'items': []})
-    def test_get_market_orders_noorders(self, mock_rest):
+        # System data
+        res_s = Price._get_market_orders(regionID, systemID, item_typeID)
+        self.assertGreaterEqual(res_s[0][0], res_r[0][0])
+        self.assertLessEqual(res_s[0][1], res_r[0][1])
+        self.assertLessEqual(res_s[1][0], res_r[1][0])
+        self.assertLessEqual(res_s[1][1], res_r[1][1])
+
+    @mock.patch("vmbot.helpers.api.request_esi", return_value=([], {}))
+    def test_get_market_orders_noorders(self, mock_esi):
         # The Forge
         regionID = 10000002
         # Pyerite
         item_typeID = 35
 
-        res = Price._get_market_orders(regionID, "Jita", item_typeID)
+        res = Price._get_market_orders(regionID, None, item_typeID)
         self.assertEqual(res[0][0], 0)
         self.assertEqual(res[0][1], 0)
         self.assertEqual(res[1][0], 0)
         self.assertEqual(res[1][1], 0)
 
-    @mock.patch("vmbot.helpers.api.request_rest",
-                side_effect=[{'items': [], 'next': {'href': ""}}, {'items': []}])
-    def test_get_market_orders_paginated(self, mock_rest):
+    @mock.patch("vmbot.helpers.api.request_esi", side_effect=[([], {'X-Pages': 2}), []])
+    def test_get_market_orders_paginated(self, mock_esi):
         # The Forge
         regionID = 10000002
         # Mexallon
         item_typeID = 36
 
-        res = Price._get_market_orders(regionID, "Jita", item_typeID)
+        res = Price._get_market_orders(regionID, None, item_typeID)
         self.assertEqual(res[0][0], 0)
         self.assertEqual(res[0][1], 0)
         self.assertEqual(res[1][0], 0)

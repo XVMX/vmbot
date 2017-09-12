@@ -1,3 +1,5 @@
+# concurrent.futures backport for Python < 3.2
+futures
 dnspython
 # Fixed xmpppy version
 git+https://github.com/ArchipelProject/xmpppy

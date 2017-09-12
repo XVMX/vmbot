@@ -2,15 +2,18 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-from datetime import datetime
-import cgi
+from datetime import datetime, timedelta
 import urllib
+import json
 import sqlite3
+
+from concurrent import futures
 
 from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
-from .helpers.exceptions import APIError
+from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
+from .helpers import staticdata
 from .helpers.format import format_affil, format_tickers, disambiguate
 
 import config
@@ -18,35 +21,40 @@ import config
 
 class Price(object):
     @staticmethod
-    def _get_market_orders(region, system, item):
+    def _get_market_orders(regionID, systemID, typeID):
         """Collect buy and sell order stats for item in system.
 
-        Empty system name means data for all systems in region is collected.
+        If systemID is None, data for all systems in region will be collected.
         Output format: ((sell_price, sell_volume), (buy_price, buy_volume))
         """
-        url = "https://crest-tq.eveonline.com/market/{}/orders/".format(region)
-        type_ = "https://crest-tq.eveonline.com/inventory/types/{}/".format(item)
+        # Get valid locations
+        locs = set()
+        if systemID is not None:
+            sys = api.request_esi("/v3/universe/systems/{}/", (systemID,))
+            locs.update(sys.get('stations', []))
 
-        orders = []
-        res = api.request_rest(url, params={'type': type_}, timeout=5)
-        orders.extend(order for order in res['items']
-                      if order['location']['name'].startswith(system))
+        # Collect matching orders
+        params = {'page': 1, 'type_id': typeID}
+        res, head = api.request_esi("/v1/markets/{}/orders/", (regionID,),
+                                    params=params, with_head=True)
+        orders = [o for o in res if systemID is None or o['location_id'] in locs]
+        max_page = int(head.get('X-Pages', 1))
 
-        while 'next' in res:
-            res = api.request_rest(res['next']['href'], timeout=5)
-            orders.extend(order for order in res['items']
-                          if order['location']['name'].startswith(system))
+        while params['page'] < max_page:
+            params['page'] += 1
+            res = api.request_esi("/v1/markets/{}/orders/", (regionID,), params=params)
+            orders.extend(o for o in res if systemID is None or o['location_id'] in locs)
 
         sell = {'volume': 0, 'price': None}
         buy = {'volume': 0, 'price': None}
 
         for order in orders:
-            if order['buy']:
-                buy['volume'] += order['volume']
+            if order['is_buy_order']:
+                buy['volume'] += order['volume_remain']
                 if buy['price'] is None or order['price'] > buy['price']:
                     buy['price'] = order['price']
             else:
-                sell['volume'] += order['volume']
+                sell['volume'] += order['volume_remain']
                 if sell['price'] is None or order['price'] < sell['price']:
                     sell['price'] = order['price']
 
@@ -77,7 +85,7 @@ class Price(object):
 
         # Sort by length of name so that the most similar system is first
         systems = conn.execute(
-            """SELECT regionID, solarSystemName
+            """SELECT regionID, solarSystemID, solarSystemName
                FROM mapSolarSystems
                WHERE solarSystemName LIKE :name
                ORDER BY LENGTH(solarSystemName) ASC;""",
@@ -103,15 +111,14 @@ class Price(object):
 
         typeID, typeName = items.pop(0)
         if region:
-            # Empty systemName matches every system in Price._get_market_orders
+            # Price._get_market_orders returns regional data if systemID is None
             regionID, market_name = region
-            systemName = ""
+            systemID = None
         else:
-            regionID, systemName = systems.pop(0)
-            market_name = systemName
+            regionID, systemID, market_name = systems.pop(0)
 
         try:
-            orders = self._get_market_orders(regionID, systemName, typeID)
+            orders = self._get_market_orders(regionID, systemID, typeID)
         except APIError as e:
             return unicode(e)
 
@@ -131,8 +138,8 @@ class Price(object):
 
         if items:
             reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) == 2 and systems and systemName:
-            reply += "<br />" + disambiguate(args[1], zip(*systems)[1], "systems")
+        if len(args) == 2 and systems and systemID:
+            reply += "<br />" + disambiguate(args[1], zip(*systems)[2], "systems")
 
         return reply
 
@@ -140,94 +147,101 @@ class Price(object):
 class EVEUtils(object):
     @botcmd
     def character(self, mess, args):
-        """<character>[, ...] - Employment information of character(s)"""
+        """<character> - Employment information for a single character"""
+        args = args.strip()
         if not args:
-            return "Please provide character name(s), separated by commas"
+            return "Please provide a character name"
 
-        args = [item.strip() for item in args.split(',')]
-        if len(args) > 10:
-            return "Please limit your search to 10 characters at once"
-
+        params = {'search': args, 'categories': "character", 'strict': "true"}
         try:
-            xml = api.request_xml("https://api.eveonline.com/eve/CharacterID.xml.aspx",
-                                  params={'names': ','.join(args)}).find("rowset")
+            res = api.request_esi("/v1/search/", params=params)
+            char_id = res['character'][0]
+        except APIError as e:
+            return unicode(e)
+        except KeyError:
+            return "This character doesn't exist"
+
+        # Load character data
+        try:
+            data = api.request_esi("/v4/characters/{}/", (char_id,))
         except APIError as e:
             return unicode(e)
 
-        charIDs = [int(character.attrib['characterID']) for character in xml
-                   if int(character.attrib['characterID'])]
+        # Process ESI lookups in parallel
+        pool = futures.ThreadPoolExecutor(max_workers=10)
 
-        if not charIDs:
-            return "None of these character(s) exist"
+        payload = json.dumps([char_id])
+        affil_fut = pool.submit(api.request_esi, "/v1/characters/affiliation/",
+                                data=payload, method="POST")
+        hist_fut = pool.submit(api.request_esi, "/v1/characters/{}/corporationhistory/", (char_id,))
 
+        faction_id = None
         try:
-            xml = api.request_xml(
-                "https://api.eveonline.com/eve/CharacterAffiliation.xml.aspx",
-                params={'ids': ','.join(map(unicode, charIDs))}, timeout=5
-            ).find("rowset")
-        except APIError as e:
-            return unicode(e)
+            affil = affil_fut.result()[0]
+            faction_id = affil.get('faction_id', None)
+        except APIError:
+            pass
 
-        # Basic multi-character information
-        descriptions = []
-        for row in xml:
-            characterName = row.attrib['characterName']
-            corporationName = row.attrib['corporationName']
-            allianceName = row.attrib['allianceName']
-            factionName = row.attrib['factionName']
-            corp_ticker, alliance_ticker = api.get_tickers(int(row.attrib['corporationID']),
-                                                           int(row.attrib['allianceID']))
-
-            descriptions.append(format_affil(characterName, corporationName, allianceName,
-                                             factionName, corp_ticker, alliance_ticker))
-
-        reply = "<br />".join(descriptions)
-
-        if len(charIDs) > 1:
-            return reply
-
-        # Detailed single-character information
+        corp_hist = []
         try:
-            xml = api.request_xml("https://api.eveonline.com/eve/CharacterInfo.xml.aspx",
-                                  params={'characterID': charIDs[0]})
-        except APIError as e:
-            return "{}<br />{}".format(reply, e)
+            corp_hist = hist_fut.result()
+        except APIError:
+            pass
 
-        reply += "<br />Security status: <strong>{:.2f}</strong>".format(
-            float(xml.find("securityStatus").text)
-        )
+        # Process corporation history
+        num_recs = len(corp_hist)
+        corp_hist.sort(key=lambda x: x['record_id'])
+        for i in reversed(xrange(num_recs)):
+            rec = corp_hist[i]
+            rec['start_date'] = datetime.strptime(rec['start_date'], "%Y-%m-%dT%H:%M:%SZ")
+            rec['end_date'] = corp_hist[i + 1]['start_date'] if i + 1 < num_recs else None
 
-        # /eve/CharacterInfo.xml.aspx returns corp history from latest to earliest
-        corp_history = [row.attrib for row in reversed(xml.findall("rowset/row"))]
-        num_records = len(corp_history)
-        # Add endDate based on next startDate
-        for i in xrange(num_records):
-            corp_history[i]['endDate'] = (corp_history[i + 1]['startDate']
-                                          if i + 1 < num_records else None)
-        corp_history = corp_history[-10:]
+        # Show all entries from the last 5 years (min 10) or the 25 most recent entries
+        min_age = datetime.utcnow() - timedelta(days=5 * 365)
+        max_hist = max(-25, -len(corp_hist))
+        while max_hist < -10 and corp_hist[max_hist + 1]['start_date'] < min_age:
+            max_hist += 1
+        corp_hist = corp_hist[max_hist:]
+
+        # Load corporation data
+        corp_ids = {data['corporation_id']}
+        corp_ids.update(rec['corporation_id'] for rec in corp_hist)
+
+        corp_futs = []
+        hist_futs = []
+
+        for id_ in corp_ids:
+            f = pool.submit(api.request_esi, "/v3/corporations/{}/", (id_,))
+            f.req_id = id_
+            corp_futs.append(f)
+
+            f = pool.submit(api.request_esi, "/v2/corporations/{}/alliancehistory/", (id_,))
+            f.req_id = id_
+            hist_futs.append(f)
+
+        corps = {}
+        for f in futures.as_completed(corp_futs):
+            try:
+                corps[f.req_id] = f.result()
+            except APIError:
+                corps[f.req_id] = {'corporation_name': "ERROR", 'ticker': "ERROR"}
+
+        ally_hist = {}
+        for f in futures.as_completed(hist_futs):
+            try:
+                ally_hist[f.req_id] = f.result()
+                ally_hist[f.req_id].sort(key=lambda x: x['record_id'])
+            except APIError:
+                ally_hist[f.req_id] = []
 
         # Corporation Alliance history
-        ally_hist = {}
-        for corp in {rec['corporationID'] for rec in corp_history}:
-            try:
-                hist = api.request_rest(
-                    "https://esi.tech.ccp.is/latest/corporations/{}/alliancehistory/".format(corp),
-                    params={'datasource': "tranquility"}
-                )
-            except APIError:
-                ally_hist[corp] = []
-                continue
-            hist.sort(key=lambda x: x['record_id'])
-            ally_hist[corp] = hist
-
-        for i in xrange(len(corp_history)):
-            record = corp_history[i]
-            hist = ally_hist[record['corporationID']]
+        ally_ids = {data['alliance_id']} if 'alliance_id' in data else set()
+        for rec in corp_hist:
+            hist = ally_hist[rec['corporation_id']]
             date_hist = [datetime.strptime(ally['start_date'], "%Y-%m-%dT%H:%M:%SZ")
                          for ally in hist]
-            start_date = datetime.strptime(record['startDate'], "%Y-%m-%d %H:%M:%S")
-            end_date = (datetime.strptime(record['endDate'], "%Y-%m-%d %H:%M:%S")
-                        if record['endDate'] is not None else datetime.utcnow())
+            start_date = rec['start_date']
+            end_date = rec['end_date'] or datetime.utcnow()
 
             j, k = 0, len(date_hist) - 1
             while j <= k:
@@ -240,23 +254,50 @@ class EVEUtils(object):
             j = max(0, j - 1)
             k = min(len(date_hist), k + 1)
 
-            allyIDs = [rec['alliance_id'] for rec in hist[j:k] if 'alliance_id' in rec]
-            ally_tickers = {_id: api.get_tickers(None, _id)[1] for _id in set(allyIDs)}
-            corp_history[i]['alliances'] = [ally_tickers[_id] for _id in allyIDs]
+            rec['alliances'] = [ent['alliance_id'] for ent in hist[j:k] if 'alliance_id' in ent]
+            ally_ids.update(rec['alliances'])
 
-        for record in corp_history:
-            corp_ticker, _ = api.get_tickers(int(record['corporationID']), None)
-            ally_ticker = "</strong>/<strong>".join(cgi.escape(format_tickers(None, ticker))
-                                                    for ticker in record['alliances'])
-            reply += "<br />From {} til {} in <strong>{} {}{}</strong>".format(
-                record['startDate'], record['endDate'] or "now",
-                record['corporationName'], cgi.escape(format_tickers(corp_ticker, None)),
-                (" " + ally_ticker if ally_ticker else "")
+        # Load alliance data
+        ally_futs = []
+        for id_ in ally_ids:
+            f = pool.submit(api.request_esi, "/v2/alliances/{}/", (id_,))
+            f.req_id = id_
+            ally_futs.append(f)
+
+        allys = {}
+        for f in futures.as_completed(ally_futs):
+            try:
+                allys[f.req_id] = f.result()
+            except APIError:
+                allys[f.req_id] = {'alliance_name': "ERROR", 'ticker': "ERROR"}
+
+        # Format output
+        corp = corps[data['corporation_id']]
+        ally = allys[data['alliance_id']] if 'alliance_id' in data else {}
+        fac_name = staticdata.faction_name(faction_id) if faction_id is not None else None
+
+        reply = format_affil(data['name'], data.get('security_status', 0),
+                             corp['corporation_name'], ally.get('alliance_name', None),
+                             fac_name, corp['ticker'], ally.get('ticker', None))
+
+        for rec in corp_hist:
+            end = ("{:%Y-%m-%d %H:%M:%S}".format(rec['end_date'])
+                   if rec['end_date'] is not None else "now")
+            corp = corps[rec['corporation_id']]
+            corp_ticker = corp['ticker']
+            ally_ticker = "</strong>/<strong>".join(
+                format_tickers(None, allys[id_]['ticker'], html=True) for id_ in rec['alliances']
+            )
+            ally_ticker = " " + ally_ticker if ally_ticker else ""
+
+            reply += "<br />From {:%Y-%m-%d %H:%M:%S} til {} in <strong>{} {}{}</strong>".format(
+                rec['start_date'], end, corp['corporation_name'],
+                format_tickers(corp_ticker, None, html=True), ally_ticker
             )
 
-        if num_records > 10:
+        if len(corp_hist) < num_recs:
             reply += "<br />The full history is available at https://evewho.com/pilot/{}/".format(
-                urllib.quote_plus(xml.find("characterName").text)
+                urllib.quote_plus(data['name'])
             )
 
         return reply
@@ -267,16 +308,16 @@ class EVEUtils(object):
         reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(datetime.utcnow())
 
         try:
-            xml = api.request_xml("https://api.eveonline.com/server/ServerStatus.xml.aspx")
+            stat = api.request_esi("/v1/status/")
+        except APIStatusError:
+            reply += ". The server is offline."
         except APIError:
             pass
         else:
-            if xml.find("serverOpen").text == "True":
-                reply += ". The server is online and {:,} players are playing.".format(
-                    int(xml.find("onlinePlayers").text)
-                )
-            else:
-                reply += ". The server is offline."
+            reply += ". The server is online"
+            if stat.get('vip', False):
+                reply += " (VIP mode)"
+            reply += " and {:,} players are playing.".format(stat['players'])
 
         return reply
 

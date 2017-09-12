@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from xmpp.protocol import JID
 
 from .botcmd import botcmd
+from .helpers.decorators import inject_db
 from .helpers.regex import TIME_OFFSET_REGEX
 from .models import Note
 
@@ -37,7 +38,8 @@ class Pager(object):
         return user, text, datetime.utcnow() + delta
 
     @botcmd
-    def remindme(self, mess, args):
+    @inject_db
+    def remindme(self, mess, args, session):
         """<offset> <msg> - Reminds you about <msg> in the current channel
 
         Reminders will be discarded 30 days after their offset ran out.
@@ -52,11 +54,12 @@ class Pager(object):
         text = REMINDER_FMT.format(user, datetime.utcnow(), text)
         note = Note(user, text, offset, room=mess.getFrom().getStripped())
 
-        Note.add_note(note)
+        Note.add_note(note, session)
         return "Reminder for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
-    def sendmsg(self, mess, args):
+    @inject_db
+    def sendmsg(self, mess, args, session):
         """<user> [offset] <msg> - Sends <msg> to <user> in the current channel
 
         If [offset] is present, message delivery will be delayed until that
@@ -71,11 +74,12 @@ class Pager(object):
         except ValueError as e:
             return unicode(e)
 
-        Note.add_note(note)
+        Note.add_note(note, session)
         return "Message for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
-    def sendpm(self, mess, args):
+    @inject_db
+    def sendpm(self, mess, args, session):
         """<user> [offset] <msg> - Sends <msg> to <user> via PM
 
         If [offset] is present, message delivery will be delayed until that
@@ -92,5 +96,5 @@ class Pager(object):
         except ValueError as e:
             return unicode(e)
 
-        Note.add_note(note)
+        Note.add_note(note, session)
         return "PM for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)

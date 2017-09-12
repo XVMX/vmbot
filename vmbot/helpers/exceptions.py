@@ -11,6 +11,14 @@ class APIError(Exception):
     pass
 
 
+class APIStatusError(APIError):
+    pass
+
+
+class APIRequestError(APIError):
+    pass
+
+
 class TokenExpiredError(Exception):
     pass
 

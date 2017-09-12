@@ -6,12 +6,13 @@ import unittest
 import mock
 
 import os
-import xml.etree.ElementTree as ET
+import StringIO
+import logging
 
 import requests
 
 from vmbot.helpers.files import BOT_DB
-from vmbot.helpers.exceptions import APIError, NoCacheError
+from vmbot.helpers.exceptions import APIError, APIStatusError, APIRequestError, NoCacheError
 import vmbot.helpers.database as db
 
 from vmbot.helpers import api
@@ -22,6 +23,16 @@ def flawed_response(*args, **kwargs):
     res = requests.Response()
     res.status_code = 404
     res._content = b"ASCII text"
+    res.encoding = "ascii"
+    return res
+
+
+def esi_warning_response(*args, **kwargs):
+    """Return a requests.Response with a deprecation warning header."""
+    res = requests.Response()
+    res.status_code = 200
+    res.headers['warning'] = "299 - This endpoint is deprecated."
+    res._content = b'{"res": true}'
     res.encoding = "ascii"
     return res
 
@@ -43,6 +54,14 @@ class TestAPI(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         return cls.setUpClass()
+
+    def test_get_db_session(self):
+        sess = api._get_db_session()
+        self.assertIs(api._get_db_session(), sess)
+
+    def test_get_requests_session(self):
+        sess = api._get_requests_session()
+        self.assertIs(api._get_requests_session(), sess)
 
     def test_get_tickers(self):
         # corporationID: 1164409536 [OTHER]
@@ -76,11 +95,8 @@ class TestAPI(unittest.TestCase):
     def test_zbot_APIError(self, mock_rest):
         self.assertEqual(api.zbot("54520379"), "TestException")
 
-    def test_get_ref_types(self):
-        self.assertEqual(api.get_ref_types()[85], "Bounty Prizes")
-
     def test_request_rest(self):
-        test_url = "https://crest-tq.eveonline.com/"
+        test_url = "https://httpbin.org/cache/60"
 
         # Test without cache
         with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
@@ -94,30 +110,44 @@ class TestAPI(unittest.TestCase):
         # Test cached response
         self.assertDictEqual(api.request_rest(test_url), res_cache)
 
-    def test_request_xml(self):
-        test_url = "https://api.eveonline.com/server/ServerStatus.xml.aspx"
+    def test_request_esi(self):
+        test_route = "/v1/status/"
 
         # Test without cache
-        with mock.patch("vmbot.helpers.api.parse_xml_cache", side_effect=NoCacheError):
-            res_nocache = api.request_xml(test_url)
-            self.assertIsInstance(res_nocache, ET.Element)
+        with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
+            res_nocache = api.request_esi(test_route)
+            self.assertIsInstance(res_nocache, dict)
 
         # Test with cache
-        res_cache = api.request_xml(test_url)
-        self.assertIsInstance(res_cache, ET.Element)
+        res, res_head = api.request_esi(test_route, with_head=True)
+        self.assertIsInstance(res, dict)
 
         # Test cached response
-        self.assertEqual(ET.tostring(api.request_xml(test_url)), ET.tostring(res_cache))
+        res_cache, res_cache_head = api.request_esi(test_route, with_head=True)
+        self.assertDictEqual(res_cache, res)
+        self.assertDictEqual(dict(res_cache_head), dict(res_head))
 
-    @mock.patch("requests.request",
-                side_effect=requests.exceptions.RequestException("TestException"))
+    @mock.patch("vmbot.helpers.api.request_api", side_effect=esi_warning_response)
+    def test_request_esi_warning(self, mock_esi):
+        log = StringIO.StringIO()
+        handler = logging.StreamHandler(log)
+        logger = logging.getLogger("vmbot.helpers.api.esi")
+        logger.addHandler(handler)
+
+        self.assertDictEqual(api.request_esi("TestURL"), {'res': True})
+        self.assertTrue(log.getvalue().startswith('Route "TestURL" is deprecated'))
+
+        logger.removeHandler(handler)
+
+    @mock.patch("requests.Session.request", side_effect=requests.RequestException("TestException"))
     def test_request_api_RequestException(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "Error while connecting to API: TestException",
+        self.assertRaisesRegexp(APIRequestError, "Error while connecting to API: TestException",
                                 api.request_api, "TestURL")
 
-    @mock.patch("requests.request", side_effect=flawed_response)
+    @mock.patch("requests.Session.request", side_effect=flawed_response)
     def test_request_api_flawedresponse(self, mock_requests):
-        self.assertRaisesRegexp(APIError, "API returned error code 404", api.request_api, "TestURL")
+        self.assertRaisesRegexp(APIStatusError, "API returned error code 404",
+                                api.request_api, "TestURL")
 
 
 if __name__ == "__main__":

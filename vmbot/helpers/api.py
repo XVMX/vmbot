@@ -2,17 +2,42 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+import copy
+import threading
 import json
-import xml.etree.ElementTree as ET
+import logging
+import traceback
 
 import requests
 
-from .exceptions import NoCacheError, APIError
+from .exceptions import NoCacheError, APIError, APIStatusError, APIRequestError
 from . import database as db
-from ..models.cache import parse_http_cache, parse_xml_cache, HTTPCacheObject
+from ..models.cache import parse_http_cache, HTTPCacheObject, ESICacheObject
 from . import staticdata
 from .format import format_tickers
 from ..models import ISK
+
+import config
+
+_API_REG = threading.local()
+
+
+def _get_db_session():
+    """Retrieve or create a thread-local SQLAlchemy session."""
+    try:
+        return _API_REG.db_sess
+    except AttributeError:
+        _API_REG.db_sess = db.Session()
+        return _API_REG.db_sess
+
+
+def _get_requests_session():
+    """Retrieve or create a thread-local requests session."""
+    try:
+        return _API_REG.req_sess
+    except AttributeError:
+        _API_REG.req_sess = requests.Session()
+        return _API_REG.req_sess
 
 
 def get_tickers(corporationID, allianceID):
@@ -21,33 +46,24 @@ def get_tickers(corporationID, allianceID):
     if corporationID:
         corp_ticker = "ERROR"
         try:
-            xml = request_xml("https://api.eveonline.com/corp/CorporationSheet.xml.aspx",
-                              params={'corporationID': corporationID})
-
-            corp_ticker = xml.find("ticker").text
-            if allianceID is None:
-                allianceID = int(xml.find("allianceID").text) or None
-        except (APIError, AttributeError):
+            corp = request_esi("/v3/corporations/{}/", (corporationID,))
+        except APIError:
             pass
+        else:
+            corp_ticker = corp['ticker']
+            allianceID = allianceID or corp.get('alliance_id', None)
 
     alliance_ticker = None
     if allianceID:
         alliance_ticker = "ERROR"
         try:
-            alliance_ticker = request_xml(
-                "https://api.eveonline.com/eve/AllianceList.xml.aspx", params={'version': 1}
-            ).find("rowset/row[@allianceID='{}']".format(allianceID)).attrib['shortName']
-        except (APIError, AttributeError):
+            ally = request_esi("/v2/alliances/{}/", (allianceID,))
+        except APIError:
             pass
+        else:
+            alliance_ticker = ally['ticker']
 
     return corp_ticker, alliance_ticker
-
-
-def get_ref_types():
-    xml = request_xml("https://api.eveonline.com/eve/RefTypes.xml.aspx")
-    ref_types = [row.attrib for row in xml.findall("rowset/row")]
-
-    return {int(type_['refTypeID']): type_['refTypeName'] for type_ in ref_types}
 
 
 def zbot(killID):
@@ -78,12 +94,15 @@ def zbot(killID):
     )
 
 
-def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
-    session = db.Session()
-    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
+def request_rest(url, params=None, data=None, headers=None, timeout=3, method="GET"):
+    # url, timeout, and method are immutable
+    params, data, headers = copy.copy(params), copy.copy(data), copy.copy(headers)
+
+    session = _get_db_session()
+    res = HTTPCacheObject.get(session, url, params=params, data=data, headers=headers)
 
     if res is None:
-        r = request_api(url, params, headers, timeout, method)
+        r = request_api(url, params, data, headers, timeout, method)
         res = r.content
 
         try:
@@ -91,46 +110,65 @@ def request_rest(url, params=None, headers=None, timeout=3, method="GET"):
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
+            HTTPCacheObject(url, r.content, expiry, params=params,
+                            data=data, headers=headers).save(session)
 
     session.close()
     return json.loads(res.decode("utf-8"))
 
 
-def request_xml(url, params=None, headers=None, timeout=3, method="POST"):
-    session = db.Session()
-    res = HTTPCacheObject.get(session, url, params=params, headers=headers)
+def request_esi(route, fmt=(), params=None, data=None, headers=None,
+                timeout=3, method="GET", with_head=False):
+    url = (config.ESI['base_url'] if route.startswith('/') else "") + route.format(*fmt)
 
-    if res is None:
-        r = request_api(url, params, headers, timeout, method)
-        res = ET.fromstring(r.content)
+    # url (route + fmt), timeout, and method are immutable
+    params = {} if params is None else copy.copy(params)
+    data, headers = copy.copy(data), copy.copy(headers)
+
+    params['datasource'] = config.ESI['datasource']
+    params['language'] = config.ESI['lang']
+
+    session = _get_db_session()
+    r = ESICacheObject.get(session, url, params=params, data=data, headers=headers)
+
+    if r is None:
+        r = request_api(url, params, data, headers, timeout, method)
+
+        if 'warning' in r.headers:
+            # Versioned endpoint is outdated (199) or deprecated (299)
+            kw = "outdated" if r.headers['warning'][:3] == "199" else "deprecated"
+            trace = "".join(traceback.format_stack(limit=3)[:-1])
+
+            warn = 'Route "{}" is {}'.format(route, kw)
+            warn += "\nResponse header: warning: " + r.headers['warning']
+            warn += "\nTraceback (most recent call last):\n" + trace
+            logging.getLogger(__name__ + ".esi").warning(warn, extra={'gh_labels': ["esi-warning"]})
 
         try:
-            expiry = parse_xml_cache(res)
+            expiry = parse_http_cache(r.headers)
         except NoCacheError:
             pass
         else:
-            HTTPCacheObject(url, r.content, expiry, params=params, headers=headers).save(session)
-    else:
-        res = ET.fromstring(res)
+            ESICacheObject(url, r, expiry, params=params, data=data, headers=headers).save(session)
 
     session.close()
-    return res.find("result")
+    if with_head:
+        return r.json(), r.headers
+    return r.json()
 
 
-def request_api(url, params=None, headers=None, timeout=3, method="GET"):
+def request_api(url, params=None, data=None, headers=None, timeout=3, method="GET"):
     if headers is None:
         headers = {}
     headers['User-Agent'] = "XVMX VMBot (JabberBot)"
 
     try:
-        if method in ("GET", "HEAD"):
-            r = requests.request(method, url, params=params, headers=headers, timeout=timeout)
-        else:
-            r = requests.request(method, url, data=params, headers=headers, timeout=timeout)
-    except requests.exceptions.RequestException as e:
-        raise APIError("Error while connecting to API: {}".format(e))
-    if r.status_code != 200:
-        raise APIError("API returned error code {}".format(r.status_code))
+        r = _get_requests_session().request(method, url, params=params, data=data,
+                                            headers=headers, timeout=timeout)
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        raise APIStatusError("API returned error code {}".format(e.response.status_code))
+    except requests.RequestException as e:
+        raise APIRequestError("Error while connecting to API: {}".format(e))
 
     return r
