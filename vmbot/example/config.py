@@ -42,8 +42,9 @@ JABBER = {
     )
 }
 
-# Bot owner's corporationID
+# Bot owner's corporation/alliance id
 CORPORATION_ID = 1234567890
+ALLIANCE_ID = None
 
 # ESI
 # Data sources: tranquility, singularity
