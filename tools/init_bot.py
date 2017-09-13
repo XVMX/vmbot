@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import cron.path
 from cron import news_feed
+from cron import evemail
 from cron import wallet_update
 
 from vmbot.helpers import database as db
@@ -22,6 +23,7 @@ news_feed.init(session)
 
 # Initialize API updates
 token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
+evemail.init(session, token)
 wallet_update.init(session, token)
 
 session.close()

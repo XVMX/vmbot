@@ -42,8 +42,9 @@ JABBER = {
     )
 }
 
-# Bot owner's corporationID
+# Bot owner's corporation/alliance id
 CORPORATION_ID = 1234567890
+ALLIANCE_ID = None
 
 # ESI
 # Data sources: tranquility, singularity
@@ -56,7 +57,7 @@ ESI = {
 
 # EVE SSO
 # Base URLs: https://login.eveonline.com (TQ), https://sisilogin.testeveonline.com (Sisi)
-# Required scopes: esi-wallet.read_corporation_wallets.v1
+# Required scopes: esi-mail.read_mail.v1, esi-wallet.read_corporation_wallets.v1
 SSO = {
     'base_url': "https://login.eveonline.com",
     'client_id': "",

@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from . import path
 from . import news_feed
+from . import evemail
 from . import wallet_update
 
 from vmbot.helpers import database as db
@@ -12,7 +13,7 @@ from vmbot.helpers.sso import SSOToken
 import config
 
 FEEDS = (news_feed,)
-ESI_UPDATES = (wallet_update,)
+ESI_UPDATES = (evemail, wallet_update)
 
 if __name__ == "__main__":
     session = db.Session()
