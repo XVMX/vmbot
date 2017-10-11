@@ -40,6 +40,13 @@ def _get_requests_session():
         return _API_REG.req_sess
 
 
+def get_name(id_):
+    try:
+        return request_esi("/v2/universe/names/", data=json.dumps([id_]), method="POST")[0]['name']
+    except (APIError, IndexError):
+        return "{ERROR}"
+
+
 def get_tickers(corporationID, allianceID):
     """Resolve corporationID/allianceID to their respective ticker(s)."""
     corp_ticker = None
