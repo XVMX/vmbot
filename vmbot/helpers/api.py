@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+from datetime import datetime
 import copy
 import threading
 import json
@@ -40,6 +41,13 @@ def _get_requests_session():
         return _API_REG.req_sess
 
 
+def get_name(id_):
+    try:
+        return request_esi("/v2/universe/names/", data=json.dumps([id_]), method="POST")[0]['name']
+    except (APIError, IndexError):
+        return "{ERROR}"
+
+
 def get_tickers(corporationID, allianceID):
     """Resolve corporationID/allianceID to their respective ticker(s)."""
     corp_ticker = None
@@ -66,31 +74,31 @@ def get_tickers(corporationID, allianceID):
     return corp_ticker, alliance_ticker
 
 
-def zbot(killID):
+def zbot(kill_id):
     """Create a compact overview of a zKB killmail."""
-    url = "https://zkillboard.com/api/killID/{}/no-items/".format(killID)
+    url = "https://zkillboard.com/api/killID/{}/no-items/".format(kill_id)
     try:
         killdata = request_rest(url)
     except APIError as e:
         return unicode(e)
 
     if not killdata:
-        return "Failed to load data for https://zkillboard.com/kill/{}/".format(killID)
+        return "Failed to load data for https://zkillboard.com/kill/{}/".format(kill_id)
 
     killdata = killdata[0]
     victim = killdata['victim']
-    system = staticdata.solarSystemData(killdata['solarSystemID'])
-    corp_ticker, alliance_ticker = get_tickers(victim['corporationID'], victim['allianceID'])
+    name = get_name(victim.get('character_id', victim['corporation_id']))
+    system = staticdata.solarSystemData(killdata['solar_system_id'])
+    corp_ticker, alliance_ticker = get_tickers(victim['corporation_id'],
+                                               victim.get('alliance_id', None))
+    killtime = datetime.strptime(killdata['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
 
     return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
-            "{} ({}) | {} participant(s) ({:,} damage) | {}").format(
-        victim['characterName'] or victim['corporationName'],
-        format_tickers(corp_ticker, alliance_ticker),
-        staticdata.typeName(victim['shipTypeID']), killdata['zkb']['points'],
-        ISK(killdata['zkb']['totalValue']),
-        system['solarSystemName'], system['regionName'],
-        len(killdata['attackers']), victim['damageTaken'],
-        killdata['killTime']
+            "{} ({}) | {} participant(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(
+        name, format_tickers(corp_ticker, alliance_ticker),
+        staticdata.typeName(victim['ship_type_id']), killdata['zkb']['points'],
+        ISK(killdata['zkb']['totalValue']), system['solarSystemName'], system['regionName'],
+        len(killdata['attackers']), victim['damage_taken'], killtime
     )
 
 

@@ -63,6 +63,13 @@ class TestAPI(unittest.TestCase):
         sess = api._get_requests_session()
         self.assertIs(api._get_requests_session(), sess)
 
+    def test_get_name(self):
+        # character_id: 91754106 Joker Gates
+        self.assertEqual(api.get_name(91754106), "Joker Gates")
+
+    def test_get_name_invalidid(self):
+        self.assertEqual(api.get_name(-1), "{ERROR}")
+
     def test_get_tickers(self):
         # corporationID: 1164409536 [OTHER]
         # allianceID: 159826257 <OTHER>
