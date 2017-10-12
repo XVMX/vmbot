@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import time
+from datetime import datetime
 import threading
 import Queue
 
@@ -14,7 +15,8 @@ from ..models import ISK
 
 KM_MIN_VAL = 5000000
 REDISQ_URL = "https://redisq.zkillboard.com/listen.php"
-FEED_FMT = "{} {} | {} | {:.2f} ISK | {} ({}) | {} | https://zkillboard.com/kill/{}/"
+FEED_FMT = ("{} {} | {} | {:.2f} ISK | {} ({}) | "
+            "{:%Y-%m-%d %H:%M:%S} | https://zkillboard.com/kill/{}/")
 KILL_SPOOL = 30 * 60
 KILL_FMT = "{} new kill(s) worth {:.2f} ISK: https://zkillboard.com/corporation/{}/kills/"
 
@@ -30,15 +32,13 @@ class KMFeed(object):
             victim = km['victim']
             system = staticdata.solarSystemData(km['solarSystem']['id'])
 
-            self.name = (victim['character']['name'] if 'character' in victim
-                         else victim['corporation']['name'])
-            self.tickers = api.get_tickers(
-                victim['corporation']['id'],
-                victim['alliance']['id'] if 'alliance' in victim else None
-            )
-            self.ship, self.value = victim['shipType']['name'], ISK(zkb['totalValue'])
+            self.id, self.value = km['killmail_id'], ISK(zkb['totalValue'])
+            self.name = api.get_name(victim.get('character_id', victim['corporation_id']))
+            self.tickers = api.get_tickers(victim['corporation_id'],
+                                           victim.get('alliance_id', None))
+            self.ship = staticdata.typeName(victim['ship_type_id'])
             self.system, self.region = system['solarSystemName'], system['regionName']
-            self.time, self.id = km['killTime'], km['killID']
+            self.time = datetime.strptime(km['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
 
         def format(self):
             return FEED_FMT.format(self.name, format_tickers(*self.tickers), self.ship,
@@ -101,11 +101,11 @@ class KMFeed(object):
                 continue
 
             if res is not None:
-                if (res['killmail']['victim']['corporation']['id'] == self.corp_id
+                if (res['killmail']['victim']['corporation_id'] == self.corp_id
                         and res['zkb']['totalValue'] >= KM_MIN_VAL):
                     self.loss_queue.put(KMFeed.KM(res))
-                elif any(att['corporation']['id'] == self.corp_id
-                         for att in res['killmail']['attackers'] if 'corporation' in att):
+                elif any(att['corporation_id'] == self.corp_id
+                         for att in res['killmail']['attackers'] if 'corporation_id' in att):
                     with self.kill_lock:
                         self.kills += 1
                         self.kill_value += res['zkb']['totalValue']
