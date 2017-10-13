@@ -88,7 +88,7 @@ def zbot(kill_id):
     killdata = killdata[0]
     victim = killdata['victim']
     name = get_name(victim.get('character_id', victim['corporation_id']))
-    system = staticdata.solarSystemData(killdata['solar_system_id'])
+    system = staticdata.solar_system_data(killdata['solar_system_id'])
     corp_ticker, alliance_ticker = get_tickers(victim['corporation_id'],
                                                victim.get('alliance_id', None))
     killtime = datetime.strptime(killdata['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
@@ -97,7 +97,7 @@ def zbot(kill_id):
             "{} ({}) | {} participant(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(
         name, format_tickers(corp_ticker, alliance_ticker),
         staticdata.typeName(victim['ship_type_id']), killdata['zkb']['points'],
-        ISK(killdata['zkb']['totalValue']), system['solarSystemName'], system['regionName'],
+        ISK(killdata['zkb']['totalValue']), system['system_name'], system['region_name'],
         len(killdata['attackers']), victim['damage_taken'], killtime
     )
 
