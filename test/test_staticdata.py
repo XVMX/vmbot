@@ -15,6 +15,19 @@ class TestStaticdata(unittest.TestCase):
     def test_typeName_invaliditem(self):
         self.assertEqual(staticdata.typeName(-1), "{Failed to load}")
 
+    def test_region_data(self):
+        # region_id: 10000002 The Forge
+        self.assertDictEqual(
+            staticdata.region_data(10000002),
+            {'region_id': 10000002, 'region_name': "The Forge"}
+        )
+
+    def test_region_data_invalidregion(self):
+        self.assertDictEqual(
+            staticdata.region_data(-1),
+            {'region_id': 0, 'region_name': "{Failed to load}"}
+        )
+
     def test_solar_system_data(self):
         # system_id: 30000142 Jita
         self.assertDictEqual(

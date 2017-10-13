@@ -23,6 +23,22 @@ def typeName(typeID):
     return item[1]
 
 
+def region_data(region_id):
+    """Resolve a region_id to its data."""
+    conn = sqlite3.connect(STATICDATA_DB)
+    region = conn.execute(
+        """SELECT regionID, regionName
+           FROM mapRegions
+           WHERE regionID = :id;""",
+        {'id': region_id}
+    ).fetchone()
+    conn.close()
+
+    if not region:
+        return {'region_id': 0, 'region_name': "{Failed to load}"}
+    return {'region_id': region[0], 'region_name': region[1]}
+
+
 def solar_system_data(system_id):
     """Resolve a system_id to its data."""
     conn = sqlite3.connect(STATICDATA_DB)
