@@ -14,6 +14,7 @@ from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
+from .helpers.sso import SSOToken
 from .helpers import staticdata
 from .helpers.format import format_affil, format_tickers, disambiguate
 
@@ -133,6 +134,13 @@ class Price(object):
 
         futures.wait(order_futs)
         return Price._calc_totals(orders)
+
+    def _get_token(self):
+        try:
+            return self._token
+        except AttributeError:
+            self._token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
+            return self._token
 
     @botcmd
     def price(self, mess, args):
