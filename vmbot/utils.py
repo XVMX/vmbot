@@ -156,27 +156,26 @@ class Price(object):
         except IndexError:
             system_or_region = "Jita"
 
-        conn = sqlite3.connect(STATICDATA_DB)
+        token = self._get_token()
+        params = {'search': system_or_region, 'categories': "region,solar_system"}
+        try:
+            if "esi-search.search_structures.v1" in token.scopes:
+                params['categories'] += ",structure"
+                res = token.request_esi("/v3/characters/{}/search/",
+                                        (token.character_id,), params=params)
+            else:
+                res = api.request_esi("/v2/search/", params=params)
+        except APIError as e:
+            return unicode(e)
 
-        region = conn.execute(
-            """SELECT regionID, regionName
-               FROM mapRegions
-               WHERE regionName LIKE :name;""",
-            {'name': system_or_region}
-        ).fetchone()
-
-        # Sort by length of name so that the most similar system is first
-        systems = conn.execute(
-            """SELECT regionID, solarSystemID, solarSystemName
-               FROM mapSolarSystems
-               WHERE solarSystemName LIKE :name
-               ORDER BY LENGTH(solarSystemName) ASC;""",
-            {'name': "%{}%".format(system_or_region)}
-        ).fetchall()
-        if not systems and not region:
+        region_id = res.get('region', [None])[0]
+        system_ids = res.get('solar_system', [])
+        struct_ids = res.get('structure', [])
+        if region_id is None and not system_ids:
             return "Failed to find a matching system/region"
 
         # Sort by length of name so that the most similar item is first
+        conn = sqlite3.connect(STATICDATA_DB)
         items = conn.execute(
             """SELECT typeID, typeName
                FROM invTypes
@@ -186,31 +185,32 @@ class Price(object):
                ORDER BY LENGTH(typeName) ASC;""",
             {'name': "%{}%".format(item)}
         ).fetchall()
+        conn.close()
+
         if not items:
             return "Failed to find a matching item"
 
-        conn.close()
-
-        typeID, typeName = items.pop(0)
-        if region:
-            # Price._get_market_orders returns regional data if systemID is None
-            regionID, market_name = region
-            systemID = None
-        else:
-            regionID, systemID, market_name = systems.pop(0)
-
+        type_id, type_name = items.pop(0)
         try:
-            orders = self._get_market_orders(regionID, systemID, typeID)
+            if region_id is not None:
+                market_name = staticdata.region_data(region_id)['region_name']
+                totals = self._get_region_orders(region_id, type_id)
+            else:
+                system_id = system_ids.pop(0)
+                sys_data = staticdata.solar_system_data(system_id)
+                market_name = sys_data['system_name']
+                totals = self._get_system_orders(token, sys_data['region_id'],
+                                                 system_id, struct_ids, type_id)
         except APIError as e:
             return unicode(e)
 
-        (sell_price, sell_volume), (buy_price, buy_volume) = orders
+        (sell_price, sell_volume), (buy_price, buy_volume) = totals
 
         reply = ("<strong>{}</strong> in <strong>{}</strong>:<br />"
                  "Sells: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                  "Buys: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                  "Spread: ").format(
-            typeName, market_name, sell_price, sell_volume, buy_price, buy_volume
+            type_name, market_name, sell_price, sell_volume, buy_price, buy_volume
         )
         try:
             reply += "{:,.2%}".format((sell_price - buy_price) / sell_price)
@@ -220,8 +220,11 @@ class Price(object):
 
         if items:
             reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) == 2 and systems and systemID:
-            reply += "<br />" + disambiguate(args[1], zip(*systems)[2], "systems")
+        if len(args) == 2 and system_ids and region_id is None:
+            reply += "<br />" + disambiguate(
+                args[1], [staticdata.solar_system_data(id_)['system_name']
+                          for id_ in system_ids], "systems"
+            )
 
         return reply
 
