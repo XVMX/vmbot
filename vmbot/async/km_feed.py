@@ -30,7 +30,7 @@ class KMFeed(object):
         def __init__(self, data):
             km, zkb = data['killmail'], data['zkb']
             victim = km['victim']
-            system = staticdata.solar_system_data(km['solar_system_id'])
+            system = staticdata.system_data(km['solar_system_id'])
 
             self.id, self.value = km['killmail_id'], ISK(zkb['totalValue'])
             self.name = api.get_name(victim.get('character_id', victim['corporation_id']))

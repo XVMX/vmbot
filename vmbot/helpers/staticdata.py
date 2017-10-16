@@ -39,7 +39,7 @@ def region_data(region_id):
     return {'region_id': region[0], 'region_name': region[1]}
 
 
-def solar_system_data(system_id):
+def system_data(system_id):
     """Resolve a system_id to its data."""
     conn = sqlite3.connect(STATICDATA_DB)
     system = conn.execute(

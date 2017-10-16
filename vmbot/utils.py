@@ -197,7 +197,7 @@ class Price(object):
                 totals = self._get_region_orders(region_id, type_id)
             else:
                 system_id = system_ids.pop(0)
-                sys_data = staticdata.solar_system_data(system_id)
+                sys_data = staticdata.system_data(system_id)
                 market_name = sys_data['system_name']
                 totals = self._get_system_orders(token, sys_data['region_id'],
                                                  system_id, struct_ids, type_id)
@@ -222,7 +222,7 @@ class Price(object):
             reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
         if len(args) == 2 and system_ids and region_id is None:
             reply += "<br />" + disambiguate(
-                args[1], [staticdata.solar_system_data(id_)['system_name']
+                args[1], [staticdata.system_data(id_)['system_name']
                           for id_ in system_ids], "systems"
             )
 

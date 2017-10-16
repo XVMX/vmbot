@@ -28,18 +28,18 @@ class TestStaticdata(unittest.TestCase):
             {'region_id': 0, 'region_name': "{Failed to load}"}
         )
 
-    def test_solar_system_data(self):
+    def test_system_data(self):
         # system_id: 30000142 Jita
         self.assertDictEqual(
-            staticdata.solar_system_data(30000142),
+            staticdata.system_data(30000142),
             {'system_id': 30000142, 'system_name': "Jita",
              'constellation_id': 20000020, 'constellation_name': "Kimotoro",
              'region_id': 10000002, 'region_name': "The Forge"}
         )
 
-    def test_solar_system_data_invalidsystem(self):
+    def test_system_data_invalidsystem(self):
         self.assertDictEqual(
-            staticdata.solar_system_data(-1),
+            staticdata.system_data(-1),
             {'system_id': 0, 'system_name': "{Failed to load}",
              'constellation_id': 0, 'constellation_name': "{Failed to load}",
              'region_id': 0, 'region_name': "{Failed to load}"}

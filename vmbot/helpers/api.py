@@ -88,7 +88,7 @@ def zbot(kill_id):
     killdata = killdata[0]
     victim = killdata['victim']
     name = get_name(victim.get('character_id', victim['corporation_id']))
-    system = staticdata.solar_system_data(killdata['solar_system_id'])
+    system = staticdata.system_data(killdata['solar_system_id'])
     corp_ticker, alliance_ticker = get_tickers(victim['corporation_id'],
                                                victim.get('alliance_id', None))
     killtime = datetime.strptime(killdata['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
