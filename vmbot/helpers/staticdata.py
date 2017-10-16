@@ -23,8 +23,24 @@ def typeName(typeID):
     return item[1]
 
 
-def solarSystemData(solarSystemID):
-    """Resolve a solarSystemID to its data."""
+def region_data(region_id):
+    """Resolve a region_id to its data."""
+    conn = sqlite3.connect(STATICDATA_DB)
+    region = conn.execute(
+        """SELECT regionID, regionName
+           FROM mapRegions
+           WHERE regionID = :id;""",
+        {'id': region_id}
+    ).fetchone()
+    conn.close()
+
+    if not region:
+        return {'region_id': 0, 'region_name': "{Failed to load}"}
+    return {'region_id': region[0], 'region_name': region[1]}
+
+
+def system_data(system_id):
+    """Resolve a system_id to its data."""
     conn = sqlite3.connect(STATICDATA_DB)
     system = conn.execute(
         """SELECT solarSystemID, solarSystemName,
@@ -36,17 +52,17 @@ def solarSystemData(solarSystemID):
            INNER JOIN mapRegions
              ON mapRegions.regionID = mapSolarSystems.regionID
            WHERE solarSystemID = :id;""",
-        {'id': solarSystemID}
+        {'id': system_id}
     ).fetchone()
     conn.close()
 
     if not system:
-        return {'solarSystemID': 0, 'solarSystemName': "{Failed to load}",
-                'constellationID': 0, 'constellationName': "{Failed to load}",
-                'regionID': 0, 'regionName': "{Failed to load}"}
-    return {'solarSystemID': system[0], 'solarSystemName': system[1],
-            'constellationID': system[2], 'constellationName': system[3],
-            'regionID': system[4], 'regionName': system[5]}
+        return {'system_id': 0, 'system_name': "{Failed to load}",
+                'constellation_id': 0, 'constellation_name': "{Failed to load}",
+                'region_id': 0, 'region_name': "{Failed to load}"}
+    return {'system_id': system[0], 'system_name': system[1],
+            'constellation_id': system[2], 'constellation_name': system[3],
+            'region_id': system[4], 'region_name': system[5]}
 
 
 def itemName(itemID):

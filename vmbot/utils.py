@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from datetime import datetime, timedelta
+import threading
 import urllib
 import json
 import sqlite3
@@ -13,6 +14,7 @@ from .botcmd import botcmd
 from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
+from .helpers.sso import SSOToken
 from .helpers import staticdata
 from .helpers.format import format_affil, format_tickers, disambiguate
 
@@ -21,44 +23,124 @@ import config
 
 class Price(object):
     @staticmethod
-    def _get_market_orders(regionID, systemID, typeID):
-        """Collect buy and sell order stats for item in system.
+    def _calc_totals(orders):
+        """Extract pricing data from a list of orders."""
+        sell_vol, sell_price = 0, None
+        buy_vol, buy_price = 0, None
 
-        If systemID is None, data for all systems in region will be collected.
+        for order in orders:
+            if order['is_buy_order']:
+                buy_vol += order['volume_remain']
+                if buy_price is None or order['price'] > buy_price:
+                    buy_price = order['price']
+            else:
+                sell_vol += order['volume_remain']
+                if sell_price is None or order['price'] < sell_price:
+                    sell_price = order['price']
+
+        return (sell_price or 0, sell_vol), (buy_price or 0, buy_vol)
+
+    @staticmethod
+    def _get_region_orders(region_id, type_id):
+        """Collect buy and sell order stats for item in region.
+
         Output format: ((sell_price, sell_volume), (buy_price, buy_volume))
         """
-        # Get valid locations
-        locs = set()
-        if systemID is not None:
-            sys = api.request_esi("/v3/universe/systems/{}/", (systemID,))
-            locs.update(sys.get('stations', []))
-
-        # Collect matching orders
-        params = {'page': 1, 'type_id': typeID}
-        res, head = api.request_esi("/v1/markets/{}/orders/", (regionID,),
-                                    params=params, with_head=True)
-        orders = [o for o in res if systemID is None or o['location_id'] in locs]
+        params = {'page': 1, 'type_id': type_id}
+        orders, head = api.request_esi("/v1/markets/{}/orders/", (region_id,),
+                                       params=params, timeout=5, with_head=True)
         max_page = int(head.get('X-Pages', 1))
 
         while params['page'] < max_page:
             params['page'] += 1
-            res = api.request_esi("/v1/markets/{}/orders/", (regionID,), params=params)
-            orders.extend(o for o in res if systemID is None or o['location_id'] in locs)
+            orders += api.request_esi("/v1/markets/{}/orders/", (region_id,),
+                                      params=params, timeout=5)
 
-        sell = {'volume': 0, 'price': None}
-        buy = {'volume': 0, 'price': None}
+        return Price._calc_totals(orders)
 
-        for order in orders:
-            if order['is_buy_order']:
-                buy['volume'] += order['volume_remain']
-                if buy['price'] is None or order['price'] > buy['price']:
-                    buy['price'] = order['price']
-            else:
-                sell['volume'] += order['volume_remain']
-                if sell['price'] is None or order['price'] < sell['price']:
-                    sell['price'] = order['price']
+    @staticmethod
+    def _get_system_orders(token, region_id, system_id, struct_ids, type_id):
+        """Collect buy and sell order stats for item in system.
 
-        return (sell['price'] or 0, sell['volume']), (buy['price'] or 0, buy['volume'])
+        Output format: ((sell_price, sell_volume), (buy_price, buy_volume))
+        """
+        if struct_ids and not {"esi-universe.read_structures.v1",
+                               "esi-markets.structure_markets.v1"}.issubset(token.scopes):
+            raise APIError("SSO token is missing required scopes")
+        pool = futures.ThreadPoolExecutor(max_workers=min(len(struct_ids) + 1, 20))
+
+        # Filter valid locations
+        sys_fut = pool.submit(api.request_esi, "/v3/universe/systems/{}/", (system_id,))
+        struct_futs = []
+        for id_ in struct_ids:
+            f = pool.submit(token.request_esi, "/v1/universe/structures/{}/", (id_,))
+            f.req_id = id_
+            struct_futs.append(f)
+
+        structs = set()
+        for f in futures.as_completed(struct_futs):
+            if f.result()['solar_system_id'] == system_id:
+                structs.add(f.req_id)
+
+        sys = sys_fut.result()
+        stations = set(sys.get('stations', []))
+
+        # Collect matching orders
+        reg_fut = pool.submit(api.request_esi, "/v1/markets/{}/orders/", (region_id,),
+                              params={'page': 1, 'type_id': type_id}, timeout=5, with_head=True)
+        struct_futs = []
+        for id_ in structs:
+            f = pool.submit(token.request_esi, "/v1/markets/structures/{}/", (id_,),
+                            params={'page': 1}, timeout=5, with_head=True)
+            f.req_id = id_
+            struct_futs.append(f)
+
+        orders = []
+        orders_lock = threading.Lock()
+
+        def add_station_orders(f):
+            with orders_lock:
+                orders.extend(o for o in f.result() if o['location_id'] in stations)
+
+        def add_struct_orders(f):
+            with orders_lock:
+                orders.extend(o for o in f.result() if o['type_id'] == type_id)
+
+        order_futs = []
+        for f in futures.as_completed(struct_futs):
+            try:
+                res, head = f.result()
+            except APIStatusError:
+                # 403/Market access denied (cannot be determined otherwise currently)
+                continue
+            with orders_lock:
+                orders.extend(o for o in res if o['type_id'] == type_id)
+
+            for p in range(2, int(head.get('X-Pages', 1)) + 1):
+                f = pool.submit(token.request_esi, "/v1/markets/structures/{}/", (f.req_id,),
+                                params={'page': p}, timeout=5)
+                f.add_done_callback(add_struct_orders)
+                order_futs.append(f)
+
+        res, head = reg_fut.result()
+        with orders_lock:
+                orders.extend(o for o in res if o['location_id'] in stations)
+
+        for p in range(2, int(head.get('X-Pages', 1)) + 1):
+            f = pool.submit(api.request_esi, "/v1/markets/{}/orders/", (region_id,),
+                            params={'page': p, 'type_id': type_id}, timeout=5)
+            f.add_done_callback(add_station_orders)
+            order_futs.append(f)
+
+        futures.wait(order_futs)
+        return Price._calc_totals(orders)
+
+    def _get_token(self):
+        try:
+            return self._token
+        except AttributeError:
+            self._token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
+            return self._token
 
     @botcmd
     def price(self, mess, args):
@@ -74,27 +156,26 @@ class Price(object):
         except IndexError:
             system_or_region = "Jita"
 
-        conn = sqlite3.connect(STATICDATA_DB)
+        token = self._get_token()
+        params = {'search': system_or_region, 'categories': "region,solar_system"}
+        try:
+            if "esi-search.search_structures.v1" in token.scopes:
+                params['categories'] += ",structure"
+                res = token.request_esi("/v3/characters/{}/search/",
+                                        (token.character_id,), params=params)
+            else:
+                res = api.request_esi("/v2/search/", params=params)
+        except APIError as e:
+            return unicode(e)
 
-        region = conn.execute(
-            """SELECT regionID, regionName
-               FROM mapRegions
-               WHERE regionName LIKE :name;""",
-            {'name': system_or_region}
-        ).fetchone()
-
-        # Sort by length of name so that the most similar system is first
-        systems = conn.execute(
-            """SELECT regionID, solarSystemID, solarSystemName
-               FROM mapSolarSystems
-               WHERE solarSystemName LIKE :name
-               ORDER BY LENGTH(solarSystemName) ASC;""",
-            {'name': "%{}%".format(system_or_region)}
-        ).fetchall()
-        if not systems and not region:
+        region_id = res.get('region', [None])[0]
+        system_ids = res.get('solar_system', [])
+        struct_ids = res.get('structure', [])
+        if region_id is None and not system_ids:
             return "Failed to find a matching system/region"
 
         # Sort by length of name so that the most similar item is first
+        conn = sqlite3.connect(STATICDATA_DB)
         items = conn.execute(
             """SELECT typeID, typeName
                FROM invTypes
@@ -104,31 +185,32 @@ class Price(object):
                ORDER BY LENGTH(typeName) ASC;""",
             {'name': "%{}%".format(item)}
         ).fetchall()
+        conn.close()
+
         if not items:
             return "Failed to find a matching item"
 
-        conn.close()
-
-        typeID, typeName = items.pop(0)
-        if region:
-            # Price._get_market_orders returns regional data if systemID is None
-            regionID, market_name = region
-            systemID = None
-        else:
-            regionID, systemID, market_name = systems.pop(0)
-
+        type_id, type_name = items.pop(0)
         try:
-            orders = self._get_market_orders(regionID, systemID, typeID)
+            if region_id is not None:
+                market_name = staticdata.region_data(region_id)['region_name']
+                totals = self._get_region_orders(region_id, type_id)
+            else:
+                system_id = system_ids.pop(0)
+                sys_data = staticdata.system_data(system_id)
+                market_name = sys_data['system_name']
+                totals = self._get_system_orders(token, sys_data['region_id'],
+                                                 system_id, struct_ids, type_id)
         except APIError as e:
             return unicode(e)
 
-        (sell_price, sell_volume), (buy_price, buy_volume) = orders
+        (sell_price, sell_volume), (buy_price, buy_volume) = totals
 
         reply = ("<strong>{}</strong> in <strong>{}</strong>:<br />"
                  "Sells: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                  "Buys: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                  "Spread: ").format(
-            typeName, market_name, sell_price, sell_volume, buy_price, buy_volume
+            type_name, market_name, sell_price, sell_volume, buy_price, buy_volume
         )
         try:
             reply += "{:,.2%}".format((sell_price - buy_price) / sell_price)
@@ -138,8 +220,11 @@ class Price(object):
 
         if items:
             reply += "<br />" + disambiguate(args[0], zip(*items)[1], "items")
-        if len(args) == 2 and systems and systemID:
-            reply += "<br />" + disambiguate(args[1], zip(*systems)[2], "systems")
+        if len(args) == 2 and system_ids and region_id is None:
+            reply += "<br />" + disambiguate(
+                args[1], [staticdata.system_data(id_)['system_name']
+                          for id_ in system_ids], "systems"
+            )
 
         return reply
 
