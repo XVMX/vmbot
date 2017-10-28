@@ -117,10 +117,10 @@ class Price(object):
                 orders.extend(o for o in res if o['type_id'] == type_id)
 
             for p in range(2, int(head.get('X-Pages', 1)) + 1):
-                f = pool.submit(token.request_esi, "/v1/markets/structures/{}/", (f.req_id,),
-                                params={'page': p}, timeout=5)
-                f.add_done_callback(add_struct_orders)
-                order_futs.append(f)
+                page_f = pool.submit(token.request_esi, "/v1/markets/structures/{}/", (f.req_id,),
+                                     params={'page': p}, timeout=5)
+                page_f.add_done_callback(add_struct_orders)
+                order_futs.append(page_f)
 
         res, head = reg_fut.result()
         with orders_lock:
