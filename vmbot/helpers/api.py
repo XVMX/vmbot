@@ -149,7 +149,7 @@ def request_esi(route, fmt=(), params=None, data=None, headers=None,
 
             warn = 'Route "{}" is {}'.format(route, kw)
             warn += "\nResponse header: warning: " + r.headers['warning']
-            warn += "\nTraceback (most recent call last):\n" + trace
+            warn += "\nTraceback (most recent call last):\n```\n" + trace + "\n```"
             logging.getLogger(__name__ + ".esi").warning(warn, extra={'gh_labels': ["esi-warning"]})
 
         try:
