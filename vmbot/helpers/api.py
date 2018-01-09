@@ -54,7 +54,7 @@ def get_tickers(corporationID, allianceID):
     if corporationID:
         corp_ticker = "ERROR"
         try:
-            corp = request_esi("/v3/corporations/{}/", (corporationID,))
+            corp = request_esi("/v4/corporations/{}/", (corporationID,))
         except APIError:
             pass
         else:
@@ -65,7 +65,7 @@ def get_tickers(corporationID, allianceID):
     if allianceID:
         alliance_ticker = "ERROR"
         try:
-            ally = request_esi("/v2/alliances/{}/", (allianceID,))
+            ally = request_esi("/v3/alliances/{}/", (allianceID,))
         except APIError:
             pass
         else:

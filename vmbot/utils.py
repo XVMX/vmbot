@@ -239,7 +239,7 @@ class EVEUtils(object):
 
         params = {'search': args, 'categories': "character", 'strict': "true"}
         try:
-            res = api.request_esi("/v1/search/", params=params)
+            res = api.request_esi("/v2/search/", params=params)
             char_id = res['character'][0]
         except APIError as e:
             return unicode(e)
@@ -296,7 +296,7 @@ class EVEUtils(object):
         hist_futs = []
 
         for id_ in corp_ids:
-            f = pool.submit(api.request_esi, "/v3/corporations/{}/", (id_,))
+            f = pool.submit(api.request_esi, "/v4/corporations/{}/", (id_,))
             f.req_id = id_
             corp_futs.append(f)
 
@@ -309,7 +309,7 @@ class EVEUtils(object):
             try:
                 corps[f.req_id] = f.result()
             except APIError:
-                corps[f.req_id] = {'corporation_name': "ERROR", 'ticker': "ERROR"}
+                corps[f.req_id] = {'name': "ERROR", 'ticker': "ERROR"}
 
         ally_hist = {}
         for f in futures.as_completed(hist_futs):
@@ -345,7 +345,7 @@ class EVEUtils(object):
         # Load alliance data
         ally_futs = []
         for id_ in ally_ids:
-            f = pool.submit(api.request_esi, "/v2/alliances/{}/", (id_,))
+            f = pool.submit(api.request_esi, "/v3/alliances/{}/", (id_,))
             f.req_id = id_
             ally_futs.append(f)
 
@@ -354,7 +354,7 @@ class EVEUtils(object):
             try:
                 allys[f.req_id] = f.result()
             except APIError:
-                allys[f.req_id] = {'alliance_name': "ERROR", 'ticker': "ERROR"}
+                allys[f.req_id] = {'name': "ERROR", 'ticker': "ERROR"}
 
         # Format output
         corp = corps[data['corporation_id']]
@@ -362,7 +362,7 @@ class EVEUtils(object):
         fac_name = staticdata.faction_name(faction_id) if faction_id is not None else None
 
         reply = format_affil(data['name'], data.get('security_status', 0),
-                             corp['corporation_name'], ally.get('alliance_name', None),
+                             corp['name'], ally.get('name', None),
                              fac_name, corp['ticker'], ally.get('ticker', None))
 
         for rec in corp_hist:
@@ -376,7 +376,7 @@ class EVEUtils(object):
             ally_ticker = " " + ally_ticker if ally_ticker else ""
 
             reply += "<br />From {:%Y-%m-%d %H:%M:%S} til {} in <strong>{} {}{}</strong>".format(
-                rec['start_date'], end, corp['corporation_name'],
+                rec['start_date'], end, corp['name'],
                 format_tickers(corp_ticker, None, html=True), ally_ticker
             )
 
