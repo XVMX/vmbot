@@ -147,5 +147,19 @@ def get_mail_body(token, mail_id):
     except APIError:
         return "<em>Failed to load mail body</em>"
 
-    # Use BeautifulSoup to force XHTML compliance
-    return unicode(BeautifulSoup(res, "html.parser"))
+    # Use BeautifulSoup to translate EVE HTML markup into XHTML-IM (XEP-0071)
+    html = BeautifulSoup(res, "html.parser")
+    for t in html.find_all("font"):
+        t.name = "span"
+        style = ""
+
+        if "color" in t.attrs and t['color'] != "#bfffffff":  # Default color is white (not black)
+            style += "color: #" + t['color'][3:] + ";"  # Ignore alpha channel
+        if "size" in t.attrs:
+            style += "font-size: " + t['size'] + "pt;"
+
+        t.attrs.clear()
+        if style:
+            t['style'] = style
+
+    return unicode(html)
