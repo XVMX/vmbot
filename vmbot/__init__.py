@@ -18,7 +18,8 @@ from .botcmd import botcmd
 from .director import Director
 from .fun import Say, Fun, Chains
 from .pager import Pager
-from .utils import Price, EVEUtils
+from .price import Price
+from .utils import EVEUtils
 from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
