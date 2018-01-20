@@ -11,7 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .botcmd import botcmd
-from .helpers.files import EMOTES, HANDY_QUOTES
+from .helpers.files import EMOTES, HANDEY_QUOTES
 
 # 8ball answers like the original, as per https://en.wikipedia.org/wiki/Magic_8-Ball
 EBALL_ANSWERS = (
@@ -185,8 +185,8 @@ class Say(object):
 
     @botcmd
     def handysay(self, mess, args):
-        """Like fishsay but blame lofac"""
-        with open(HANDY_QUOTES, 'r') as says_file:
+        """Like fishsay but blame lofac for the misspelled name"""
+        with open(HANDEY_QUOTES, 'r') as says_file:
             says = says_file.read().splitlines()
 
         return random.choice(says)

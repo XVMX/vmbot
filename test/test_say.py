@@ -7,7 +7,7 @@ import mock
 
 import re
 
-from vmbot.helpers.files import HANDY_QUOTES
+from vmbot.helpers.files import HANDEY_QUOTES
 from vmbot.fun import (EBALL_ANSWERS, FISHISMS, PIMPISMS, ARELEISMS, NICKISMS,
                        KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS, PUBBIESMACK)
 
@@ -104,7 +104,7 @@ class TestSay(unittest.TestCase):
                       [test_arg + ' ' + line for line in JOKERISMS])
 
     def test_handysay(self):
-        with open(HANDY_QUOTES, 'r') as says_file:
+        with open(HANDEY_QUOTES, 'r') as says_file:
             says = says_file.read()
 
         self.assertIn(self.say.handysay(self.default_mess, self.default_args), says)
