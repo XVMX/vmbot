@@ -45,12 +45,12 @@ class TestStaticdata(unittest.TestCase):
              'region_id': 0, 'region_name': "{Failed to load}"}
         )
 
-    def test_itemName(self):
-        # itemID: 40009082 Jita IV
-        self.assertEqual(staticdata.itemName(40009082), "Jita IV")
+    def test_item_name(self):
+        # item_id: 40009082 Jita IV
+        self.assertEqual(staticdata.item_name(40009082), "Jita IV")
 
-    def test_itemName_invaliditem(self):
-        self.assertEqual(staticdata.itemName(-1), "{Failed to load}")
+    def test_item_name_invaliditem(self):
+        self.assertEqual(staticdata.item_name(-1), "{Failed to load}")
 
     def test_faction_name(self):
         # faction_id: 500001 Caldari State

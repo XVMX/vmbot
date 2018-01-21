@@ -65,14 +65,14 @@ def system_data(system_id):
             'region_id': system[4], 'region_name': system[5]}
 
 
-def itemName(itemID):
-    """Resolve an itemID to its name."""
+def item_name(item_id):
+    """Resolve an item_id to its name."""
     conn = sqlite3.connect(STATICDATA_DB)
     item = conn.execute(
         """SELECT itemID, itemName
            FROM invNames
            WHERE itemID = :id;""",
-        {'id': itemID}
+        {'id': item_id}
     ).fetchone()
     conn.close()
 
