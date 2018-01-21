@@ -71,16 +71,16 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(api.get_name(-1), "{ERROR}")
 
     def test_get_tickers(self):
-        # corporationID: 1164409536 [OTHER]
-        # allianceID: 159826257 <OTHER>
+        # corp_id: 1164409536 [OTHER]
+        # ally_id: 159826257 <OTHER>
         self.assertTupleEqual(api.get_tickers(1164409536, 159826257), ("OTHER", "OTHER"))
 
     def test_get_tickers_corponly(self):
-        # corporationID: 2052404106 [XVMX] (member of <CONDI>)
+        # corp_id: 2052404106 [XVMX] (member of <CONDI>)
         self.assertTupleEqual(api.get_tickers(2052404106, None), ("XVMX", "CONDI"))
 
     def test_get_tickers_allianceonly(self):
-        # allianceID: 99005065 <HKRAB>
+        # ally_id: 99005065 <HKRAB>
         self.assertTupleEqual(api.get_tickers(None, 99005065), (None, "HKRAB"))
 
     def test_get_tickers_invalidid(self):

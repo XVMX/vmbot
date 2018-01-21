@@ -48,24 +48,24 @@ def get_name(id_):
         return "{ERROR}"
 
 
-def get_tickers(corporationID, allianceID):
-    """Resolve corporationID/allianceID to their respective ticker(s)."""
+def get_tickers(corp_id, ally_id):
+    """Resolve corp_id/ally_id to their respective ticker(s)."""
     corp_ticker = None
-    if corporationID:
+    if corp_id:
         corp_ticker = "ERROR"
         try:
-            corp = request_esi("/v4/corporations/{}/", (corporationID,))
+            corp = request_esi("/v4/corporations/{}/", (corp_id,))
         except APIError:
             pass
         else:
             corp_ticker = corp['ticker']
-            allianceID = allianceID or corp.get('alliance_id', None)
+            ally_id = ally_id or corp.get('alliance_id', None)
 
     alliance_ticker = None
-    if allianceID:
+    if ally_id:
         alliance_ticker = "ERROR"
         try:
-            ally = request_esi("/v3/alliances/{}/", (allianceID,))
+            ally = request_esi("/v3/alliances/{}/", (ally_id,))
         except APIError:
             pass
         else:
