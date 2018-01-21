@@ -7,14 +7,14 @@ import sqlite3
 from .files import STATICDATA_DB
 
 
-def typeName(typeID):
-    """Resolve a typeID to its name."""
+def type_name(type_id):
+    """Resolve a type_id to its name."""
     conn = sqlite3.connect(STATICDATA_DB)
     item = conn.execute(
         """SELECT typeID, typeName
            FROM invTypes
            WHERE typeID = :id;""",
-        {'id': typeID}
+        {'id': type_id}
     ).fetchone()
     conn.close()
 

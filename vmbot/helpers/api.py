@@ -96,7 +96,7 @@ def zbot(kill_id):
     return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
             "{} ({}) | {} participant(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(
         name, format_tickers(corp_ticker, alliance_ticker),
-        staticdata.typeName(victim['ship_type_id']), killdata['zkb']['points'],
+        staticdata.type_name(victim['ship_type_id']), killdata['zkb']['points'],
         ISK(killdata['zkb']['totalValue']), system['system_name'], system['region_name'],
         len(killdata['attackers']), victim['damage_taken'], killtime
     )

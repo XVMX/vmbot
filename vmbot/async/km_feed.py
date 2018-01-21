@@ -36,7 +36,7 @@ class KMFeed(object):
             self.name = api.get_name(victim.get('character_id', victim['corporation_id']))
             self.tickers = api.get_tickers(victim['corporation_id'],
                                            victim.get('alliance_id', None))
-            self.ship = staticdata.typeName(victim['ship_type_id'])
+            self.ship = staticdata.type_name(victim['ship_type_id'])
             self.system, self.region = system['system_name'], system['region_name']
             self.time = datetime.strptime(km['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
 

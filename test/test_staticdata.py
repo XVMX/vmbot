@@ -8,12 +8,12 @@ from vmbot.helpers import staticdata
 
 
 class TestStaticdata(unittest.TestCase):
-    def test_typeName(self):
-        # typeID: 34 Tritanium
-        self.assertEqual(staticdata.typeName(34), "Tritanium")
+    def test_type_name(self):
+        # type_id: 34 Tritanium
+        self.assertEqual(staticdata.type_name(34), "Tritanium")
 
-    def test_typeName_invaliditem(self):
-        self.assertEqual(staticdata.typeName(-1), "{Failed to load}")
+    def test_type_name_invaliditem(self):
+        self.assertEqual(staticdata.type_name(-1), "{Failed to load}")
 
     def test_region_data(self):
         # region_id: 10000002 The Forge
