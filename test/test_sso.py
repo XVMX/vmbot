@@ -43,7 +43,7 @@ class TestSSOToken(unittest.TestCase):
         self.token._refresh_token = None
         self.token._expiry = datetime.utcnow() - timedelta(hours=1)
         with self.assertRaises(TokenExpiredError):
-            self.token.auth
+            self.token.auth()
 
     @mock.patch("vmbot.helpers.api.request_esi", return_value={'res': True})
     def test_token_request_esi(self, mock_esi):
