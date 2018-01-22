@@ -84,7 +84,7 @@ def item_name(item_id):
 def faction_name(faction_id):
     """Resolve a faction_id to its name."""
     conn = sqlite3.connect(STATICDATA_DB)
-    item = conn.execute(
+    faction = conn.execute(
         """SELECT factionID, factionName
            FROM chrFactions
            WHERE factionID = :id;""",
@@ -92,6 +92,6 @@ def faction_name(faction_id):
     ).fetchone()
     conn.close()
 
-    if not item:
+    if not faction:
         return "{Failed to load}"
-    return item[1]
+    return faction[1]
