@@ -17,26 +17,13 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 
 from . import VMBot
-from .helpers.logging import GitHubIssueHandler
+from .helpers.logging import setup_logging
 
 import config
 
 if __name__ == "__main__":
-    logger = logging.getLogger("vmbot")
-    logger.setLevel(logging.DEBUG)
-
-    handler = TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
-                                       backupCount=3, encoding="utf-8")
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
-                                           "%Y-%m-%d %H:%M:%S"))
-    handler.setLevel(config.LOGLEVEL)
-    logger.addHandler(handler)
-
-    gh = config.GITHUB
-    if gh['user'] and gh['token']:
-        esi_handler = GitHubIssueHandler("XVMX", "VMBot", gh['user'], gh['token'])
-        esi_handler.setLevel(logging.WARNING)
-        logging.getLogger("vmbot.helpers.api.esi").addHandler(esi_handler)
+    logger = setup_logging(TimedRotatingFileHandler("vmbot.log", when='d', interval=7,
+                                                    backupCount=3, encoding="utf-8"))
 
     jbc = config.JABBER
     morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], feeds=True)

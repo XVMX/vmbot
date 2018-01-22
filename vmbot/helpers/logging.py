@@ -6,6 +6,8 @@ import logging
 
 import requests
 
+import config
+
 
 class GitHubIssueHandler(logging.Handler):
     headers = {'Accept': "application/vnd.github.v3+json", 'User-Agent': "XVMX VMBot"}
@@ -62,3 +64,21 @@ class GitHubIssueHandler(logging.Handler):
         else:
             if r.status_code == 201:
                 self.known_issues.add(payload['title'])
+
+
+def setup_logging(main_handler):
+    logger = logging.getLogger("vmbot")
+    logger.setLevel(logging.DEBUG)
+
+    main_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
+                                                "%Y-%m-%d %H:%M:%S"))
+    main_handler.setLevel(config.LOGLEVEL)
+    logger.addHandler(main_handler)
+
+    gh = config.GITHUB
+    if gh['user'] and gh['token']:
+        esi_handler = GitHubIssueHandler("XVMX", "VMBot", gh['user'], gh['token'])
+        esi_handler.setLevel(logging.WARNING)
+        logging.getLogger("vmbot.helpers.api.esi").addHandler(esi_handler)
+
+    return logger
