@@ -54,7 +54,7 @@ def get_entries(token, from_id=None):
 
     params = {'from_id': from_id}
     try:
-        recs = token.request_esi("/v1/corporations/{}/wallets/{}/journal/",
+        recs = token.request_esi("/v2/corporations/{}/wallets/{}/journal/",
                                  (config.CORPORATION_ID, WALLET_DIVISION), params=params)
     except APIError:
         return []
