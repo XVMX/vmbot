@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+from datetime import datetime, timedelta
 import logging
 
 # Log level
@@ -45,6 +46,12 @@ JABBER = {
 # Bot owner's corporation/alliance id
 CORPORATION_ID = 1234567890
 ALLIANCE_ID = None
+
+# Custom revenue table columns
+REVENUE_COLS = (
+    ("< 3 months", timedelta(days=90)),
+    ("Since 2018", datetime(2018, 1, 1))
+)
 
 # ESI
 # Data sources: tranquility, singularity

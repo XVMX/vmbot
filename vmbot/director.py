@@ -18,6 +18,11 @@ from .models import ISK, WalletJournalEntry
 
 import config
 
+REVENUE_COLS = (
+    ("< 24h", timedelta(days=1)), ("< 1 week", timedelta(weeks=1)),
+    ("< 30 days", timedelta(days=30))
+)
+
 # See https://esi.tech.ccp.is/latest/#!/Wallet
 REVENUE_ROWS = (
     ("PVE", ("bounty_prize", "agent_mission_reward", "agent_mission_time_bonus_reward",
@@ -105,20 +110,22 @@ class Director(object):
         def to_dict(res):
             return {ref_type: amount for ref_type, amount in res}
 
+        data = []
+        table = [["Type"]]
         now = datetime.utcnow()
         query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
-        day = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=1)).all())
-        week = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(weeks=1)).all())
-        month = to_dict(query.filter(WalletJournalEntry.date > now - timedelta(days=30)).all())
-        genesis = to_dict(query.filter(WalletJournalEntry.date > datetime(2016, 9, 1)).all())
 
-        table = [["Type", "< 24h", "< 1 week", "< 30 days", "Since 2016-09-01"]]
+        for title, from_date in REVENUE_COLS + config.REVENUE_COLS:
+            table[0].append(title)
+
+            if isinstance(from_date, timedelta):
+                from_date = now - from_date
+            data.append(to_dict(query.filter(WalletJournalEntry.date > from_date).all()))
+
         for name, types in REVENUE_ROWS:
             row = [name]
-            for col in (day, week, month, genesis):
-                val = 0.0
-                for ref_type in types:
-                    val += col.get(ref_type, 0.0)
+            for col in data:
+                val = sum(col.get(ref_type, 0.0) for ref_type in types)
                 row.append("{:,.2f} ISK".format(val))
             table.append(row)
 
