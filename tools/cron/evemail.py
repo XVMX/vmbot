@@ -133,7 +133,7 @@ def filter_mails(last_mail, mails):
         # Fallback in case last_mail was deleted
         last_update = time.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ")
         idx = next((idx for idx, mail in enumerate(mails)
-                    if time.strptime(mail['timestamp'], "%Y-%m-%dT%H:%M:%SZ") >= last_update), None)
+                    if time.strptime(mail['timestamp'], "%Y-%m-%dT%H:%M:%SZ") <= last_update), None)
 
     return mails[:idx]
 
