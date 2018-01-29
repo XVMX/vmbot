@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from datetime import datetime, timedelta
+import shlex
 
 from xmpp.protocol import JID
 
@@ -18,12 +19,13 @@ REMINDER_FMT = "Reminder for {} set at {:%Y-%m-%d %H:%M:%S}:\n{}"
 class Pager(object):
     @staticmethod
     def _process_args(args):
-        args = [item.strip() for item in args.split(None, 1)]
-        if len(args) < 2:
+        parts = shlex.split(args)
+        if len(parts) < 2:
             raise ValueError("Please provide a username, a message to send, "
                              "and optionally a time offset: <user> [offset] <msg>")
 
-        user, data = args
+        user = parts[0].strip()
+        data = args.split(None, len(user.split()))[-1].strip()
         delta, text = timedelta(), None
         try:
             days, hours, mins = TIME_OFFSET_REGEX.match(data).groups()
@@ -64,6 +66,7 @@ class Pager(object):
 
         If [offset] is present, message delivery will be delayed until that
         amount of time has passed. Messages will be discarded 30 days after their offset ran out.
+        If <user> contains spaces, enclose <user> in quotes.
         [offset] format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
         Only days, hours, and minutes are supported.
         """
@@ -84,6 +87,7 @@ class Pager(object):
 
         If [offset] is present, message delivery will be delayed until that
         amount of time has passed. Messages will be discarded 30 days after their offset ran out.
+        If <user> contains spaces, enclose <user> in quotes.
         [offset] format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
         Only days, hours, and minutes are supported.
         """
