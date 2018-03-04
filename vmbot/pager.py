@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from datetime import datetime, timedelta
-import shlex
 
 from xmpp.protocol import JID
 
@@ -19,18 +18,25 @@ REMINDER_FMT = "Reminder for {} set at {:%Y-%m-%d %H:%M:%S}:\n{}"
 class Pager(object):
     @staticmethod
     def _process_args(args):
-        parts = shlex.split(args)
-        if len(parts) < 2:
-            raise ValueError("Please provide a username, a message to send, "
-                             "and optionally a time offset: <user> [offset] <msg>")
+        args = args.strip()
 
-        user = parts[0].strip()
-        data = args.split(None, len(user.split()))[-1].strip()
+        quot_end = args.find('"', 1)
+        if args.startswith('"') and quot_end != -1:
+            # user is enclosed in quotes
+            user = args[1:quot_end].strip()
+            data = args[quot_end+1:].strip()
+        else:
+            args = args.split(None, 1)
+            if len(args) < 2:
+                raise ValueError("Please provide a username, a message to send, "
+                                 "and optionally a time offset: <user> [offset] <msg>")
+            user, data = args
+
         delta, text = timedelta(), None
         try:
             days, hours, mins = TIME_OFFSET_REGEX.match(data).groups()
             delta = timedelta(days=int(days or 0), hours=int(hours or 0), minutes=int(mins or 0))
-            text = data.split(None, 1)[1].strip()
+            text = data.split(None, 1)[1]
         except AttributeError:
             text = data
         except IndexError:
