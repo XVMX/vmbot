@@ -10,6 +10,8 @@ import config
 
 
 class GitHubIssueHandler(logging.Handler):
+    """Emit logged messages as issues on GitHub."""
+
     headers = {'Accept': "application/vnd.github.v3+json", 'User-Agent': "XVMX VMBot"}
     known_issues = set()
 
