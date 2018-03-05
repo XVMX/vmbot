@@ -26,7 +26,7 @@ from .helpers import database as db
 from .helpers import api
 from .helpers.decorators import timeout, requires_admin, requires_dir_chat
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
-from .models.messages import Message
+from .models.message import Message
 from .models import Note
 
 import config

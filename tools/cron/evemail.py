@@ -12,7 +12,7 @@ from .models import Storage
 
 from vmbot.helpers.exceptions import APIError
 from vmbot.helpers import api
-from vmbot.models.messages import Message
+from vmbot.models.message import Message
 
 import config
 

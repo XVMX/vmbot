@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import unittest
 
-from vmbot.models.messages import Message
+from vmbot.models.message import Message
 
 
 class TestMessage(unittest.TestCase):

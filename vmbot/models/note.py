@@ -9,7 +9,7 @@ from xmpp.protocol import JID
 from sortedcontainers import SortedList
 
 from ..helpers import database as db
-from .messages import Message
+from .message import Message
 
 QUEUE_UPDATE_INTERVAL = 12 * 60 * 60
 QUEUE_MAX_OFFSET = timedelta(hours=14)
