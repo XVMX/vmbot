@@ -149,6 +149,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
         self.message_trigger = None
+        self.sess = db.Session()
 
         if kwargs.pop('feeds', False):
             self.message_trigger = time.time() + 30
@@ -164,19 +165,16 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
                 for room in config.JABBER['primary_chatrooms']:
                     self.send(user=room, text=km_res, message_type="groupchat")
 
-            sess = db.Session()
-
             # Cron messages
-            for mess in sess.query(Message).order_by(Message.message_id.asc()).all():
+            for mess in self.sess.query(Message).order_by(Message.message_id.asc()).all():
                 self.send(**mess.send_dict)
-                sess.delete(mess)
+                self.sess.delete(mess)
 
             # Notes
-            for mess in Note.process_notes(self.nick_dict, sess):
+            for mess in Note.process_notes(self.nick_dict, self.sess):
                 self.send(**mess.send_dict)
 
-            sess.commit()
-            sess.close()
+            self.sess.commit()
             self.message_trigger += MESSAGE_INTERVAL
 
         return super(VMBot, self).idle_proc()
@@ -205,6 +203,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
         return reply
 
     def shutdown(self):
+        self.sess.close()
         if self.message_trigger:
             self.km_feed.close()
 
