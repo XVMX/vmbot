@@ -111,9 +111,26 @@ class MUCJabberBot(JabberBot):
 
     @botcmd
     def help(self, mess, args):
-        # Fix multiline docstring indentation (not compliant to PEP 257)
         reply = super(MUCJabberBot, self).help(mess, args)
-        return '\n'.join(line.lstrip() for line in reply.splitlines())
+        if not args or not reply:
+            return reply
+
+        # Fix multiline docstring indentation (see PEP 257)
+        lines = reply.splitlines()
+        try:
+            minindent = min(len(line) - len(line.lstrip()) for line in lines[1:] if line.lstrip())
+        except ValueError:
+            minindent = 0
+
+        fixed = [lines[0].strip()]
+        for line in lines[1:]:
+            fixed.append(line[minindent:].rstrip())
+        while fixed and not fixed[0]:
+            fixed.pop(0)
+        while fixed and not fixed[-1]:
+            fixed.pop()
+
+        return '\n'.join(fixed)
 
     @botcmd
     def nopm(self, mess, args):
