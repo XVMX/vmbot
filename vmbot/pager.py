@@ -48,10 +48,10 @@ class Pager(object):
     @botcmd
     @inject_db
     def remindme(self, mess, args, session):
-        """<offset> <msg> - Reminds you about <msg> in the current channel
+        """<offset> <msg> - Reminds you about msg in the current channel
 
         Reminders will be discarded 30 days after their offset ran out.
-        <offset> format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
+        offset format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
         Only days, hours, and minutes are supported.
         """
         if len(args.split(None, 1)) < 2:
@@ -68,12 +68,12 @@ class Pager(object):
     @botcmd
     @inject_db
     def sendmsg(self, mess, args, session):
-        """<user> [offset] <msg> - Sends <msg> to <user> in the current channel
+        """<user> [offset] <msg> - Sends msg to user in the current channel
 
-        If [offset] is present, message delivery will be delayed until that
+        If offset is present, message delivery will be delayed until that
         amount of time has passed. Messages will be discarded 30 days after their offset ran out.
-        If <user> contains spaces, enclose <user> in quotes.
-        [offset] format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
+        If user contains spaces, enclose user in quotes.
+        offset format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
         Only days, hours, and minutes are supported.
         """
         try:
@@ -89,12 +89,12 @@ class Pager(object):
     @botcmd
     @inject_db
     def sendpm(self, mess, args, session):
-        """<user> [offset] <msg> - Sends <msg> to <user> via PM
+        """<user> [offset] <msg> - Sends msg to user via PM
 
-        If [offset] is present, message delivery will be delayed until that
+        If offset is present, message delivery will be delayed until that
         amount of time has passed. Messages will be discarded 30 days after their offset ran out.
-        If <user> contains spaces, enclose <user> in quotes.
-        [offset] format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
+        If user contains spaces, enclose user in quotes.
+        offset format: 12d15h37m equals 12 days, 15 hours, and 37 minutes.
         Only days, hours, and minutes are supported.
         """
         try:
