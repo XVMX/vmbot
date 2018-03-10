@@ -10,16 +10,16 @@ LOGLEVEL = logging.INFO
 
 # Jabber usernames allowed to execute director commands
 DIRECTORS = (
-    "username1",
-    "username2",
-    "username3"
+    "username1@domain.tld",
+    "username2@domain.tld",
+    "username3@domain.tld"
 )
 
 # Jabber usernames allowed to execute admin commands
 ADMINS = (
-    "username1",
-    "username2",
-    "username3"
+    "username1@domain.tld",
+    "username2@domain.tld",
+    "username3@domain.tld"
 )
 
 # Jabber credentials
