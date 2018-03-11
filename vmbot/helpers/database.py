@@ -6,7 +6,8 @@ from sqlalchemy import (create_engine, Column, Integer, BigInteger, Float, Strin
                         Text, Enum, DateTime, LargeBinary, PickleType, ForeignKey)
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import func
+from sqlalchemy.exc import OperationalError
+from sqlalchemy import and_, or_, func
 
 from .files import BOT_DB
 
