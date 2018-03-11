@@ -27,11 +27,11 @@ if __name__ == "__main__":
             if feed.needs_run(session):
                 feed.main(session)
 
-        if any(update.needs_run(session) for update in ESI_UPDATES):
+        run_updates = [u for u in ESI_UPDATES if u.needs_run(session)]
+        if run_updates:
             token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
-            for update in ESI_UPDATES:
-                if update.needs_run(session):
-                    update.main(session, token)
+            for update in run_updates:
+                update.main(session, token)
     except Exception:
         logger.exception("An error happened in a cron module:")
 
