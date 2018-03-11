@@ -327,8 +327,9 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
         if not args:
             return
 
+        # Join prevents users without associated nickname(s) from being selected
         uname_or_nick = args + '%'
-        usrs = session.query(User).filter(User.jid.ilike(uname_or_nick)).all()
+        usrs = session.query(User).join(User.nicks).filter(User.jid.ilike(uname_or_nick)).all()
         nicks = session.query(Nickname).filter(Nickname.nick.ilike(uname_or_nick),
                                                Nickname._user_jid.notin_(u.jid for u in usrs)).all()
 
