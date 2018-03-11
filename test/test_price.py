@@ -5,11 +5,9 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
-import os
-
-from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import APIError
 import vmbot.helpers.database as db
+from vmbot.helpers import api
 
 from vmbot.price import Price
 
@@ -21,6 +19,8 @@ def token_reg():
 
 
 class TestPrice(unittest.TestCase):
+    db_engine = db.create_engine("sqlite://")
+
     default_mess = ""
     default_args = ""
 
@@ -33,24 +33,25 @@ class TestPrice(unittest.TestCase):
                           "Buys: <strong>{:,.2f}</strong> ISK -- {:,} units<br />"
                           "Spread: NaNNaNNaNNaNNaNBatman!")
 
+    @classmethod
+    def setUpClass(cls):
+        db.init_db(cls.db_engine)
+        db.Session.configure(bind=cls.db_engine)
+
+    @classmethod
+    def tearDownClass(cls):
+        db.Session.configure(bind=db.engine)
+        cls.db_engine.dispose()
+        del cls.db_engine
+
+        # _API_REG may still hold a session connected to cls.db_engine
+        api._API_REG = api.threading.local()
+
     def setUp(self):
         self.price = Price()
 
     def tearDown(self):
         del self.price
-
-    @classmethod
-    def setUpClass(cls):
-        try:
-            os.remove(BOT_DB)
-        except OSError:
-            pass
-        else:
-            db.init_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        return cls.setUpClass()
 
     def test_price_noargs(self):
         self.assertEqual(

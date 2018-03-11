@@ -5,11 +5,9 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 
 from datetime import datetime, timedelta
-import os
 
 from xmpp.protocol import JID
 
-from vmbot.helpers.files import BOT_DB
 import vmbot.helpers.database as db
 
 from vmbot.models.note import Note, NOTE_DELIVERY_FRAME
@@ -35,18 +33,18 @@ NICK_DICT = {
 
 
 class TestNote(unittest.TestCase):
+    db_engine = db.create_engine("sqlite://")
+
     @classmethod
     def setUpClass(cls):
-        try:
-            os.remove(BOT_DB)
-        except OSError:
-            pass
-        else:
-            db.init_db()
+        db.init_db(cls.db_engine)
+        db.Session.configure(bind=cls.db_engine)
 
     @classmethod
     def tearDownClass(cls):
-        return cls.setUpClass()
+        db.Session.configure(bind=db.engine)
+        cls.db_engine.dispose()
+        del cls.db_engine
 
     def setUp(self):
         self.sess = db.Session()
