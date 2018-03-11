@@ -5,13 +5,11 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
-import os
 import StringIO
 import logging
 
 import requests
 
-from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import APIError, APIStatusError, APIRequestError, NoCacheError
 import vmbot.helpers.database as db
 
@@ -38,22 +36,24 @@ def esi_warning_response(*args, **kwargs):
 
 
 class TestAPI(unittest.TestCase):
+    db_engine = db.create_engine("sqlite://")
     zbot_regex = ("Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
                   "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | "
                   "2016-06-10 02:09:38")
 
     @classmethod
     def setUpClass(cls):
-        try:
-            os.remove(BOT_DB)
-        except OSError:
-            pass
-        else:
-            db.init_db()
+        db.init_db(cls.db_engine)
+        db.Session.configure(bind=cls.db_engine)
 
     @classmethod
     def tearDownClass(cls):
-        return cls.setUpClass()
+        db.Session.configure(bind=db.engine)
+        cls.db_engine.dispose()
+        del cls.db_engine
+
+        # _API_REG may still hold a session connected to cls.db_engine
+        api._API_REG = api.threading.local()
 
     def test_get_db_session(self):
         sess = api._get_db_session()

@@ -6,11 +6,9 @@ import unittest
 import mock
 
 from datetime import datetime
-import os
 
 from xmpp.protocol import JID, Message
 
-from vmbot.helpers.files import BOT_DB
 import vmbot.helpers.database as db
 
 from vmbot.pager import Pager
@@ -21,21 +19,20 @@ def msg_recvr(mess):
 
 
 class TestPager(unittest.TestCase):
+    db_engine = db.create_engine("sqlite://")
     default_mess = Message(to=JID("sender"), frm=JID("room"))
     default_args = "user 2d5h13m text"
 
     @classmethod
     def setUpClass(cls):
-        try:
-            os.remove(BOT_DB)
-        except OSError:
-            pass
-        else:
-            db.init_db()
+        db.init_db(cls.db_engine)
+        db.Session.configure(bind=cls.db_engine)
 
     @classmethod
     def tearDownClass(cls):
-        return cls.setUpClass()
+        db.Session.configure(bind=db.engine)
+        cls.db_engine.dispose()
+        del cls.db_engine
 
     def setUp(self):
         self.pager = Pager()

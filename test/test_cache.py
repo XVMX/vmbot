@@ -5,11 +5,9 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 
 from datetime import datetime, timedelta
-import os
 
 import requests
 
-from vmbot.helpers.files import BOT_DB
 from vmbot.helpers.exceptions import NoCacheError
 import vmbot.helpers.database as db
 
@@ -18,20 +16,19 @@ from vmbot.models.cache import parse_http_cache, HTTPCacheObject, ESICacheObject
 
 class TestCache(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
-        try:
-            os.remove(BOT_DB)
-        except OSError:
-            pass
-        else:
-            db.init_db()
+    def tearDownClass(cls):
+        db.Session.configure(bind=db.engine)
 
     def setUp(self):
+        self.db_engine = db.create_engine("sqlite://")
+        db.init_db(self.db_engine)
+        db.Session.configure(bind=self.db_engine)
         self.sess = db.Session()
 
     def tearDown(self):
         self.sess.close()
-        self.setUpClass()
+        self.db_engine.dispose()
+        del self.db_engine
 
     def test_parse_http_cache(self):
         self.assertIsInstance(parse_http_cache({'Cache-Control': "max-age=60"}), datetime)

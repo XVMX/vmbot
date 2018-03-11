@@ -16,8 +16,8 @@ Session = sessionmaker(bind=engine)
 Model = declarative_base()
 
 
-def init_db():
+def init_db(bind=engine):
     """Create all required database tables."""
     # Import all models which have associated tables
     from ..models import cache, message, note, user, wallet
-    Model.metadata.create_all(engine)
+    Model.metadata.create_all(bind)
