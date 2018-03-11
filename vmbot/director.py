@@ -12,7 +12,7 @@ from terminaltables import AsciiTable
 from .botcmd import botcmd
 from .helpers.exceptions import APIError
 from .helpers import database as db
-from .helpers.decorators import requires_dir, requires_dir_chat, inject_db
+from .helpers.decorators import requires_role, requires_dir_chat, inject_db
 from .helpers.format import format_ref_type
 from .models import ISK, WalletJournalEntry
 
@@ -68,7 +68,7 @@ class Director(object):
 
     @botcmd
     @requires_dir_chat
-    @requires_dir
+    @requires_role("director")
     def bcast(self, mess, args):
         """vm <message> - Sends message as a broadcast to your corp
 
@@ -90,7 +90,7 @@ class Director(object):
             return unicode(e)
 
     @botcmd
-    @requires_dir
+    @requires_role("director")
     def pingall(self, mess, args):
         """Pings everyone in the current chatroom"""
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
@@ -103,8 +103,8 @@ class Director(object):
         return query.group_by(WalletJournalEntry.ref_type)
 
     @botcmd
-    @requires_dir_chat
     @inject_db
+    @requires_dir_chat
     def revenue(self, mess, args, session):
         """Revenue statistics for the last day/week/month"""
         def to_dict(res):
@@ -149,8 +149,8 @@ class Director(object):
         return '<br /><span style="font-family: monospace;">' + res + "</span>"
 
     @botcmd
-    @requires_dir_chat
     @inject_db
+    @requires_dir_chat
     def income(self, mess, args, session):
         """Income statistics for the last month"""
         query = self._wallet_type_query(session)
@@ -161,8 +161,8 @@ class Director(object):
         return self._type_overview(res)
 
     @botcmd
-    @requires_dir_chat
     @inject_db
+    @requires_dir_chat
     def expenses(self, mess, args, session):
         """Expense statistics for the last month"""
         query = self._wallet_type_query(session)

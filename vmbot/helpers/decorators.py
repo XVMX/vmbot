@@ -7,6 +7,7 @@ from functools import wraps
 
 from .exceptions import TimeoutError
 from . import database as db
+from ..models.user import User
 
 import config
 
@@ -34,29 +35,40 @@ def timeout(seconds, error_message="Timer expired"):
     return decorate
 
 
-def requires_dir(func):
-    @wraps(func)
-    def check_dir(self, mess, args):
-        if self.get_uname_from_mess(mess) in config.DIRECTORS:
-            return func(self, mess, args)
-
-    return check_dir
+def generate_role_attr_map(user):
+    return {'director': user.is_director, 'admin': user.is_admin}
 
 
-def requires_admin(func):
-    @wraps(func)
-    def check_admin(self, mess, args):
-        if self.get_uname_from_mess(mess) in config.ADMINS:
-            return func(self, mess, args)
+ROLE_ATTR_MAP = generate_role_attr_map(User)
 
-    return check_admin
+
+def requires_role(role):
+    if role not in ROLE_ATTR_MAP:
+        raise ValueError("Invalid role name")
+
+    def decorate(func):
+        @wraps(func)
+        def check_role(self, mess, args, **kwargs):
+            jid = self.get_uname_from_mess(mess, full_jid=True).getStripped()
+            sess = kwargs.get('session', None) or db.Session()
+
+            allow = sess.query(ROLE_ATTR_MAP[role]).filter_by(jid=jid).scalar()
+            if 'session' not in kwargs:
+                sess.close()
+
+            if allow:
+                return func(self, mess, args, **kwargs)
+
+        return check_role
+
+    return decorate
 
 
 def requires_dir_chat(func):
     @wraps(func)
-    def check_dir_chat(self, mess, args):
+    def check_dir_chat(self, mess, args, **kwargs):
         if mess.getFrom().getStripped() in config.JABBER['director_chatrooms']:
-            return func(self, mess, args)
+            return func(self, mess, args, **kwargs)
 
     return check_dir_chat
 

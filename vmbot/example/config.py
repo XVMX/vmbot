@@ -8,20 +8,6 @@ import logging
 # Log level
 LOGLEVEL = logging.INFO
 
-# Jabber usernames allowed to execute director commands
-DIRECTORS = (
-    "username1@domain.tld",
-    "username2@domain.tld",
-    "username3@domain.tld"
-)
-
-# Jabber usernames allowed to execute admin commands
-ADMINS = (
-    "username1@domain.tld",
-    "username2@domain.tld",
-    "username3@domain.tld"
-)
-
 # Jabber credentials
 # Primary chatrooms: main corp channel(s), feeds will be posted there
 # Director chatrooms: director channel(s), important data will be posted there

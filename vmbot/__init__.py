@@ -24,7 +24,7 @@ from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
-from .helpers.decorators import timeout, requires_admin, requires_dir_chat, inject_db
+from .helpers.decorators import timeout, requires_role, requires_dir_chat, inject_db
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
 from .models.message import Message
 from .models.user import User, Nickname
@@ -365,7 +365,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
         return res
 
     @botcmd(hidden=True)
-    @requires_admin
+    @requires_role("admin")
     def reload(self, mess, args):
         """Kills the bot's process. Restarts the process if run in a while true loop."""
         if not args:
@@ -374,7 +374,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
 
     @botcmd(hidden=True)
     @requires_dir_chat
-    @requires_admin
+    @requires_role("admin")
     def gitpull(self, mess, args):
         """Pulls the latest commit from the active remote/branch"""
         p = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
