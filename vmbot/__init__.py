@@ -15,6 +15,7 @@ from sympy.printing.pretty import pretty
 import pint
 
 from .botcmd import botcmd
+from .acl import ACL
 from .director import Director
 from .fun import Say, Fun, Chains
 from .pager import Pager
@@ -24,9 +25,10 @@ from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
-from .helpers.decorators import timeout, requires_admin, requires_dir_chat
+from .helpers.decorators import timeout, requires_role, requires_dir_chat, inject_db
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
 from .models.message import Message
+from .models.user import User, Nickname
 from .models import Note
 
 import config
@@ -145,7 +147,7 @@ class MUCJabberBot(JabberBot):
             super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
 
 
-class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
+class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
         self.message_trigger = None
@@ -179,6 +181,25 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
 
         return super(VMBot, self).idle_proc()
 
+    def callback_presence(self, conn, presence):
+        jid = presence.getJid()
+        nick_str = presence.getFrom().getResource()
+
+        if jid is not None:
+            jid = JID(jid).getStripped()
+            usr = self.sess.query(User).get(jid) or User(jid)
+            nick = self.sess.query(Nickname).get((nick_str, usr.jid))
+
+            if nick is None:
+                usr.nicks.append(Nickname(nick_str))
+            else:
+                nick.last_seen = datetime.utcnow()
+
+            self.sess.add(usr)
+            self.sess.commit()
+
+        return super(VMBot, self).callback_presence(conn, presence)
+
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
 
@@ -203,6 +224,17 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
         return reply
 
     def shutdown(self):
+        nicks = {(nick, jid.getStripped()) for node in self.nick_dict.values()
+                 for nick, jid in node.items()}
+        try:
+            self.sess.query(Nickname).filter(db.or_(
+                False,  # Prevents matching everything if nicks is empty
+                *(db.and_(Nickname.nick == nick, Nickname._user_jid == jid) for nick, jid in nicks)
+            )).update({'last_seen': datetime.utcnow()}, synchronize_session=False)
+            self.sess.commit()
+        except db.OperationalError:
+            pass
+
         self.sess.close()
         if self.message_trigger:
             self.km_feed.close()
@@ -290,6 +322,37 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
             return "Please provide multiple options to choose from"
 
     @botcmd
+    @inject_db
+    def lastseen(self, mess, args, session):
+        """<user> - Looks up the last time user was seen by the bot"""
+        if not args:
+            return
+
+        # Join prevents users without associated nickname(s) from being selected
+        uname_or_nick = args + '%'
+        usrs = session.query(User).join(User.nicks).filter(User.jid.ilike(uname_or_nick)).all()
+        nicks = session.query(Nickname).filter(Nickname.nick.ilike(uname_or_nick),
+                                               Nickname._user_jid.notin_(u.jid for u in usrs)).all()
+
+        if not usrs and not nicks:
+            return "I've never seen that user before"
+
+        if len(usrs) + len(nicks) == 1 and usrs:
+            return "The last time I've seen {} was at {:%Y-%m-%d %H:%M:%S}".format(
+                usrs[0].uname, usrs[0].last_seen
+            )
+        elif nicks:
+            return "The last time I've seen {} ({}) was at {:%Y-%m-%d %H:%M:%S}".format(
+                nicks[0].nick, nicks[0].user.uname, nicks[0].last_seen
+            )
+
+        res = ["I've seen the following people use that name:"]
+        res.extend("{} at {:%Y-%m-%d %H:%M:%S}".format(usr.uname, usr.last_seen) for usr in usrs)
+        res.extend("{} ({}) at {:%Y-%m-%d %H:%M:%S}".format(nick.nick, nick.user.uname,
+                                                            nick.last_seen) for nick in nicks)
+        return '\n'.join(res)
+
+    @botcmd
     def uptime(self, mess, args):
         """Bot's current uptime and git revision"""
         p = subprocess.Popen(["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE,
@@ -304,7 +367,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
         return res
 
     @botcmd(hidden=True)
-    @requires_admin
+    @requires_role("admin")
     def reload(self, mess, args):
         """Kills the bot's process. Restarts the process if run in a while true loop."""
         if not args:
@@ -313,7 +376,7 @@ class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
 
     @botcmd(hidden=True)
     @requires_dir_chat
-    @requires_admin
+    @requires_role("admin")
     def gitpull(self, mess, args):
         """Pulls the latest commit from the active remote/branch"""
         p = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
