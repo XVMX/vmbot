@@ -64,7 +64,7 @@ class Price(object):
         if struct_ids and not {"esi-universe.read_structures.v1",
                                "esi-markets.structure_markets.v1"}.issubset(token.scopes):
             raise APIError("SSO token is missing required scopes")
-        pool = futures.ThreadPoolExecutor(max_workers=min(len(struct_ids) + 1, 20))
+        pool = futures.ThreadPoolExecutor(max_workers=10)
 
         # Filter valid locations
         sys_fut = pool.submit(api.request_esi, "/v3/universe/systems/{}/", (system_id,))
