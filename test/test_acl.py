@@ -112,6 +112,25 @@ class TestACL(unittest.TestCase):
         self.assertEqual(self.acl.demote(self.default_mess, "user director"),
                          "The user doesn't have any of the specified roles")
 
+    def test_list(self):
+        self.assertEqual(self.acl.list(self.default_mess, "admin"),
+                         "This role is assigned to admin")
+
+    def test_list_invalidrole(self):
+        self.assertEqual(self.acl.list(self.default_mess, "xyz"),
+                         "Invalid role")
+
+    def test_list_notassigned(self):
+        admin = self.sess.query(User).get("admin@domain.tld")
+        admin.is_admin = False
+        self.sess.commit()
+
+        self.assertEqual(self.acl.list(self.default_mess, "admin"),
+                         "This role is not assigned to anyone")
+
+        admin.is_admin = True
+        self.sess.commit()
+
 
 if __name__ == "__main__":
     unittest.main()

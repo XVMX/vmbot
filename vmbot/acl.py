@@ -96,3 +96,19 @@ class ACL(object):
         session.commit()
         return ("The following role(s) have been removed from {}: ".format(receiver.jid) +
                 ", ".join(roles))
+
+    @botcmd
+    @inject_db
+    def list(self, mess, args, session):
+        """<role> - Lists users with the specified role
+
+        Available roles: director, admin.
+        """
+        if args not in ROLE_ATTR_MAP:
+            return "Invalid role"
+
+        usrs = session.query(User).filter(ROLE_ATTR_MAP[args].is_(True)).all()
+        if not usrs:
+            return "This role is not assigned to anyone"
+
+        return "This role is assigned to " + ", ".join(usr.uname for usr in usrs)
