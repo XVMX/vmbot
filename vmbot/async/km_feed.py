@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import time
 from datetime import datetime
 import threading
+import logging
 import Queue
 
 from ..helpers.exceptions import APIError
@@ -22,7 +23,7 @@ KILL_FMT = "{} new kill(s) worth {:.2f} ISK: https://zkillboard.com/corporation/
 
 
 class KMFeed(object):
-    """Continuously fetch and process zKB lossmails."""
+    """Continuously fetch and process zKB killmails."""
 
     class KM(object):
         """Store zKB killmail data."""
@@ -54,7 +55,7 @@ class KMFeed(object):
         self.loss_queue = Queue.Queue()
 
         self.abort_exec = threading.Event()
-        self.worker = threading.Thread(target=self._request)
+        self.worker = threading.Thread(target=self._async_exec)
         self.worker.daemon = True
         self.worker.start()
 
@@ -64,6 +65,19 @@ class KMFeed(object):
 
     def process(self):
         return self.process_kills(), self.process_losses()
+
+    def process_kills(self):
+        with self.kill_lock:
+            if (self.kills == 0 or self.kill_value < KM_MIN_VAL or
+                    not self.kill_timer or self.kill_timer > time.time()):
+                return
+
+            res = KILL_FMT.format(self.kills, ISK(self.kill_value), self.corp_id)
+            self.kills = 0
+            self.kill_value = 0
+            self.kill_timer = None
+
+            return res
 
     def process_losses(self):
         losses = []
@@ -80,18 +94,11 @@ class KMFeed(object):
         return ("{} new loss(es):\n".format(len(losses)) +
                 '\n'.join(loss.format() for loss in losses))
 
-    def process_kills(self):
-        with self.kill_lock:
-            if (self.kills == 0 or self.kill_value < KM_MIN_VAL or
-                    not self.kill_timer or self.kill_timer > time.time()):
-                return
-
-            res = KILL_FMT.format(self.kills, ISK(self.kill_value), self.corp_id)
-            self.kills = 0
-            self.kill_value = 0
-            self.kill_timer = None
-
-            return res
+    def _async_exec(self):
+        try:
+            self._request()
+        except Exception:
+            logging.getLogger(__name__).exception("An error happened in KMFeed:")
 
     def _request(self):
         while not self.abort_exec.is_set():
@@ -99,14 +106,15 @@ class KMFeed(object):
                 res = api.request_rest(REDISQ_URL, timeout=15)['package']
             except APIError:
                 continue
+            if res is None:
+                continue
 
-            if res is not None:
-                if (res['killmail']['victim']['corporation_id'] == self.corp_id
-                        and res['zkb']['totalValue'] >= KM_MIN_VAL):
-                    self.loss_queue.put(KMFeed.KM(res))
-                elif any(att['corporation_id'] == self.corp_id
-                         for att in res['killmail']['attackers'] if 'corporation_id' in att):
-                    with self.kill_lock:
-                        self.kills += 1
-                        self.kill_value += res['zkb']['totalValue']
-                        self.kill_timer = self.kill_timer or time.time() + KILL_SPOOL
+            if (res['killmail']['victim']['corporation_id'] == self.corp_id
+                    and res['zkb']['totalValue'] >= KM_MIN_VAL):
+                self.loss_queue.put(KMFeed.KM(res))
+            elif any(att['corporation_id'] == self.corp_id
+                     for att in res['killmail']['attackers'] if 'corporation_id' in att):
+                with self.kill_lock:
+                    self.kills += 1
+                    self.kill_value += res['zkb']['totalValue']
+                    self.kill_timer = self.kill_timer or time.time() + KILL_SPOOL
