@@ -15,6 +15,7 @@ from sympy.printing.pretty import pretty
 import pint
 
 from .botcmd import botcmd
+from .acl import ACL
 from .director import Director
 from .fun import Say, Fun, Chains
 from .pager import Pager
@@ -146,7 +147,7 @@ class MUCJabberBot(JabberBot):
             super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
 
 
-class VMBot(MUCJabberBot, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
+class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
         self.message_trigger = None
