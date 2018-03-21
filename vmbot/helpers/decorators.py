@@ -36,7 +36,7 @@ def timeout(seconds, error_message="Timer expired"):
 
 
 def generate_role_attr_map(user):
-    return {'director': user.is_director, 'admin': user.is_admin}
+    return {'director': user.allow_director, 'admin': user.allow_admin, 'token': user.allow_token}
 
 
 ROLE_ATTR_MAP = generate_role_attr_map(User)

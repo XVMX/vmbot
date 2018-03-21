@@ -7,6 +7,7 @@ import cgi
 import xml.etree.ElementTree as ET
 
 import requests
+import pyotp
 from terminaltables import AsciiTable
 
 from .botcmd import botcmd
@@ -96,6 +97,17 @@ class Director(object):
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
         reply += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
         return reply
+
+    @botcmd(hidden=True)
+    @requires_role("token")
+    def token(self, mess, args):
+        """<account> - Generates the current login code for account"""
+        args = args.strip().lower()
+        if args not in config.TOTP_KEYS:
+            return "This account is not available for code generation"
+
+        totp = pyotp.TOTP(config.TOTP_KEYS[args])
+        return totp.now()
 
     @staticmethod
     def _wallet_type_query(session):
