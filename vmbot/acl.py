@@ -46,7 +46,7 @@ class ACL(object):
     def promote(self, mess, args, session):
         """<user> <role> [role...] - Adds role(s) to user
 
-        Available roles: director, admin.
+        Available roles: director, admin, token.
         """
         try:
             receiver, roles = self._process_args(mess, args, session)
@@ -63,6 +63,8 @@ class ACL(object):
                 receiver.allow_director = True
             elif role == "admin":
                 receiver.allow_admin = True
+            elif role == "token":
+                receiver.allow_token = True
 
         session.add(receiver)
         session.commit()
@@ -74,7 +76,7 @@ class ACL(object):
     def demote(self, mess, args, session):
         """<user> <role> [role...] - Removes role(s) from user
 
-        Available roles: director, admin.
+        Available roles: director, admin, token.
         """
         try:
             receiver, roles = self._process_args(mess, args, session)
@@ -91,6 +93,8 @@ class ACL(object):
                 receiver.allow_director = False
             elif role == "admin":
                 receiver.allow_admin = False
+            elif role == "token":
+                receiver.allow_token = False
 
         session.add(receiver)
         session.commit()
@@ -102,7 +106,7 @@ class ACL(object):
     def list(self, mess, args, session):
         """<role> - Lists users with the specified role
 
-        Available roles: director, admin.
+        Available roles: director, admin, token.
         """
         args = args.strip()
         if args not in ROLE_ATTR_MAP:

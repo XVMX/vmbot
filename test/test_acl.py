@@ -26,6 +26,7 @@ class TestACL(unittest.TestCase):
         full_usr = User("admin@domain.tld")
         full_usr.allow_admin = True
         full_usr.allow_director = True
+        full_usr.allow_token = True
 
         sess = db.Session()
         sess.add_all([def_user, full_usr])
@@ -69,14 +70,16 @@ class TestACL(unittest.TestCase):
                           self.default_mess, "user admin", self.sess)
 
     def test_promote(self):
-        self.acl.promote(self.default_mess, "user director admin")
+        self.acl.promote(self.default_mess, "user director admin token")
 
         usr = self.sess.query(User).get("user@domain.tld")
         self.assertTrue(usr.allow_director)
         self.assertTrue(usr.allow_admin)
+        self.assertTrue(usr.allow_token)
 
         usr.allow_director = False
         usr.allow_admin = False
+        usr.allow_token = False
         self.sess.commit()
 
     def test_promote_denied(self):
@@ -91,14 +94,16 @@ class TestACL(unittest.TestCase):
                          "The user already has all specified roles")
 
     def test_demote(self):
-        self.acl.demote(self.default_mess, "admin director admin")
+        self.acl.demote(self.default_mess, "admin director admin token")
 
         admin = self.sess.query(User).get("admin@domain.tld")
         self.assertFalse(admin.allow_director)
         self.assertFalse(admin.allow_admin)
+        self.assertFalse(admin.allow_token)
 
         admin.allow_director = True
         admin.allow_admin = True
+        admin.allow_token = True
         self.sess.commit()
 
     def test_demote_denied(self):
