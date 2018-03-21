@@ -104,6 +104,7 @@ class ACL(object):
 
         Available roles: director, admin.
         """
+        args = args.strip()
         if args not in ROLE_ATTR_MAP:
             return "Invalid role"
 
