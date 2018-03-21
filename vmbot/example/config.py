@@ -33,6 +33,11 @@ JABBER = {
 CORPORATION_ID = 1234567890
 ALLIANCE_ID = None
 
+# TOTP account keys
+TOTP_KEYS = {
+    'account name': "account key"
+}
+
 # Custom revenue table columns
 REVENUE_COLS = (
     ("< 3 months", timedelta(days=90)),
