@@ -13,13 +13,8 @@ from vmbot.models.user import User
 from vmbot.helpers.decorators import requires_role, requires_dir_chat
 
 
-@requires_role("director")
-def dir_acl(self, mess, args):
-    return True
-
-
 @requires_role("admin")
-def admin_acl(self, mess, args):
+def role_acl(self, mess, args):
     return True
 
 
@@ -42,12 +37,10 @@ class TestACLDecorators(unittest.TestCase):
         db.Session.configure(bind=cls.db_engine)
 
         admin_usr = User("admin@domain.tld")
-        dir_usr = User("dir@domain.tld")
         admin_usr.is_admin = True
-        dir_usr.is_director = True
 
         sess = db.Session()
-        sess.add_all([admin_usr, dir_usr])
+        sess.add(admin_usr)
         sess.commit()
         sess.close()
 
@@ -60,28 +53,20 @@ class TestACLDecorators(unittest.TestCase):
     def test_requires_invalidrole(self):
         self.assertRaises(ValueError, requires_role, "invalid role")
 
-    def test_requires_dir(self):
-        self.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
-                                                  return_value=JID("dir@domain.tld/res"))
-        self.assertTrue(dir_acl(self, self.default_mess, self.default_args))
-
-    def test_requires_dir_denied(self):
-        self.assertIsNone(dir_acl(self, self.default_mess, self.default_args))
-
-    def test_requires_admin(self):
+    def test_requires_role(self):
         self.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
                                                   return_value=JID("admin@domain.tld/res"))
-        self.assertTrue(admin_acl(self, self.default_mess, self.default_args))
+        self.assertTrue(role_acl(self, self.default_mess, self.default_args))
 
-    def test_requires_admin_denied(self):
-        self.assertIsNone(admin_acl(self, self.default_mess, self.default_args))
+    def test_requires_role_denied(self):
+        self.assertIsNone(role_acl(self, self.default_mess, self.default_args))
 
     def test_requires_dir_chat(self):
         self.assertTrue(dir_chat_acl(self, Message(frm=JID("DirRoom@domain.tld")),
                                      self.default_args))
 
     def test_requires_dir_chat_denied(self):
-        self.assertIsNone(dir_acl(self, self.default_mess, self.default_args))
+        self.assertIsNone(dir_chat_acl(self, self.default_mess, self.default_args))
 
 
 if __name__ == "__main__":
