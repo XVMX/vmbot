@@ -37,7 +37,7 @@ class TestACLDecorators(unittest.TestCase):
         db.Session.configure(bind=cls.db_engine)
 
         admin_usr = User("admin@domain.tld")
-        admin_usr.is_admin = True
+        admin_usr.allow_admin = True
 
         sess = db.Session()
         sess.add(admin_usr)

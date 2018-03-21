@@ -60,9 +60,9 @@ class ACL(object):
 
         for role in roles:
             if role == "director":
-                receiver.is_director = True
+                receiver.allow_director = True
             elif role == "admin":
-                receiver.is_admin = True
+                receiver.allow_admin = True
 
         session.add(receiver)
         session.commit()
@@ -88,9 +88,9 @@ class ACL(object):
 
         for role in roles:
             if role == "director":
-                receiver.is_director = False
+                receiver.allow_director = False
             elif role == "admin":
-                receiver.is_admin = False
+                receiver.allow_admin = False
 
         session.add(receiver)
         session.commit()
