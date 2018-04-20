@@ -43,7 +43,8 @@ def _get_requests_session():
 
 def get_name(id_):
     try:
-        return request_esi("/v2/universe/names/", data=json.dumps([id_]), method="POST")[0]['name']
+        return request_esi("/v2/universe/names/", data=json.dumps([id_]),
+                           headers={'Content-Type': "application/json"}, method="POST")[0]['name']
     except (APIError, IndexError):
         return "{ERROR}"
 
