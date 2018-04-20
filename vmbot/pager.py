@@ -17,7 +17,7 @@ REMINDER_FMT = "Reminder for {} set at {:%Y-%m-%d %H:%M:%S}:\n{}"
 
 class Pager(object):
     @staticmethod
-    def _process_args(args):
+    def _process_pager_args(args):
         args = args.strip()
 
         quot_end = args.find('"', 1)
@@ -57,8 +57,8 @@ class Pager(object):
         if len(args.split(None, 1)) < 2:
             return "Please specify a time offset and a message"
 
-        # _process_args parameter can always be split into 3 parts here
-        user, text, offset = self._process_args(self.get_sender_username(mess) + ' ' + args)
+        # _process_pager_args parameter can always be split into 3 parts here
+        user, text, offset = self._process_pager_args(self.get_sender_username(mess) + ' ' + args)
         text = REMINDER_FMT.format(user, datetime.utcnow(), text)
         note = Note(user, text, offset, room=mess.getFrom().getStripped())
 
@@ -77,7 +77,7 @@ class Pager(object):
         Only days, hours, and minutes are supported.
         """
         try:
-            user, text, offset = self._process_args(args)
+            user, text, offset = self._process_pager_args(args)
             text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
             note = Note(user, text, offset, room=mess.getFrom().getStripped())
         except ValueError as e:
@@ -98,7 +98,7 @@ class Pager(object):
         Only days, hours, and minutes are supported.
         """
         try:
-            user, text, offset = self._process_args(args)
+            user, text, offset = self._process_pager_args(args)
             jid = (JID(node=user, domain=self.jid.getDomain()).getStripped()
                    if '@' not in user else user)
             text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)

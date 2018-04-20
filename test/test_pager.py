@@ -45,29 +45,29 @@ class TestPager(unittest.TestCase):
     def tearDown(self):
         del self.pager
 
-    def test_process_args(self):
-        res = self.pager._process_args(self.default_args)
+    def test_process_pager_args(self):
+        res = self.pager._process_pager_args(self.default_args)
 
         self.assertEqual(res[0], "user")
         self.assertEqual(res[1], "text")
         self.assertIsInstance(res[2], datetime)
 
-    def test_process_args_quoted(self):
-        res = self.pager._process_args('"spaced user" 2d5h13m text')
+    def test_process_pager_args_quoted(self):
+        res = self.pager._process_pager_args('"spaced user" 2d5h13m text')
 
         self.assertEqual(res[0], "spaced user")
         self.assertEqual(res[1], "text")
         self.assertIsInstance(res[2], datetime)
 
-    def test_process_args_noargs(self):
-        self.assertRaises(ValueError, self.pager._process_args, "")
-        self.assertRaises(ValueError, self.pager._process_args, "user")
+    def test_process_pager_args_noargs(self):
+        self.assertRaises(ValueError, self.pager._process_pager_args, "")
+        self.assertRaises(ValueError, self.pager._process_pager_args, "user")
 
-    def test_process_args_notext(self):
-        self.assertRaises(ValueError, self.pager._process_args, "user 2d5h13m")
+    def test_process_pager_args_notext(self):
+        self.assertRaises(ValueError, self.pager._process_pager_args, "user 2d5h13m")
 
-    def test_process_args_invalidoffset(self):
-        res = self.pager._process_args("user -13d+8y5h text")
+    def test_process_pager_args_invalidoffset(self):
+        res = self.pager._process_pager_args("user -13d+8y5h text")
 
         self.assertEqual(res[0], "user")
         self.assertEqual(res[1], "-13d+8y5h text")

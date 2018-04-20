@@ -50,23 +50,26 @@ class TestACL(unittest.TestCase):
         self.sess.close()
         del self.acl
 
-    def test_process_args(self):
-        recv, roles = self.acl._process_args(self.default_mess, "user director admin", self.sess)
+    def test_process_acl_args(self):
+        recv, roles = self.acl._process_acl_args(self.default_mess,
+                                                 "user director admin", self.sess)
 
         self.assertEqual(recv.jid, "user@domain.tld")
         self.assertListEqual(roles, ["director", "admin"])
 
-    def test_process_args_noargs(self):
-        self.assertRaises(ValueError, self.acl._process_args, self.default_mess, "", self.sess)
-        self.assertRaises(ValueError, self.acl._process_args, self.default_mess, "user", self.sess)
+    def test_process_acl_args_noargs(self):
+        self.assertRaises(ValueError, self.acl._process_acl_args,
+                          self.default_mess, "", self.sess)
+        self.assertRaises(ValueError, self.acl._process_acl_args,
+                          self.default_mess, "user", self.sess)
 
-    def test_process_args_invalidroles(self):
-        self.assertRaises(ValueError, self.acl._process_args,
+    def test_process_acl_args_invalidroles(self):
+        self.assertRaises(ValueError, self.acl._process_acl_args,
                           self.default_mess, "user xyz", self.sess)
 
-    def test_process_args_denied(self):
+    def test_process_acl_args_denied(self):
         self.acl.get_uname_from_mess.return_value = JID("user@domain.tld/res")
-        self.assertRaises(ValueError, self.acl._process_args,
+        self.assertRaises(ValueError, self.acl._process_acl_args,
                           self.default_mess, "user admin", self.sess)
 
     def test_promote(self):

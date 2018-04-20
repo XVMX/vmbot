@@ -10,7 +10,7 @@ from .models.user import User
 
 
 class ACL(object):
-    def _process_args(self, mess, args, session):
+    def _process_acl_args(self, mess, args, session):
         args = args.strip().split()
         if len(args) < 2:
             raise ValueError("Please provide a username and at least one role: "
@@ -49,7 +49,7 @@ class ACL(object):
         Available roles: director, admin, token.
         """
         try:
-            receiver, roles = self._process_args(mess, args, session)
+            receiver, roles = self._process_acl_args(mess, args, session)
         except ValueError as e:
             return e.message
 
@@ -79,7 +79,7 @@ class ACL(object):
         Available roles: director, admin, token.
         """
         try:
-            receiver, roles = self._process_args(mess, args, session)
+            receiver, roles = self._process_acl_args(mess, args, session)
         except ValueError as e:
             return e.message
 
