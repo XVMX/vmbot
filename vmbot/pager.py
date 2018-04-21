@@ -24,7 +24,7 @@ class Pager(object):
         if args.startswith('"') and quot_end != -1:
             # user is enclosed in quotes
             user = args[1:quot_end].strip()
-            data = args[quot_end+1:].strip()
+            data = args[quot_end + 1:].strip()
         else:
             args = args.split(None, 1)
             if len(args) < 2:

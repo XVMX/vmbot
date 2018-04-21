@@ -16,7 +16,7 @@ def format_affil(char_name, sec_status, corp_name, ally_name,
              if char_name else "The structure is owned by ")
 
     reply += "corporation <strong>{} {}</strong>".format(
-            corp_name, format_tickers(corp_ticker, None, html=True)
+        corp_name, format_tickers(corp_ticker, None, html=True)
     )
 
     if ally_name:

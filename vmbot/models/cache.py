@@ -21,7 +21,7 @@ def parse_http_cache(headers):
     if "no-cache" in cache_control or "no-store" in cache_control:
         raise NoCacheError
 
-    timer = re.search("max-age=(\d+)", cache_control, re.IGNORECASE)
+    timer = re.search(r"max-age=(\d+)", cache_control, re.IGNORECASE)
     if timer is not None:
         return datetime.utcnow() + timedelta(seconds=int(timer.group(1)))
     elif 'Expires' in headers:

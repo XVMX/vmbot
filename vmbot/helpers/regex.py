@@ -9,7 +9,7 @@ PUBBIETALK = (
     "sup",
     "dank",
     "o7",
-    "o\/",
+    r"o\/",
     "m8",
     "retart",
     "rekt",

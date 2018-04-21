@@ -36,7 +36,7 @@ class TestFun(unittest.TestCase):
         res = self.fun.rtq(self.default_mess, self.default_args)
 
         try:
-            quote_url = re.search("http://bash\.org/\?\d+", res).group(0)
+            quote_url = re.search(r"http://bash\.org/\?\d+", res).group(0)
         except AttributeError:
             self.fail("rtq didn't return an http://bash.org link in test_rtq")
 
@@ -69,7 +69,7 @@ class TestFun(unittest.TestCase):
         res = self.fun.rtxkcd(self.default_mess, self.default_args)
 
         try:
-            comic_url = re.search("https://xkcd\.com/\d+/", res).group(0)
+            comic_url = re.search(r"https://xkcd\.com/\d+/", res).group(0)
         except AttributeError:
             self.fail("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
 
@@ -137,19 +137,19 @@ class TestFun(unittest.TestCase):
         mock_requests.side_effect = side_effect
 
         self.assertRegexpMatches(self.fun.rtxkcd(self.default_mess, self.default_args),
-                                 "Failed to load xkcd #\d+ from https://xkcd\.com/\d+/")
+                                 r"Failed to load xkcd #\d+ from https://xkcd\.com/\d+/")
 
         requests_patcher.stop()
 
     def test_urban(self):
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
-                                 ("<strong>[\S ]+</strong> by <em>[\S ]+</em> "
-                                  "rated (?:\+|-)\d+: .+<br />.+"))
+                                 (r"<strong>[\S ]+</strong> by <em>[\S ]+</em> "
+                                  r"rated (?:\+|-)\d+: .+<br />.+"))
 
     def test_urban_random(self):
         self.assertRegexpMatches(self.fun.rtud(self.default_mess, self.default_args),
-                                 ("<strong>[\S ]+</strong> by <em>[\S ]+</em> "
-                                  "rated (?:\+|-)\d+: .+<br />.+"))
+                                 (r"<strong>[\S ]+</strong> by <em>[\S ]+</em> "
+                                  r"rated (?:\+|-)\d+: .+<br />.+"))
 
     @mock.patch("cgi.escape", return_value="[API]")
     def test_urban_link(self, mock_cgi):

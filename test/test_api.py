@@ -37,9 +37,9 @@ def esi_warning_response(*args, **kwargs):
 
 class TestAPI(unittest.TestCase):
     db_engine = db.create_engine("sqlite://")
-    zbot_regex = ("Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
-                  "Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | "
-                  "2016-06-10 02:09:38")
+    zbot_regex = (r"Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
+                  r"Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | "
+                  r"2016-06-10 02:09:38")
 
     @classmethod
     def setUpClass(cls):

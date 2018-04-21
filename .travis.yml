@@ -10,9 +10,9 @@ before_script:
    - cp vmbot/example/config.py ./
    - python -c "from vmbot.helpers import database as db; db.init_db()"
 script:
-   - pycodestyle --max-line-length=100 --exclude=jabberbot.py vmbot/
-   - pycodestyle --max-line-length=100 tools/
-   - pycodestyle --max-line-length=100 test/
+   - pycodestyle --max-line-length=100 --ignore=E123,W5,W606 --exclude=jabberbot.py vmbot/
+   - pycodestyle --max-line-length=100 --ignore=E123,W5,W606 tools/
+   - pycodestyle --max-line-length=100 --ignore=E123,W5,W606 test/
    - coverage run -m unittest discover
 after_success: coveralls
 after_script: coverage report
