@@ -16,25 +16,23 @@ from vmbot.models.message import Message
 import config
 
 FEED_INTERVAL = 10 * 60
-NEWS_FEED = "https://newsfeed.eveonline.com/en-US/44/articles/page/1/20"
-DEVBLOG_FEED = "https://newsfeed.eveonline.com/en-US/2/articles/page/1/20"
-FEED_NS = {'atom': "http://www.w3.org/2005/Atom", 'title': "http://ccp/custom",
-           'media': "http://search.yahoo.com/mrss/"}
+NEWS_FEED = "https://www.eveonline.com/rss/news"
+DEVBLOG_FEED = "https://www.eveonline.com/rss/dev-blogs"
 FEED_FMT = "<strong>{title}</strong> by <em>{author}</em>: {url}"
 
 
 def init(session):
     try:
-        news = ET.fromstring(api.request_api(NEWS_FEED).content)
-        devblog = ET.fromstring(api.request_api(DEVBLOG_FEED).content)
+        news = ET.fromstring(api.request_api(NEWS_FEED).content)[0]
+        devblog = ET.fromstring(api.request_api(DEVBLOG_FEED).content)[0]
     except APIError as e:
         print(unicode(e))
         return
 
-    news_id = news.find("atom:entry[1]/atom:id", FEED_NS).text
-    news_updated = news.find("atom:entry[1]/atom:updated", FEED_NS).text
-    devblog_id = devblog.find("atom:entry[1]/atom:id", FEED_NS).text
-    devblog_updated = devblog.find("atom:entry[1]/atom:updated", FEED_NS).text
+    news_id = news.find("item[1]/guid").text
+    news_updated = news.find("item[1]/pubDate").text
+    devblog_id = devblog.find("item[1]/guid").text
+    devblog_updated = devblog.find("item[1]/pubDate").text
 
     Storage.set(session, "news_feed_last_news", (news_id, news_updated))
     Storage.set(session, "news_feed_last_devblog", (devblog_id, devblog_updated))
@@ -82,22 +80,23 @@ def main(session):
 def read_feed(url, last_entry):
     last_id, last_update = last_entry
 
-    feed = ET.fromstring(api.request_api(url).content)
-    entries = [{'id': entry.find("atom:id", FEED_NS).text,
-                'title': cgi.escape(entry.find("atom:title", FEED_NS).text),
-                'author': entry.find("atom:author/atom:name", FEED_NS).text,
-                'url': entry.find("atom:link[@rel='alternate']", FEED_NS).attrib['href'],
-                'updated': entry.find("atom:updated", FEED_NS).text}
-               for entry in feed.findall("atom:entry", FEED_NS)]
+    feed = ET.fromstring(api.request_api(url).content)[0]
+    entries = [{'id': entry.find("guid").text,
+                'title': cgi.escape(entry.find("title").text),
+                'author': entry.find("author").text,
+                'url': entry.find("link").text,
+                'updated': entry.find("pubDate").text}
+               for entry in feed.findall("item")]
 
-    # ISO 8601 (eg 2016-02-10T16:35:32Z)
-    entries.sort(key=lambda x: time.strptime(x['updated'], "%Y-%m-%dT%H:%M:%SZ"), reverse=True)
+    # RFC 822 (eg Fri, 20 Apr 2018 14:00:00 GMT)
+    DATETIME_FMT = "%a, %d %b %Y %H:%M:%S %Z"
+    entries.sort(key=lambda x: time.strptime(x['updated'], DATETIME_FMT), reverse=True)
 
     idx = next((idx for idx, entry in enumerate(entries) if entry['id'] == last_id), None)
     if idx is None:
         # Fallback in case CCP deletes the last entry
-        last_update = time.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ")
+        last_update = time.strptime(last_update, DATETIME_FMT)
         idx = next((idx for idx, entry in enumerate(entries)
-                    if time.strptime(entry['updated'], "%Y-%m-%dT%H:%M:%SZ") <= last_update), None)
+                    if time.strptime(entry['updated'], DATETIME_FMT) <= last_update), None)
 
     return entries[:idx]
