@@ -48,7 +48,7 @@ REVENUE_COLS = (
 # Data sources: tranquility, singularity
 # Languages: en-us, de, fr, ja, ru, zh
 ESI = {
-    'base_url': "https://esi.tech.ccp.is",
+    'base_url': "https://esi.evetech.net",
     'datasource': "tranquility",
     'lang': "en-us"
 }
