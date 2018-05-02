@@ -11,7 +11,7 @@ from vmbot.models.wallet import WalletJournalEntry
 
 class TestWalletEntry(unittest.TestCase):
     def test_from_esi_record(self):
-        rec = {"ref_id": 14541533899, "ref_type": "bounty_prizes",
+        rec = {"id": 14541533899, "ref_type": "bounty_prizes",
                "amount": 1754495.63, "date": "2017-09-07T20:43:22Z"}
         entry = WalletJournalEntry.from_esi_record(rec)
 

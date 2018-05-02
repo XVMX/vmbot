@@ -36,28 +36,38 @@ def main(session, token):
 def walk_journal(session, token):
     known_ids = {res[0] for res in session.query(WalletJournalEntry.ref_id).all()}
 
-    entries = filter_known_entries(known_ids, get_entries(token))
+    entries, pages = get_entries(token)
+    raw_len = len(entries)
+    entries = filter_known_entries(known_ids, entries)
     session.add_all(entries)
     session.commit()
 
-    # ESI returns up to 500 journal entries at once
-    while len(entries) == 500:
-        min_id = min(entry.ref_id for entry in entries)
-        entries = filter_known_entries(known_ids, get_entries(token, from_id=min_id))
+    for p in range(2, pages + 1):
+        if len(entries) != raw_len:
+            break
+
+        entries = get_entries(token, page=p)
+        raw_len = len(entries)
+        entries = filter_known_entries(known_ids, entries)
         session.add_all(entries)
         session.commit()
 
 
-def get_entries(token, from_id=None):
+def get_entries(token, page=None):
     if "esi-wallet.read_corporation_wallets.v1" not in token.scopes:
         return []
 
-    params = {'from_id': from_id}
     try:
-        recs = token.request_esi("/v2/corporations/{}/wallets/{}/journal/",
-                                 (config.CORPORATION_ID, WALLET_DIVISION), params=params)
+        recs = token.request_esi("/v3/corporations/{}/wallets/{}/journal/",
+                                 (config.CORPORATION_ID, WALLET_DIVISION),
+                                 params={'page': page}, with_head=page is None)
     except APIError:
         return []
+
+    if page is None:
+        recs, head = recs
+        return ([WalletJournalEntry.from_esi_record(rec) for rec in recs],
+                int(head.get('X-Pages', 1)))
 
     return [WalletJournalEntry.from_esi_record(rec) for rec in recs]
 

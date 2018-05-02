@@ -25,4 +25,4 @@ class WalletJournalEntry(db.Model):
     @classmethod
     def from_esi_record(cls, record):
         date = datetime.strptime(record['date'], "%Y-%m-%dT%H:%M:%SZ")
-        return cls(record['ref_id'], record['ref_type'], record.get('amount', 0.0), date)
+        return cls(record['id'], record['ref_type'], record.get('amount', 0.0), date)
