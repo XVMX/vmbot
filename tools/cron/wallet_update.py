@@ -55,14 +55,14 @@ def walk_journal(session, token):
 
 def get_entries(token, page=None):
     if "esi-wallet.read_corporation_wallets.v1" not in token.scopes:
-        return []
+        return ([], 1) if page is None else []
 
     try:
         recs = token.request_esi("/v3/corporations/{}/wallets/{}/journal/",
                                  (config.CORPORATION_ID, WALLET_DIVISION),
-                                 params={'page': page}, with_head=page is None)
+                                 params={'page': page or 1}, with_head=page is None)
     except APIError:
-        return []
+        return ([], 1) if page is None else []
 
     if page is None:
         recs, head = recs
