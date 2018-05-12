@@ -2,8 +2,9 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-from sqlalchemy import (create_engine, Column, Boolean, Integer, BigInteger, Float,
+from sqlalchemy import (create_engine, event, Column, Boolean, Integer, BigInteger, Float,
                         String, Text, Enum, DateTime, LargeBinary, PickleType, ForeignKey)
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
@@ -14,6 +15,13 @@ from .files import BOT_DB
 engine = create_engine("sqlite:///" + BOT_DB)
 Session = sessionmaker(bind=engine)
 Model = declarative_base()
+
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.close()
 
 
 def init_db(bind=engine):
