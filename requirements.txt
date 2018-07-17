@@ -7,6 +7,8 @@ sortedcontainers
 sqlalchemy
 requests
 pyotp
+numpy
+scikit-learn
 sympy
 pint
 terminaltables
