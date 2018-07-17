@@ -8,7 +8,7 @@ sqlalchemy
 requests
 pyotp
 numpy
-scikit-learn
+scikit-learn[alldeps]
 sympy
 pint
 terminaltables
