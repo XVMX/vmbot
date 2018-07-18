@@ -67,10 +67,10 @@ class Price(object):
         pool = futures.ThreadPoolExecutor(max_workers=10)
 
         # Filter valid locations
-        sys_fut = pool.submit(api.request_esi, "/v3/universe/systems/{}/", (system_id,))
+        sys_fut = pool.submit(api.request_esi, "/v4/universe/systems/{}/", (system_id,))
         struct_futs = []
         for id_ in struct_ids:
-            f = pool.submit(token.request_esi, "/v1/universe/structures/{}/", (id_,))
+            f = pool.submit(token.request_esi, "/v2/universe/structures/{}/", (id_,))
             f.req_id = id_
             struct_futs.append(f)
 
