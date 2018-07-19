@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
+import math
 import time
 from datetime import datetime
 import threading
@@ -21,7 +22,9 @@ REDISQ_URL = "https://redisq.zkillboard.com/listen.php"
 KM_MIN_VAL = 5000000
 LOSS_FMT = ("{} {} | {} | {:.2f} ISK | {} ({}) | "
             "{:%Y-%m-%d %H:%M:%S} | https://zkillboard.com/kill/{}/")
-KILL_SPOOL = 60 * 60
+KILL_SPOOL = (10 * 60, 90 * 60)
+KILL_TO_DEF = 5 * 60
+KILL_TO_RANGE = (1 * 60, 20 * 60)
 KILL_MAX_HL = 3
 KILL_MAX_ANOM = 5
 KILL_NUM_NEIGHBORS = 5
@@ -93,7 +96,9 @@ class KMFeed(object):
     def __init__(self, corp_id):
         self.corp_id = corp_id
         self.kill_list = []
+        self.mean_ttk = None
         self.kill_timer = None
+        self.kill_timer_range = None
         self.kill_lock = threading.Lock()
         self.loss_queue = Queue.Queue()
 
@@ -131,7 +136,9 @@ class KMFeed(object):
                 highlights = detect_anomalies(self.kill_list)
 
             self.kill_list = []
+            self.mean_ttk = None
             self.kill_timer = None
+            self.kill_timer_range = None
 
         highlights = [unicode(k) for k, _ in zip(reversed(highlights), xrange(KILL_MAX_HL))]
         if highlights:
@@ -175,4 +182,21 @@ class KMFeed(object):
                      for att in res['killmail']['attackers'] if 'corporation_id' in att):
                 with self.kill_lock:
                     self.kill_list.append(Killmail(res))
-                    self.kill_timer = self.kill_timer or time.time() + KILL_SPOOL
+                    cur_time = time.time()
+                    if self.kill_timer_range is None:
+                        self.kill_timer_range = tuple(cur_time + v for v in KILL_SPOOL)
+
+                    num_kills = len(self.kill_list)
+                    if num_kills == 1 or self.mean_ttk is None:
+                        self.mean_ttk = [0, cur_time]
+                    else:
+                        self.mean_ttk[0] += (cur_time - sum(self.mean_ttk)) / (num_kills - 1)
+                        self.mean_ttk[1] = cur_time
+
+                    # Predict time to next kill using the exponential distribution
+                    # MLE is lambda = 1 / mean_ttk[0], quantile function is -ln(1 - p) / lambda
+                    # 80% quantile is equal to -ln(0.2) * mean_ttk[0]
+                    kill_to = (-math.log(0.2) * self.mean_ttk[0]) if num_kills >= 4 else KILL_TO_DEF
+                    kill_to = min(KILL_TO_RANGE[1], max(KILL_TO_RANGE[0], kill_to))
+                    self.kill_timer = min(self.kill_timer_range[1],
+                                          max(self.kill_timer_range[0], cur_time + kill_to))
