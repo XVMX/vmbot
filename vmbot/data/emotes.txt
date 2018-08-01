@@ -1,5 +1,5 @@
 Name=SA-GF Pack, No-Smile Version
-Description=Last Updated: February 19th, 2018
+Description=Last Updated: July 28th, 2018
 Icon=smugjones.001.gif
 Author=Querns
 
@@ -1328,3 +1328,57 @@ shrek.001.gif :dota:
 ! meowth.001.png :meowth:
 ! gb2tfr.001.gif :gb2tfr:
 ! tandp.001.gif :tandp:
+! shucks.001.gif :shucks:
+! yosnice.001.png :yosnice:
+! lofty.001.gif :lofty:
+! abrathink.001.gif :abrathink:
+! trumpfap.001.gif :trumpfap:
+! killemall.001.gif :killemall:
+! carol.001.png :carol:
+! qqpeters.001.gif :qqpeters:
+! wellpiss.001.gif :wellpiss:
+! hmmyes.001.gif :hmmyes:
+! chud.001.gif :chud:
+! dudsmile.001.gif :dudsmile:
+! iiasm.001.gif :iiasm:
+! pigoff.001.gif :pigoff:
+! fivecbux.001.gif :fivecbux:
+! emot-fuckyou.gif :imunfunny:
+! dogtits.001.gif :dogtits:
+! right.001.gif :right:
+! thinkdorm.001.png :thinkdorm:
+! randvince.001.gif :randvince:
+! thembeans.001.gif :thembeans:
+! concerned.001.gif :concerned:
+! ice.001.gif :ice:
+! bernchloe.001.png :bernchloe:
+! yeshaha.001.gif :yeshaha:
+! twisty.001.jpg :twisty:
+! gerard.001.gif :gerard:
+! honked.001.gif :honked:
+! freakout.001.gif :freakout:
+! rodtronics.001.gif :rodtronics:
+! fatshark.001.gif :fatshark:
+! blastu.002.gif :blastu:
+! pkmnwhy.001.gif :pkmnwhy:
+! kazooieass.001.gif :kazooieass:
+! posthaste.001.gif :posthaste:
+! dogcited.001.gif :dogcited:
+! comfysamus.001.png :comfysamus:
+! dehumanize.001.gif :dehumanize:
+! thunkher.001.png :thunkher:
+! pepsi.001.png :pepsi:
+! purfect.001.gif :purfect:
+! shuckyes.001.gif :shuckyes:
+! justass.001.gif :justass:
+! justtrans.001.gif :justtrans:
+! bigwhat.001.png :bigwhat:
+! whatfor.001.gif :whatfor:
+! emot-d2a.png :d2a:
+! borked.001.gif :borked:
+! fluffy.001.gif :fluffy:
+! ali.001.gif :ali:
+! comfyoot.001.png :comfyoot:
+! sadday.001.gif :sadday:
+! sanix.001.gif :sanix:
+! mcnally.001.png :mcnally:
