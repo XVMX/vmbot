@@ -39,7 +39,7 @@ def detect_anomalies(kills):
     kill_vals = np.array([[k.value / 1e6] for k in kills])
     res = lof.fit_predict(kill_vals)
 
-    return [kills[i] for i in np.where(res == -1)]
+    return [kills[i] for i in np.nditer(np.where(res == -1))]
 
 
 class Killmail(object):
