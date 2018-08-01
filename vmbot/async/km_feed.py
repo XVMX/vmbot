@@ -120,19 +120,22 @@ class KMFeed(object):
                 return
 
             kill_sum = sum(k.value for k in self.kill_list)
-            res = "{} new kill(s) worth {:.2f} ISK: https://zkillboard.com/corporation/{}/"
-            res = res.format(len(self.kill_list), ISK(kill_sum), self.corp_id)
+            res = "{} new kill(s) worth {:.2f} ISK:".format(len(self.kill_list), ISK(kill_sum))
 
             self.kill_list.sort(key=lambda k: k.value)
             suff_val_idx = next((i for i, k in enumerate(self.kill_list)
                                  if k.value >= KM_MIN_VAL), None)
             del self.kill_list[:suff_val_idx]
 
-            if len(self.kill_list) <= 3:
+            if 1 <= len(self.kill_list) <= 3:
+                res += ' '
                 highlights = self.kill_list
             elif len(self.kill_list) <= 5:
-                return res
+                res += " https://zkillboard.com/corporation/{}/".format(self.corp_id)
+                highlights = []
             else:
+                res += " https://zkillboard.com/corporation/{}/".format(self.corp_id)
+                res += "<br />Highlight(s): "
                 highlights = detect_anomalies(self.kill_list)
 
             self.kill_list = []
@@ -142,7 +145,7 @@ class KMFeed(object):
 
         highlights = [unicode(k) for k, _ in zip(reversed(highlights), xrange(KILL_MAX_HL))]
         if highlights:
-            res += "\nHighlight(s): " + ", ".join(highlights)
+            res += ", ".join(highlights)
 
         return res
 
