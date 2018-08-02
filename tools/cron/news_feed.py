@@ -38,23 +38,16 @@ UPDATES_BLOCKED_TAGS = {"SKINs"}
 
 def init(session):
     try:
-        news = ET.fromstring(api.request_api(NEWS_FEED).content)[0]
-        devblog = ET.fromstring(api.request_api(DEVBLOG_FEED).content)[0]
-        update = ET.fromstring(api.request_api(UPDATES_FEED).content)[0]
+        news = read_feed(NEWS_FEED, RFC822_FMT, (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
+        devblogs = read_feed(DEVBLOG_FEED, RFC822_FMT, (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
+        updates = read_feed(UPDATES_FEED, ISO8601_FMT, (None, "1970-01-01T00:00:00Z"))
     except APIError as e:
         print(unicode(e))
         return
 
-    news_id = news.find("item[1]/guid").text
-    news_updated = news.find("item[1]/pubDate").text
-    devblog_id = devblog.find("item[1]/guid").text
-    devblog_updated = devblog.find("item[1]/pubDate").text
-    update_id = update.find("item[1]/guid").text
-    update_updated = update.find("item[1]/pubDate").text
-
-    Storage.set(session, "news_feed_last_news", (news_id, news_updated))
-    Storage.set(session, "news_feed_last_devblog", (devblog_id, devblog_updated))
-    Storage.set(session, "news_feed_last_update", (update_id, update_updated))
+    Storage.set(session, "news_feed_last_news", (news[0]['id'], news[0]['updated']))
+    Storage.set(session, "news_feed_last_devblog", (devblogs[0]['id'], devblogs[0]['updated']))
+    Storage.set(session, "news_feed_last_update", (updates[0]['id'], updates[0]['updated']))
     Storage.set(session, "news_feed_next_run", time.time())
 
 
