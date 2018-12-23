@@ -77,16 +77,21 @@ def get_tickers(corp_id, ally_id):
 
 def zbot(kill_id):
     """Create a compact overview of a zKB killmail."""
-    url = "https://zkillboard.com/api/killID/{}/no-items/".format(kill_id)
+    url = "https://zkillboard.com/api/killID/{}/".format(kill_id)
     try:
-        killdata = request_rest(url)
+        zkb = request_rest(url)
     except APIError as e:
         return unicode(e)
 
-    if not killdata:
+    if not zkb:
         return "Failed to load data for https://zkillboard.com/kill/{}/".format(kill_id)
 
-    killdata = killdata[0]
+    zkb = zkb[0]['zkb']
+    try:
+        killdata = request_esi("/v1/killmails/{}/{}/", (kill_id, zkb['hash']))
+    except APIError as e:
+        return unicode(e)
+
     victim = killdata['victim']
     name = get_name(victim.get('character_id', victim['corporation_id']))
     system = staticdata.system_data(killdata['solar_system_id'])
@@ -97,8 +102,8 @@ def zbot(kill_id):
     return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
             "{} ({}) | {} participant(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(
         name, format_tickers(corp_ticker, alliance_ticker),
-        staticdata.type_name(victim['ship_type_id']), killdata['zkb']['points'],
-        ISK(killdata['zkb']['totalValue']), system['system_name'], system['region_name'],
+        staticdata.type_name(victim['ship_type_id']), zkb['points'],
+        ISK(zkb['totalValue']), system['system_name'], system['region_name'],
         len(killdata['attackers']), victim['damage_taken'], killtime
     )
 

@@ -99,7 +99,11 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
 
     @mock.patch("vmbot.helpers.api.request_rest", side_effect=APIError("TestException"))
-    def test_zbot_APIError(self, mock_rest):
+    def test_zbot_APIError_zkb(self, mock_rest):
+        self.assertEqual(api.zbot("54520379"), "TestException")
+
+    @mock.patch("vmbot.helpers.api.request_esi", side_effect=APIError("TestException"))
+    def test_zbot_APIError_esi(self, mock_rest):
         self.assertEqual(api.zbot("54520379"), "TestException")
 
     def test_request_rest(self):
