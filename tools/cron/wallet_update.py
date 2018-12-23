@@ -58,7 +58,7 @@ def get_entries(token, page=None):
         return ([], 1) if page is None else []
 
     try:
-        recs = token.request_esi("/v3/corporations/{}/wallets/{}/journal/",
+        recs = token.request_esi("/v4/corporations/{}/wallets/{}/journal/",
                                  (config.CORPORATION_ID, WALLET_DIVISION),
                                  params={'page': page or 1}, with_head=page is None)
     except APIError:

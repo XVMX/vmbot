@@ -26,11 +26,11 @@ REVENUE_COLS = (
 
 # See https://esi.tech.ccp.is/latest/#!/Wallet
 REVENUE_ROWS = (
-    ("PVE", ("bounty_prize", "agent_mission_reward", "agent_mission_time_bonus_reward",
+    ("PVE", ("agent_mission_reward", "agent_mission_time_bonus_reward", "bounty_prize",
              "bounty_prizes", "corporate_reward_payout", "project_discovery_reward")),
     ("POCO", ("planetary_import_tax", "planetary_export_tax")),
-    ("Reprocessing", ("reprocessing_tax",)),
-    ("Citadel Services", ("office_rental_fee", "factory_slot_rental_fee",
+    ("Citadel Services", ("docking_fee", "office_rental_fee", "factory_slot_rental_fee",
+                          "reprocessing_tax", "brokers_fee", "structure_gate_jump",
                           "jump_clone_installation_fee", "jump_clone_activation_fee"))
 )
 
