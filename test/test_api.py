@@ -5,13 +5,14 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
+import shutil
 import StringIO
 import logging
 
 import requests
 
-from vmbot.helpers.exceptions import APIError, APIStatusError, APIRequestError, NoCacheError
-import vmbot.helpers.database as db
+from vmbot.helpers.files import HTTPCACHE
+from vmbot.helpers.exceptions import APIError, APIStatusError, APIRequestError
 
 from vmbot.helpers import api
 
@@ -22,6 +23,7 @@ def flawed_response(*args, **kwargs):
     res.status_code = 404
     res._content = b"ASCII text"
     res.encoding = "ascii"
+    res.from_cache = False
     return res
 
 
@@ -32,36 +34,29 @@ def esi_warning_response(*args, **kwargs):
     res.headers['warning'] = "299 - This endpoint is deprecated."
     res._content = b'{"res": true}'
     res.encoding = "ascii"
+    res.from_cache = False
     return res
 
 
 class TestAPI(unittest.TestCase):
-    db_engine = db.create_engine("sqlite://")
     zbot_regex = (r"Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
                   r"Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | "
                   r"2016-06-10 02:09:38")
 
     @classmethod
     def setUpClass(cls):
-        db.init_db(cls.db_engine)
-        db.Session.configure(bind=cls.db_engine)
+        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     @classmethod
     def tearDownClass(cls):
-        db.Session.configure(bind=db.engine)
-        cls.db_engine.dispose()
-        del cls.db_engine
-
-        # _API_REG may still hold a session connected to cls.db_engine
+        # _API_REG may still hold a FileCache
         api._API_REG = api.threading.local()
-
-    def test_get_db_session(self):
-        sess = api._get_db_session()
-        self.assertIs(api._get_db_session(), sess)
+        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     def test_get_requests_session(self):
         sess = api._get_requests_session()
         self.assertIs(api._get_requests_session(), sess)
+        self.assertIn("XVMX VMBot", sess.headers['User-Agent'])
 
     def test_get_name(self):
         # character_id: 91754106 Joker Gates
@@ -90,6 +85,7 @@ class TestAPI(unittest.TestCase):
         self.assertTupleEqual(api.get_tickers(None, None), (None, None))
 
     def test_zbot(self):
+        # See https://zkillboard.com/kill/54520379/
         self.assertRegexpMatches(api.zbot("54520379"), self.zbot_regex)
 
     def test_zbot_int(self):
@@ -98,48 +94,26 @@ class TestAPI(unittest.TestCase):
     def test_zbot_invalidid(self):
         self.assertEqual(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
 
-    @mock.patch("vmbot.helpers.api.request_rest", side_effect=APIError("TestException"))
-    def test_zbot_APIError_zkb(self, mock_rest):
+    @mock.patch("vmbot.helpers.api.request_api",
+                side_effect=APIError(requests.RequestException(), "TestException"))
+    def test_zbot_APIError_zkb(self, mock_api):
         self.assertEqual(api.zbot("54520379"), "TestException")
 
-    @mock.patch("vmbot.helpers.api.request_esi", side_effect=APIError("TestException"))
-    def test_zbot_APIError_esi(self, mock_rest):
+    @mock.patch("vmbot.helpers.api.request_esi",
+                side_effect=APIError(requests.RequestException(), "TestException"))
+    def test_zbot_APIError_esi(self, mock_esi):
         self.assertEqual(api.zbot("54520379"), "TestException")
-
-    def test_request_rest(self):
-        test_url = "https://httpbin.org/cache/60"
-
-        # Test without cache
-        with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
-            res_nocache = api.request_rest(test_url)
-            self.assertIsInstance(res_nocache, dict)
-
-        # Test with cache
-        res_cache = api.request_rest(test_url)
-        self.assertIsInstance(res_cache, dict)
-
-        # Test cached response
-        self.assertDictEqual(api.request_rest(test_url), res_cache)
 
     def test_request_esi(self):
         test_route = "/v1/status/"
+        test_params = {'datasource': "tranquility"}
 
-        # Test without cache
-        with mock.patch("vmbot.helpers.api.parse_http_cache", side_effect=NoCacheError):
-            res_nocache = api.request_esi(test_route)
-            self.assertIsInstance(res_nocache, dict)
-
-        # Test with cache
-        res, res_head = api.request_esi(test_route, with_head=True)
-        self.assertIsInstance(res, dict)
-
-        # Test cached response
-        res_cache, res_cache_head = api.request_esi(test_route, with_head=True)
-        self.assertDictEqual(res_cache, res)
-        self.assertDictEqual(dict(res_cache_head), dict(res_head))
+        res, head = api.request_esi(test_route, params=test_params, with_head=True)
+        cached_res = api.request_esi(test_route, params=test_params)
+        self.assertDictEqual(res, cached_res)
 
     @mock.patch("vmbot.helpers.api.request_api", side_effect=esi_warning_response)
-    def test_request_esi_warning(self, mock_esi):
+    def test_request_esi_warning(self, mock_api):
         log = StringIO.StringIO()
         handler = logging.StreamHandler(log)
         logger = logging.getLogger("vmbot.helpers.api.esi")
