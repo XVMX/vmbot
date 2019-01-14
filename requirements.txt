@@ -6,6 +6,7 @@ git+https://github.com/ArchipelProject/xmpppy
 sortedcontainers
 sqlalchemy
 requests
+cachecontrol[filecache]
 pyotp
 numpy
 scikit-learn[alldeps]

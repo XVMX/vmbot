@@ -202,7 +202,7 @@ class EVEUtils(object):
 
         for character in (item.strip() for item in args.split(',')):
             try:
-                res = api.request_rest(url + character)
+                res = api.request_api(url + character).json()
             except APIError:
                 results.append("Failed to load blacklist entry for " + character)
             else:
