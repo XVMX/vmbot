@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from datetime import datetime
 import threading
-import json
 import logging
 import traceback
 
@@ -37,12 +36,16 @@ def _get_requests_session():
         return _API_REG.http_sess
 
 
-def get_name(id_):
+def get_names(*ids):
+    """Resolve char_ids/corp_ids/ally_ids to their names."""
     try:
-        return request_esi("/v2/universe/names/", data=json.dumps([id_]),
-                           headers={'Content-Type': "application/json"}, method="POST")[0]['name']
-    except (APIError, IndexError):
-        return "{ERROR}"
+        res = request_esi("/v2/universe/names/", json=ids, method="POST")
+    except APIError:
+        return {id_: "{ERROR}" for id_ in ids}
+
+    # ESI returns either names for all ids or none at all
+    # See https://esi.evetech.net/ui/#/operations/Universe/post_universe_names
+    return {item['id']: item['name'] for item in res}
 
 
 def get_tickers(corp_id, ally_id):
@@ -89,7 +92,7 @@ def zbot(kill_id):
         return unicode(e)
 
     victim = killdata['victim']
-    name = get_name(victim.get('character_id', victim['corporation_id']))
+    name = get_names(victim.get('character_id', victim['corporation_id'])).values()[0]
     system = staticdata.system_data(killdata['solar_system_id'])
     corp_ticker, alliance_ticker = get_tickers(victim['corporation_id'],
                                                victim.get('alliance_id', None))

@@ -58,12 +58,21 @@ class TestAPI(unittest.TestCase):
         self.assertIs(api._get_requests_session(), sess)
         self.assertIn("XVMX VMBot", sess.headers['User-Agent'])
 
-    def test_get_name(self):
+    def test_get_names_single(self):
         # character_id: 91754106 Joker Gates
-        self.assertEqual(api.get_name(91754106), "Joker Gates")
+        self.assertDictEqual(api.get_names(91754106), {91754106: "Joker Gates"})
 
-    def test_get_name_invalidid(self):
-        self.assertEqual(api.get_name(-1), "{ERROR}")
+    def test_get_names_multi(self):
+        # character_id: 91754106 Joker Gates
+        # corporation_id: 2052404106 Valar Morghulis.
+        # alliance_id: 1354830081 Goonswarm Federation
+        self.assertDictEqual(api.get_names(91754106, 2052404106, 1354830081),
+                             {91754106: "Joker Gates", 2052404106: "Valar Morghulis.",
+                              1354830081: "Goonswarm Federation"})
+
+    def test_get_names_invalidid(self):
+        # character_id: 91754106 Joker Gates
+        self.assertDictEqual(api.get_names(91754106, -1), {91754106: "{ERROR}", -1: "{ERROR}"})
 
     def test_get_tickers(self):
         # corp_id: 1164409536 [OTHER]

@@ -79,7 +79,7 @@ class Lossmail(object):
         system = staticdata.system_data(km['solar_system_id'])
 
         self.id, self.value = km['killmail_id'], ISK(data['zkb']['totalValue'])
-        self.name = api.get_name(victim.get('character_id', victim['corporation_id']))
+        self.name = api.get_names(victim.get('character_id', victim['corporation_id'])).values()[0]
         self.tickers = api.get_tickers(victim['corporation_id'], victim.get('alliance_id', None))
         self.ship = staticdata.type_name(victim['ship_type_id'])
         self.system, self.region = system['system_name'], system['region_name']
