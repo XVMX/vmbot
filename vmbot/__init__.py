@@ -329,22 +329,22 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
             return
 
         # Join prevents users without associated nickname(s) from being selected
-        uname_or_nick = args + '%'
-        usrs = session.query(User).join(User.nicks).filter(User.jid.ilike(uname_or_nick)).all()
-        nicks = session.query(Nickname).filter(Nickname.nick.ilike(uname_or_nick),
+        usrs = session.query(User).join(User.nicks).filter(User.jid.ilike(args + "@%")).all()
+        nicks = session.query(Nickname).filter(Nickname.nick.ilike(args),
                                                Nickname._user_jid.notin_(u.jid for u in usrs)).all()
 
         if not usrs and not nicks:
             return "I've never seen that user before"
 
-        if len(usrs) + len(nicks) == 1 and usrs:
-            return "The last time I've seen {} was at {:%Y-%m-%d %H:%M:%S}".format(
-                usrs[0].uname, usrs[0].last_seen
-            )
-        elif nicks:
-            return "The last time I've seen {} ({}) was at {:%Y-%m-%d %H:%M:%S}".format(
-                nicks[0].nick, nicks[0].user.uname, nicks[0].last_seen
-            )
+        if len(usrs) + len(nicks) == 1:
+            if usrs:
+                return "The last time I've seen {} was at {:%Y-%m-%d %H:%M:%S}".format(
+                    usrs[0].uname, usrs[0].last_seen
+                )
+            else:
+                return "The last time I've seen {} ({}) was at {:%Y-%m-%d %H:%M:%S}".format(
+                    nicks[0].nick, nicks[0].user.uname, nicks[0].last_seen
+                )
 
         res = ["I've seen the following people use that name:"]
         res.extend("{} at {:%Y-%m-%d %H:%M:%S}".format(usr.uname, usr.last_seen) for usr in usrs)
