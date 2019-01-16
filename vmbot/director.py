@@ -112,9 +112,6 @@ class Director(object):
     @requires_dir_chat
     def revenue(self, mess, args, session):
         """Revenue statistics for the last day/week/month"""
-        def to_dict(res):
-            return {ref_type: amount for ref_type, amount in res}
-
         data = []
         table = [["Type"]]
         now = datetime.utcnow()
@@ -125,7 +122,7 @@ class Director(object):
 
             if isinstance(from_date, timedelta):
                 from_date = now - from_date
-            data.append(to_dict(query.filter(WalletJournalEntry.date > from_date).all()))
+            data.append(dict(query.filter(WalletJournalEntry.date > from_date).all()))
 
         for name, types in REVENUE_ROWS:
             row = [name]
@@ -143,7 +140,7 @@ class Director(object):
 
     @staticmethod
     def _type_overview(res):
-        table = [[format_ref_type(ref_type), "{:,.3f} ISK".format(ISK(total))]
+        table = [[format_ref_type(ref_type), "{:,.2f} ISK".format(ISK(total))]
                  for ref_type, total in res]
         table = AsciiTable(table)
         table.outer_border = False
