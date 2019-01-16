@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from datetime import datetime, timedelta
 import urllib
-import json
 
 from concurrent import futures
 
@@ -43,9 +42,8 @@ class EVEUtils(object):
         # Process ESI lookups in parallel
         pool = futures.ThreadPoolExecutor(max_workers=10)
 
-        payload = json.dumps([char_id])
         affil_fut = pool.submit(api.request_esi, "/v1/characters/affiliation/",
-                                data=payload, method="POST")
+                                json=[char_id], method="POST")
         hist_fut = pool.submit(api.request_esi, "/v1/characters/{}/corporationhistory/", (char_id,))
 
         faction_id = None

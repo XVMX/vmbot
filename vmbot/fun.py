@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 
 from .botcmd import botcmd
 from .helpers.files import EMOTES, HANDEY_QUOTES
+from .helpers.exceptions import APIError
+from .helpers import api
 
 # 8ball answers like the original, as per https://en.wikipedia.org/wiki/Magic_8-Ball
 EBALL_ANSWERS = (
@@ -222,9 +224,9 @@ class Fun(object):
     def rtq(self, mess, args):
         """Like a box of chocolates, but without emotes this time"""
         try:
-            r = requests.get("http://bash.org/?random", timeout=5)
-        except requests.RequestException as e:
-            return "Error while connecting to http://bash.org: {}".format(e)
+            r = api.request_api("http://bash.org/?random", timeout=5)
+        except APIError as e:
+            return unicode(e)
         soup = BeautifulSoup(r.text, "html.parser")
 
         try:
@@ -242,19 +244,19 @@ class Fun(object):
     def rtxkcd(self, mess, args):
         """Like a box of chocolates, but with xkcds"""
         try:
-            res = requests.get("https://xkcd.com/info.0.json", timeout=3).json()
-        except requests.RequestException as e:
-            return "Error while connecting to https://xkcd.com: {}".format(e)
+            res = api.request_api("https://xkcd.com/info.0.json", timeout=3).json()
+        except APIError as e:
+            return unicode(e)
         except ValueError:
-            return "Error while parsing response from https://xkcd.com"
+            return "Error while parsing response"
 
         comic_id = random.randint(1, res['num'])
         comic_url = "https://xkcd.com/{}/".format(comic_id)
 
         try:
-            comic = requests.get(comic_url + "info.0.json", timeout=3).json()
-        except requests.RequestException as e:
-            return "Error while connecting to https://xkcd.com: {}".format(e)
+            comic = api.request_api(comic_url + "info.0.json", timeout=3).json()
+        except APIError as e:
+            return unicode(e)
         except ValueError:
             return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
 
@@ -275,11 +277,11 @@ class Fun(object):
         params = None if not args else {'term': args}
 
         try:
-            res = requests.get(url, params=params, timeout=3).json()
-        except requests.RequestException as e:
-            return "Error while connecting to https://www.urbandictionary.com: {}".format(e)
+            res = api.request_api(url, params=params, timeout=3).json()
+        except APIError as e:
+            return unicode(e)
         except ValueError:
-            return "Error while parsing response from https://www.urbandictionary.com"
+            return "Error while parsing response"
 
         if not res['list']:
             return 'Failed to find any definitions for "{}"'.format(args)
