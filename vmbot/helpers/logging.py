@@ -4,7 +4,8 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import logging
 
-import requests
+from .exceptions import APIError
+from . import api
 
 import config
 
@@ -12,7 +13,7 @@ import config
 class GitHubIssueHandler(logging.Handler):
     """Emit logged messages as issues on GitHub."""
 
-    headers = {'Accept': "application/vnd.github.v3+json", 'User-Agent': "XVMX VMBot"}
+    headers = {'Accept': "application/vnd.github.v3+json"}
     known_issues = set()
 
     def __init__(self, owner, repo, user, access_token):
@@ -31,14 +32,12 @@ class GitHubIssueHandler(logging.Handler):
 
         issues = []
         try:
-            r = requests.get(self.url, params=params, headers=self.headers)
-            r.raise_for_status()
+            r = api.request_api(self.url, params=params, headers=self.headers)
             issues.extend(i['title'] for i in r.json())
             while 'next' in r.links:
-                r = requests.get(r.links['next']['url'], headers=self.headers)
-                r.raise_for_status()
+                r = api.request_api(r.links['next']['url'], headers=self.headers)
                 issues.extend(i['title'] for i in r.json())
-        except requests.RequestException:
+        except APIError:
             pass
 
         self.known_issues.update(issues)
@@ -60,8 +59,9 @@ class GitHubIssueHandler(logging.Handler):
             return
 
         try:
-            r = requests.post(self.url, json=payload, auth=self.auth, headers=self.headers)
-        except requests.RequestException:
+            r = api.request_api(self.url, json=payload, auth=self.auth,
+                                headers=self.headers, method="POST")
+        except APIError:
             self.handleError(record)
         else:
             if r.status_code == 201:

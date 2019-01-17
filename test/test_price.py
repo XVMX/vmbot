@@ -5,8 +5,12 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
+import shutil
+
+import requests
+
+from vmbot.helpers.files import HTTPCACHE
 from vmbot.helpers.exceptions import APIError
-import vmbot.helpers.database as db
 from vmbot.helpers import api
 
 from vmbot.price import Price
@@ -19,8 +23,6 @@ def token_reg():
 
 
 class TestPrice(unittest.TestCase):
-    db_engine = db.create_engine("sqlite://")
-
     default_mess = ""
     default_args = ""
 
@@ -35,17 +37,13 @@ class TestPrice(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        db.init_db(cls.db_engine)
-        db.Session.configure(bind=cls.db_engine)
+        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     @classmethod
     def tearDownClass(cls):
-        db.Session.configure(bind=db.engine)
-        cls.db_engine.dispose()
-        del cls.db_engine
-
-        # _API_REG may still hold a session connected to cls.db_engine
+        # _API_REG may still hold a FileCache
         api._API_REG = api.threading.local()
+        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     def setUp(self):
         self.price = Price()
@@ -116,7 +114,8 @@ class TestPrice(unittest.TestCase):
         )
 
     @mock.patch("vmbot.price.Price._get_token", side_effect=token_reg)
-    @mock.patch("vmbot.helpers.api.request_esi", side_effect=APIError("TestException"))
+    @mock.patch("vmbot.helpers.api.request_esi",
+                side_effect=APIError(requests.RequestException(), "TestException"))
     def test_price_searcherror(self, mock_esi, mock_token):
         self.assertEqual(
             self.price.price(self.default_mess, "Mexallon"),
@@ -124,7 +123,8 @@ class TestPrice(unittest.TestCase):
         )
 
     @mock.patch("vmbot.price.Price._get_token", side_effect=token_reg)
-    @mock.patch("vmbot.price.Price._get_system_orders", side_effect=APIError("TestException"))
+    @mock.patch("vmbot.price.Price._get_system_orders",
+                side_effect=APIError(requests.RequestException(), "TestException"))
     def test_price_orderserror(self, mock_system_orders, mock_token):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite"),

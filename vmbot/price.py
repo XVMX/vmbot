@@ -107,7 +107,9 @@ class Price(object):
         for f in futures.as_completed(struct_futs):
             try:
                 res, head = f.result()
-            except APIStatusError:
+            except APIStatusError as e:
+                if e.status_code != 403:
+                    raise e
                 # 403/Market access denied (cannot be determined otherwise currently)
                 continue
             with orders_lock:

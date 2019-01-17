@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 
 from .test_api import flawed_response
 from vmbot.helpers.files import EMOTES
+from vmbot.helpers.exceptions import APIError
 
 from vmbot.fun import Fun
 
@@ -55,13 +56,13 @@ class TestFun(unittest.TestCase):
 
         self.assertEqual(res, "{} ({:+})\n{}".format(quote_url, quote_rating, quote))
 
-    @mock.patch("requests.get", side_effect=requests.RequestException)
-    def test_rtq_RequestException(self, mock_requests):
-        self.assertRegexpMatches(self.fun.rtq(self.default_mess, self.default_args),
-                                 "Error while connecting to http://bash.org: .*")
+    @mock.patch("vmbot.helpers.api.request_api",
+                side_effect=APIError(requests.RequestException(), "TestException"))
+    def test_rtq_APIError(self, mock_api):
+        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args), "TestException")
 
-    @mock.patch("requests.get", side_effect=flawed_response)
-    def test_rtq_flawedresponse(self, mock_requests):
+    @mock.patch("vmbot.helpers.api.request_api", side_effect=flawed_response)
+    def test_rtq_flawedresponse(self, mock_api):
         self.assertEqual(self.fun.rtq(self.default_mess, self.default_args),
                          "Failed to load any quotes from http://bash.org/?random")
 
@@ -84,62 +85,60 @@ class TestFun(unittest.TestCase):
             comic['safe_title'], comic['year'], comic['month'], comic['day'], comic_url
         ))
 
-    def test_rtxkcd_RequestException(self):
-        desc = "TestException"
-        exception_text = "Error while connecting to https://xkcd.com: {}".format(desc)
-
+    def test_rtxkcd_APIError(self):
         def side_effect(*args, **kwargs):
             """Emulate call and restart patcher to use default side_effect for second request."""
-            requests_patcher.stop()
+            api_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
             except requests.RequestException as e:
                 self.skipTest(
                     "Error while emulating request in test_rtxkcd_RequestException: {}".format(e)
                 )
-            mock_requests = requests_patcher.start()
+            api_patcher.start()
             return r
 
         # Exception at first request
-        requests_patcher = mock.patch("requests.get", side_effect=requests.RequestException(desc))
-        mock_requests = requests_patcher.start()
+        api_patcher = mock.patch("vmbot.helpers.api.request_api",
+                                 side_effect=APIError(requests.RequestException(), "TestException"))
+        mock_api = api_patcher.start()
 
-        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), exception_text)
+        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), "TestException")
 
         # Exception at second request
-        mock_requests.side_effect = side_effect
+        mock_api.side_effect = side_effect
 
-        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), exception_text)
+        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), "TestException")
 
-        requests_patcher.stop()
+        api_patcher.stop()
 
     def test_rtxkcd_flawedresponse(self):
         def side_effect(*args, **kwargs):
             """Emulate call and restart patcher to use default side_effect for second request."""
-            requests_patcher.stop()
+            api_patcher.stop()
             try:
                 r = requests.get(*args, **kwargs)
             except requests.RequestException as e:
                 self.skipTest(
                     "Error while emulating request in test_rtxkcd_flawedresponse: {}".format(e)
                 )
-            mock_requests = requests_patcher.start()
+            api_patcher.start()
             return r
 
         # 404 response after first request
-        requests_patcher = mock.patch("requests.get", side_effect=flawed_response)
-        mock_requests = requests_patcher.start()
+        api_patcher = mock.patch("vmbot.helpers.api.request_api", side_effect=flawed_response)
+        mock_api = api_patcher.start()
 
         self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args),
-                         "Error while parsing response from https://xkcd.com")
+                         "Error while parsing response")
 
         # 404 response after second request
-        mock_requests.side_effect = side_effect
+        mock_api.side_effect = side_effect
 
         self.assertRegexpMatches(self.fun.rtxkcd(self.default_mess, self.default_args),
                                  r"Failed to load xkcd #\d+ from https://xkcd\.com/\d+/")
 
-        requests_patcher.stop()
+        api_patcher.stop()
 
     def test_urban(self):
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
@@ -161,15 +160,14 @@ class TestFun(unittest.TestCase):
         self.assertEqual(self.fun.urban(self.default_mess, "API"),
                          'Failed to find any definitions for "API"')
 
-    @mock.patch("requests.get", side_effect=requests.RequestException)
-    def test_urban_RequestException(self, mock_requests):
-        self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
-                                 "Error while connecting to https://www.urbandictionary.com: .*")
+    @mock.patch("vmbot.helpers.api.request_api",
+                side_effect=APIError(requests.RequestException(), "TestException"))
+    def test_urban_APIError(self, mock_api):
+        self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"), "TestException")
 
-    @mock.patch("requests.get", side_effect=flawed_response)
-    def test_urban_flawedresponse(self, mock_requests):
-        self.assertEqual(self.fun.urban(self.default_mess, "API"),
-                         "Error while parsing response from https://www.urbandictionary.com")
+    @mock.patch("vmbot.helpers.api.request_api", side_effect=flawed_response)
+    def test_urban_flawedresponse(self, mock_api):
+        self.assertEqual(self.fun.urban(self.default_mess, "API"), "Error while parsing response")
 
 
 if __name__ == "__main__":

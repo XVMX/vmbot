@@ -27,5 +27,5 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
 def init_db(bind=engine):
     """Create all required database tables."""
     # Import all models which have associated tables
-    from ..models import cache, message, note, user, wallet
+    from ..models import message, note, user, wallet
     Model.metadata.create_all(bind)

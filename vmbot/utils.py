@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from datetime import datetime, timedelta
 import urllib
-import json
 
 from concurrent import futures
 
@@ -43,9 +42,8 @@ class EVEUtils(object):
         # Process ESI lookups in parallel
         pool = futures.ThreadPoolExecutor(max_workers=10)
 
-        payload = json.dumps([char_id])
         affil_fut = pool.submit(api.request_esi, "/v1/characters/affiliation/",
-                                data=payload, method="POST")
+                                json=[char_id], method="POST")
         hist_fut = pool.submit(api.request_esi, "/v1/characters/{}/corporationhistory/", (char_id,))
 
         faction_id = None
@@ -72,7 +70,7 @@ class EVEUtils(object):
         # Show all entries from the last 5 years (min 10) or the 25 most recent entries
         min_age = datetime.utcnow() - timedelta(days=5 * 365)
         max_hist = max(-25, -len(corp_hist))
-        while max_hist < -10 and corp_hist[max_hist + 1]['start_date'] < min_age:
+        while max_hist < -10 and corp_hist[max_hist + 1]['start_date'] <= min_age:
             max_hist += 1
         corp_hist = corp_hist[max_hist:]
 
@@ -125,7 +123,7 @@ class EVEUtils(object):
                 else:
                     break
             j = max(0, j - 1)
-            k = min(len(date_hist), k + 1)
+            k += 1
 
             rec['alliances'] = [ent['alliance_id'] for ent in hist[j:k] if 'alliance_id' in ent]
             ally_ids.update(rec['alliances'])
@@ -202,7 +200,7 @@ class EVEUtils(object):
 
         for character in (item.strip() for item in args.split(',')):
             try:
-                res = api.request_rest(url + character)
+                res = api.request_api(url + character).json()
             except APIError:
                 results.append("Failed to load blacklist entry for " + character)
             else:

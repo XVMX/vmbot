@@ -3,17 +3,17 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from datetime import datetime
-import copy
 import threading
-import json
 import logging
 import traceback
 
+from ..jabberbot import __version__ as jb_version
 import requests
+from cachecontrol import CacheControl
+from cachecontrol.caches import FileCache
 
-from .exceptions import NoCacheError, APIError, APIStatusError, APIRequestError
-from . import database as db
-from ..models.cache import parse_http_cache, HTTPCacheObject, ESICacheObject
+from .files import HTTPCACHE
+from .exceptions import APIError, APIStatusError, APIRequestError
 from . import staticdata
 from .format import format_tickers
 from ..models import ISK
@@ -23,30 +23,29 @@ import config
 _API_REG = threading.local()
 
 
-def _get_db_session():
-    """Retrieve or create a thread-local SQLAlchemy session."""
-    try:
-        return _API_REG.db_sess
-    except AttributeError:
-        _API_REG.db_sess = db.Session()
-        return _API_REG.db_sess
-
-
 def _get_requests_session():
     """Retrieve or create a thread-local requests session."""
     try:
-        return _API_REG.req_sess
+        return _API_REG.http_sess
     except AttributeError:
-        _API_REG.req_sess = requests.Session()
-        return _API_REG.req_sess
+        sess = requests.session()
+        ua = "XVMX VMBot (JabberBot {}) ".format(jb_version) + sess.headers['User-Agent']
+        sess.headers['User-Agent'] = ua
+
+        _API_REG.http_sess = CacheControl(sess, cache=FileCache(HTTPCACHE))
+        return _API_REG.http_sess
 
 
-def get_name(id_):
+def get_names(*ids):
+    """Resolve char_ids/corp_ids/ally_ids to their names."""
     try:
-        return request_esi("/v2/universe/names/", data=json.dumps([id_]),
-                           headers={'Content-Type': "application/json"}, method="POST")[0]['name']
-    except (APIError, IndexError):
-        return "{ERROR}"
+        res = request_esi("/v2/universe/names/", json=ids, method="POST")
+    except APIError:
+        return {id_: "{ERROR}" for id_ in ids}
+
+    # ESI returns either names for all ids or none at all
+    # See https://esi.evetech.net/ui/#/operations/Universe/post_universe_names
+    return {item['id']: item['name'] for item in res}
 
 
 def get_tickers(corp_id, ally_id):
@@ -79,7 +78,7 @@ def zbot(kill_id):
     """Create a compact overview of a zKB killmail."""
     url = "https://zkillboard.com/api/killID/{}/".format(kill_id)
     try:
-        zkb = request_rest(url)
+        zkb = request_api(url).json()
     except APIError as e:
         return unicode(e)
 
@@ -93,7 +92,7 @@ def zbot(kill_id):
         return unicode(e)
 
     victim = killdata['victim']
-    name = get_name(victim.get('character_id', victim['corporation_id']))
+    name = get_names(victim.get('character_id', victim['corporation_id'])).values()[0]
     system = staticdata.system_data(killdata['solar_system_id'])
     corp_ticker, alliance_ticker = get_tickers(victim['corporation_id'],
                                                victim.get('alliance_id', None))
@@ -108,81 +107,44 @@ def zbot(kill_id):
     )
 
 
-def request_rest(url, params=None, data=None, headers=None, timeout=3, method="GET"):
-    # url, timeout, and method are immutable
-    params, data, headers = copy.copy(params), copy.copy(data), copy.copy(headers)
-
-    session = _get_db_session()
-    res = HTTPCacheObject.get(session, url, params=params, data=data, headers=headers)
-
-    if res is None:
-        r = request_api(url, params, data, headers, timeout, method)
-        res = r.content
-
-        try:
-            expiry = parse_http_cache(r.headers)
-        except NoCacheError:
-            pass
-        else:
-            HTTPCacheObject(url, r.content, expiry, params=params,
-                            data=data, headers=headers).save(session)
-
-    session.close()
-    return json.loads(res.decode("utf-8"))
-
-
 def request_esi(route, fmt=(), params=None, data=None, headers=None,
-                timeout=3, method="GET", with_head=False):
-    url = (config.ESI['base_url'] if route.startswith('/') else "") + route.format(*fmt)
+                timeout=3, json=None, method="GET", with_head=False):
+    url = route.format(*fmt)
+    if url.startswith('/'):
+        url = config.ESI['base_url'] + url
 
-    # url (route + fmt), timeout, and method are immutable
-    params = {} if params is None else copy.copy(params)
-    data, headers = copy.copy(data), copy.copy(headers)
+    full_params = {'datasource': config.ESI['datasource'], 'language': config.ESI['lang']}
+    if params is not None:
+        full_params.update(params)
 
-    params['datasource'] = config.ESI['datasource']
-    params['language'] = config.ESI['lang']
+    r = request_api(url, params=full_params, data=data, headers=headers,
+                    timeout=timeout, json=json, method=method)
 
-    session = _get_db_session()
-    r = ESICacheObject.get(session, url, params=params, data=data, headers=headers)
+    if not r.from_cache and 'warning' in r.headers:
+        # Versioned endpoint is outdated (199) or deprecated (299)
+        kw = "outdated" if r.headers['warning'][:3] == "199" else "deprecated"
+        # Omit top stack frame (this function) and strip trailing newline
+        trace = "".join(traceback.format_stack(limit=3)[:-1])[:-1]
 
-    if r is None:
-        r = request_api(url, params, data, headers, timeout, method)
+        warn = 'Route "{}" is {}'.format(route, kw)
+        warn += "\nResponse header: warning: " + r.headers['warning']
+        warn += "\nTraceback (most recent call last):\n```\n" + trace + "\n```"
+        logging.getLogger(__name__ + ".esi").warning(warn, extra={'gh_labels': ["esi-warning"]})
 
-        if 'warning' in r.headers:
-            # Versioned endpoint is outdated (199) or deprecated (299)
-            kw = "outdated" if r.headers['warning'][:3] == "199" else "deprecated"
-            trace = "".join(traceback.format_stack(limit=3)[:-1])
-
-            warn = 'Route "{}" is {}'.format(route, kw)
-            warn += "\nResponse header: warning: " + r.headers['warning']
-            warn += "\nTraceback (most recent call last):\n```\n" + trace + "\n```"
-            logging.getLogger(__name__ + ".esi").warning(warn, extra={'gh_labels': ["esi-warning"]})
-
-        try:
-            expiry = parse_http_cache(r.headers)
-        except NoCacheError:
-            pass
-        else:
-            ESICacheObject(url, r, expiry, params=params, data=data, headers=headers).save(session)
-
-    session.close()
     if with_head:
         return r.json(), r.headers
     return r.json()
 
 
-def request_api(url, params=None, data=None, headers=None, timeout=3, method="GET"):
-    if headers is None:
-        headers = {}
-    headers['User-Agent'] = "XVMX VMBot (JabberBot)"
-
+def request_api(url, params=None, data=None, headers=None,
+                auth=None, timeout=3, json=None, method="GET"):
     try:
         r = _get_requests_session().request(method, url, params=params, data=data,
-                                            headers=headers, timeout=timeout)
+                                            headers=headers, auth=auth, timeout=timeout, json=json)
         r.raise_for_status()
     except requests.HTTPError as e:
-        raise APIStatusError("API returned error code {}".format(e.response.status_code))
+        raise APIStatusError(e, "API returned error code {}".format(e.response.status_code))
     except requests.RequestException as e:
-        raise APIRequestError("Error while connecting to API: {}".format(e))
+        raise APIRequestError(e, "Error while connecting to API: {}".format(e))
 
     return r

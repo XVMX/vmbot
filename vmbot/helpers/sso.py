@@ -51,16 +51,16 @@ class SSOToken(object):
         if self._refresh_token is None:
             raise TokenExpiredError
 
-        res = self._request_grant(self._refresh_token, "refresh_token")
+        res = self._request_grant(self._refresh_token, type_="refresh_token")
         self._access_token = res['access_token']
         self._type = res['token_type']
         self._expiry = datetime.utcnow() + timedelta(seconds=res['expires_in'])
 
     def request_esi(self, route, fmt=(), params=None, data=None, headers=None,
-                    timeout=3, method="GET", with_head=False):
+                    timeout=3, json=None, method="GET", with_head=False):
         headers = {} if headers is None else headers.copy()
         headers['Authorization'] = self.auth
-        return api.request_esi(route, fmt, params, data, headers, timeout, method, with_head)
+        return api.request_esi(route, fmt, params, data, headers, timeout, json, method, with_head)
 
     @staticmethod
     def _request_grant(token, type_="authorization_code"):

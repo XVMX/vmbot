@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 import cgi
 import xml.etree.ElementTree as ET
 
-import requests
 import pyotp
 from terminaltables import AsciiTable
 
 from .botcmd import botcmd
-from .helpers.exceptions import APIError
+from .helpers.exceptions import APIError, APIStatusError
 from .helpers import database as db
+from .helpers import api
 from .helpers.decorators import requires_role, requires_dir_chat, inject_db
 from .helpers.format import format_ref_type
 from .models import ISK, WalletJournalEntry
@@ -53,19 +53,8 @@ class Director(object):
         text.text = broadcast
 
         result = b'<?xml version="1.0"?>' + ET.tostring(messaging)
-        headers = {'User-Agent': "XVMX VMBot (JabberBot)",
-                   'X-SourceID': config.BCAST['id'],
-                   'X-SharedKey': config.BCAST['key']}
-
-        try:
-            r = requests.post(config.BCAST['url'], data=result, headers=headers, timeout=5)
-            r.raise_for_status()
-        except requests.HTTPError as e:
-            r = e.response
-            res = ET.fromstring(r.content).find(".//response").text
-            raise APIError("Broadcast-API returned error code {}: {}".format(r.status_code, res))
-        except requests.RequestException as e:
-            raise APIError("Error while connecting to Broadcast-API: {}".format(e))
+        headers = {'X-SourceID': config.BCAST['id'], 'X-SharedKey': config.BCAST['key']}
+        api.request_api(config.BCAST['url'], data=result, headers=headers, timeout=5, method="POST")
 
     @botcmd
     @requires_dir_chat
@@ -87,6 +76,10 @@ class Director(object):
         try:
             self._send_bcast(broadcast, self.get_uname_from_mess(mess) + " via VMBot")
             return "Your broadcast was sent to " + config.BCAST['target']
+        except APIStatusError as e:
+            r = e.response
+            res = ET.fromstring(r.content).find(".//response").text
+            return unicode(e) + ": " + res
         except APIError as e:
             return unicode(e)
 
@@ -119,9 +112,6 @@ class Director(object):
     @requires_dir_chat
     def revenue(self, mess, args, session):
         """Revenue statistics for the last day/week/month"""
-        def to_dict(res):
-            return {ref_type: amount for ref_type, amount in res}
-
         data = []
         table = [["Type"]]
         now = datetime.utcnow()
@@ -132,7 +122,7 @@ class Director(object):
 
             if isinstance(from_date, timedelta):
                 from_date = now - from_date
-            data.append(to_dict(query.filter(WalletJournalEntry.date > from_date).all()))
+            data.append(dict(query.filter(WalletJournalEntry.date > from_date).all()))
 
         for name, types in REVENUE_ROWS:
             row = [name]
@@ -150,7 +140,7 @@ class Director(object):
 
     @staticmethod
     def _type_overview(res):
-        table = [[format_ref_type(ref_type), "{:,.3f} ISK".format(ISK(total))]
+        table = [[format_ref_type(ref_type), "{:,.2f} ISK".format(ISK(total))]
                  for ref_type, total in res]
         table = AsciiTable(table)
         table.outer_border = False

@@ -61,15 +61,7 @@ def main(session, token):
     if not corp_mails and not ally_mails:
         return
 
-    chars = {}
-    params = {'character_ids': ','.join({unicode(mail['from'])
-                                         for mail in corp_mails + ally_mails})}
-    try:
-        chars = {char['character_id']: char['character_name'] for char in
-                 api.request_esi("/v1/characters/names/", params=params)}
-    except APIError:
-        pass
-
+    chars = api.get_names(*{mail['from'] for mail in corp_mails + ally_mails})
     corp_mails = [{'id': mail['mail_id'],
                    'header': MAIL_FMT.format(cgi.escape(mail['subject']), chars[mail['from']])}
                   for mail in corp_mails]
