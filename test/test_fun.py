@@ -5,14 +5,16 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
+import shutil
 import re
 
 import requests
 from bs4 import BeautifulSoup
 
 from .test_api import flawed_response
-from vmbot.helpers.files import EMOTES
+from vmbot.helpers.files import EMOTES, HTTPCACHE
 from vmbot.helpers.exceptions import APIError
+from vmbot.helpers import api
 
 from vmbot.fun import Fun
 
@@ -20,6 +22,16 @@ from vmbot.fun import Fun
 class TestFun(unittest.TestCase):
     default_mess = ""
     default_args = ""
+
+    @classmethod
+    def setUpClass(cls):
+        shutil.rmtree(HTTPCACHE, ignore_errors=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        # _API_REG may still hold a FileCache
+        api._API_REG = api.threading.local()
+        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     def setUp(self):
         self.fun = Fun()
