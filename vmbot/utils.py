@@ -9,6 +9,7 @@ from concurrent import futures
 
 from .botcmd import botcmd
 from .helpers.exceptions import APIError, APIStatusError
+from .helpers.time import ISO8601_DATETIME_FMT
 from .helpers import api
 from .helpers import staticdata
 from .helpers.format import format_affil, format_tickers
@@ -64,7 +65,7 @@ class EVEUtils(object):
         corp_hist.sort(key=lambda x: x['record_id'])
         for i in reversed(xrange(num_recs)):
             rec = corp_hist[i]
-            rec['start_date'] = datetime.strptime(rec['start_date'], "%Y-%m-%dT%H:%M:%SZ")
+            rec['start_date'] = datetime.strptime(rec['start_date'], ISO8601_DATETIME_FMT)
             rec['end_date'] = corp_hist[i + 1]['start_date'] if i + 1 < num_recs else None
 
         # Show all entries from the last 5 years (min 10) or the 25 most recent entries
@@ -109,7 +110,7 @@ class EVEUtils(object):
         ally_ids = {data['alliance_id']} if 'alliance_id' in data else set()
         for rec in corp_hist:
             hist = ally_hist[rec['corporation_id']]
-            date_hist = [datetime.strptime(ally['start_date'], "%Y-%m-%dT%H:%M:%SZ")
+            date_hist = [datetime.strptime(ally['start_date'], ISO8601_DATETIME_FMT)
                          for ally in hist]
             start_date = rec['start_date']
             end_date = rec['end_date'] or datetime.utcnow()

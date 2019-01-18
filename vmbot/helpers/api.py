@@ -14,6 +14,7 @@ from cachecontrol.caches import FileCache
 
 from .files import HTTPCACHE
 from .exceptions import APIError, APIStatusError, APIRequestError
+from .time import ISO8601_DATETIME_FMT
 from . import staticdata
 from .format import format_tickers
 from ..models import ISK
@@ -96,7 +97,7 @@ def zbot(kill_id):
     system = staticdata.system_data(killdata['solar_system_id'])
     corp_ticker, alliance_ticker = get_tickers(victim['corporation_id'],
                                                victim.get('alliance_id', None))
-    killtime = datetime.strptime(killdata['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
+    killtime = datetime.strptime(killdata['killmail_time'], ISO8601_DATETIME_FMT)
 
     return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
             "{} ({}) | {} participant(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(

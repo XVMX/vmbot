@@ -11,6 +11,7 @@ from . import path
 from .models import Storage
 
 from vmbot.helpers.exceptions import APIError
+from vmbot.helpers.time import ISO8601_DATETIME_FMT
 from vmbot.helpers import api
 from vmbot.models.message import Message
 
@@ -123,9 +124,9 @@ def filter_mails(last_mail, mails):
     idx = next((idx for idx, mail in enumerate(mails) if mail['mail_id'] == last_id), None)
     if idx is None and last_update is not None:
         # Fallback in case last_mail was deleted
-        last_update = time.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ")
+        last_update = time.strptime(last_update, ISO8601_DATETIME_FMT)
         idx = next((idx for idx, mail in enumerate(mails)
-                    if time.strptime(mail['timestamp'], "%Y-%m-%dT%H:%M:%SZ") <= last_update), None)
+                    if time.strptime(mail['timestamp'], ISO8601_DATETIME_FMT) <= last_update), None)
 
     return mails[:idx]
 

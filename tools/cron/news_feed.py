@@ -10,6 +10,7 @@ from . import path
 from .models import Storage
 
 from vmbot.helpers.exceptions import APIError
+from vmbot.helpers.time import RFC822_DATETIME_FMT, ISO8601_DATETIME_FMT
 from vmbot.helpers import api
 from vmbot.models.message import Message
 
@@ -19,11 +20,6 @@ FEED_INTERVAL = 10 * 60
 NEWS_FEED = "https://www.eveonline.com/rss/news"
 DEVBLOG_FEED = "https://www.eveonline.com/rss/dev-blogs"
 FEED_FMT = "<strong>{title}</strong> by <em>{author}</em>: {url}"
-
-# RFC 822 (eg Fri, 20 Apr 2018 14:00:00 GMT)
-RFC822_FMT = "%a, %d %b %Y %H:%M:%S %Z"
-# ISO 8601 (eg 2018-07-09T14:43:21Z)
-ISO8601_FMT = "%Y-%m-%dT%H:%M:%SZ"
 
 # Updates will be shown if they are tagged with an allowed tag,
 # unless they are also tagged with a blocked tag
@@ -38,9 +34,10 @@ UPDATES_BLOCKED_TAGS = {"SKINs"}
 
 def init(session):
     try:
-        news = read_feed(NEWS_FEED, RFC822_FMT, (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
-        devblogs = read_feed(DEVBLOG_FEED, RFC822_FMT, (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
-        updates = read_feed(UPDATES_FEED, ISO8601_FMT, (None, "1970-01-01T00:00:00Z"))
+        news = read_feed(NEWS_FEED, RFC822_DATETIME_FMT, (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
+        devblogs = read_feed(DEVBLOG_FEED, RFC822_DATETIME_FMT,
+                             (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
+        updates = read_feed(UPDATES_FEED, ISO8601_DATETIME_FMT, (None, "1970-01-01T00:00:00Z"))
     except APIError as e:
         print(unicode(e))
         return
@@ -60,16 +57,17 @@ def main(session):
 
     news, devblogs, updates = None, None, None
     try:
-        news = read_feed(NEWS_FEED, RFC822_FMT, Storage.get(session, "news_feed_last_news"))
+        news = read_feed(NEWS_FEED, RFC822_DATETIME_FMT,
+                         Storage.get(session, "news_feed_last_news"))
     except APIError:
         pass
     try:
-        devblogs = read_feed(DEVBLOG_FEED, RFC822_FMT,
+        devblogs = read_feed(DEVBLOG_FEED, RFC822_DATETIME_FMT,
                              Storage.get(session, "news_feed_last_devblog"))
     except APIError:
         pass
     try:
-        updates = read_feed(UPDATES_FEED, ISO8601_FMT,
+        updates = read_feed(UPDATES_FEED, ISO8601_DATETIME_FMT,
                             Storage.get(session, "news_feed_last_update"))
     except APIError:
         pass
