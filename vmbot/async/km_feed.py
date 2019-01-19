@@ -13,6 +13,7 @@ import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 
 from ..helpers.exceptions import APIError
+from ..helpers.time import ISO8601_DATETIME_FMT
 from ..helpers import api
 from ..helpers import staticdata
 from ..helpers.format import format_tickers
@@ -83,7 +84,7 @@ class Lossmail(object):
         self.tickers = api.get_tickers(victim['corporation_id'], victim.get('alliance_id', None))
         self.ship = staticdata.type_name(victim['ship_type_id'])
         self.system, self.region = system['system_name'], system['region_name']
-        self.time = datetime.strptime(km['killmail_time'], "%Y-%m-%dT%H:%M:%SZ")
+        self.time = datetime.strptime(km['killmail_time'], ISO8601_DATETIME_FMT)
 
     def __unicode__(self):
         return LOSS_FMT.format(self.name, format_tickers(*self.tickers), self.ship,

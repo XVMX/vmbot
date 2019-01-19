@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from datetime import datetime
 
+from ..helpers.time import ISO8601_DATETIME_FMT
 from ..helpers import database as db
 
 
@@ -24,5 +25,5 @@ class WalletJournalEntry(db.Model):
 
     @classmethod
     def from_esi_record(cls, record):
-        date = datetime.strptime(record['date'], "%Y-%m-%dT%H:%M:%SZ")
+        date = datetime.strptime(record['date'], ISO8601_DATETIME_FMT)
         return cls(record['id'], record['ref_type'], record.get('amount', 0.0), date)

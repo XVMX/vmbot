@@ -79,6 +79,10 @@ BLACKLIST = {
     'key': ""
 }
 
+# Google API key
+# Required API: YouTube Data API v3
+YT_KEY = ""
+
 # GitHub personal access token
 # Required scope: public_repo
 # Used to automatically report outdated/deprecated ESI routes
