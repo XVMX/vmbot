@@ -26,7 +26,7 @@ from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
 from .helpers.decorators import timeout, requires_role, requires_dir_chat, inject_db
-from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX
+from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
 from .models.message import Message
 from .models.user import User, Nickname
 from .models import Note
@@ -152,6 +152,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         self.startup_time = datetime.utcnow()
         self.message_trigger = None
         self.sess = db.Session()
+        self.yt_quota_exceeded = False
 
         if kwargs.pop('feeds', False):
             self.message_trigger = time.time() + 30
@@ -220,6 +221,22 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
             replies = [api.zbot(match) for match in matches]
             if replies:
                 super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
+
+            # YTBot
+            if not self.yt_quota_exceeded:
+                matches = {match.group(1) for match in YT_REGEX.finditer(msg)}
+                replies = []
+                for match in matches:
+                    reply = api.ytbot(match)
+                    if reply is None:
+                        continue
+                    if reply is False:
+                        self.yt_quota_exceeded = True
+                        break
+                    replies.append(reply)
+
+                if replies:
+                    super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
 
         return reply
 

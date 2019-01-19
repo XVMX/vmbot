@@ -27,4 +27,7 @@ PUBBIE_REGEX = re.compile(r"\b(?:{})\b".format('|'.join(PUBBIETALK)), re.IGNOREC
 
 ZKB_REGEX = re.compile(r"(?:https?://)?zkillboard\.com/kill/(-?\d+)/?", re.IGNORECASE)
 
+YT_REGEX = re.compile((r"(?:https?://)?(?:(?:(?:m|www)\.)?youtube\.com|youtu\.be)"
+                       r"/(?:[\w-]+\?v=|embed/|v/)?([\w-]+)"), re.IGNORECASE)
+
 TIME_OFFSET_REGEX = re.compile(r"^(?!\s|$)(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:\s|$)", re.IGNORECASE)
