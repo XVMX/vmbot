@@ -77,9 +77,8 @@ def get_tickers(corp_id, ally_id):
 
 def zbot(kill_id):
     """Create a compact overview of a zKB killmail."""
-    url = "https://zkillboard.com/api/killID/{}/".format(kill_id)
     try:
-        zkb = request_api(url).json()
+        zkb = request_api("https://zkillboard.com/api/killID/{}/".format(kill_id)).json()
     except APIError as e:
         return unicode(e)
 
