@@ -7,7 +7,6 @@ import re
 import cgi
 import urllib
 
-import requests
 from bs4 import BeautifulSoup
 
 from .botcmd import botcmd

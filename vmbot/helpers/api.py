@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import threading
 import logging
 import traceback
