@@ -1,5 +1,5 @@
 Name=SA-GF Pack, No-Smile Version
-Description=Last Updated: July 28th, 2018
+Description=Last Updated: January 21st, 2019
 Icon=smugjones.001.gif
 Author=Querns
 
@@ -1334,7 +1334,6 @@ shrek.001.gif :dota:
 ! abrathink.001.gif :abrathink:
 ! trumpfap.001.gif :trumpfap:
 ! killemall.001.gif :killemall:
-! carol.001.png :carol:
 ! qqpeters.001.gif :qqpeters:
 ! wellpiss.001.gif :wellpiss:
 ! hmmyes.001.gif :hmmyes:
@@ -1382,3 +1381,41 @@ shrek.001.gif :dota:
 ! sadday.001.gif :sadday:
 ! sanix.001.gif :sanix:
 ! mcnally.001.png :mcnally:
+! tesla.001.png :tesla:
+! auspol.001.gif :auspol:
+! elongate.001.gif :elongate:
+! hek.001.gif :hek:
+! snoo.001.gif :snoo:
+! gdj.001.gif :gdj:
+! crobear.001.gif :crobear:
+! kav.001.gif :kav:
+! basta.001.gif :basta:
+! ffgqa.001.gif :ffgqa:
+! gritty.001.gif :gritty:
+! gritin.001.gif :gritin:
+! sora.001.gif :sora:
+! magemage.001.png :magemage:
+! nah.001.gif :nah:
+! hundi.001.png :hundi:
+! ohno.001.gif :ohno:
+! brainworms.002.gif :brainworms:
+! blindside.001.gif :blindside:
+! egosoft.001.gif :egosoft:
+! doit.001.png :doit:
+! trumpsmug.001.gif :trumpsmug:
+! comfyzelda.001.png :comfyzelda:
+! enkidel.001.png :enkidel:
+! emot-carol.gif :carol:
+! cursed.001.png :cursed:
+! getgud.001.gif :getgud:
+! gitgudhorn.001.gif :gitgudhorn:
+! jpmf.001.gif :jpmf:
+! mood.001.png :mood:
+! haibrow.001.gif :haibrow:
+! hydrated.001.gif :hydrated:
+! jail2.001.png :jail2:
+! jail.001.png :jail:
+! chast2b.001.gif :chast2b:
+! blessed.001.png :blessed:
+! lewd.001.png :lewd:
+! actually.001.png :actually:
