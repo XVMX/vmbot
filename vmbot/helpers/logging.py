@@ -71,11 +71,14 @@ class GitHubIssueHandler(logging.Handler):
 def setup_logging(main_handler):
     logger = logging.getLogger("vmbot")
     logger.setLevel(logging.DEBUG)
+    cc_logger = logging.getLogger("cachecontrol")
+    cc_logger.setLevel(logging.WARNING)
 
     main_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
                                                 "%Y-%m-%d %H:%M:%S"))
     main_handler.setLevel(config.LOGLEVEL)
     logger.addHandler(main_handler)
+    cc_logger.addHandler(main_handler)
 
     gh = config.GITHUB
     if gh['user'] and gh['token']:
