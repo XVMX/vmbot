@@ -40,7 +40,7 @@ def _get_requests_session():
 def get_names(*ids):
     """Resolve char_ids/corp_ids/ally_ids to their names."""
     try:
-        res = request_esi("/v2/universe/names/", json=ids, method="POST")
+        res = request_esi("/v3/universe/names/", json=ids, method="POST")
     except APIError:
         return {id_: "{ERROR}" for id_ in ids}
 
