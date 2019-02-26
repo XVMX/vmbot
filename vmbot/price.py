@@ -123,7 +123,7 @@ class Price(object):
 
         res, head = reg_fut.result()
         with orders_lock:
-                orders.extend(o for o in res if o['location_id'] in stations)
+            orders.extend(o for o in res if o['location_id'] in stations)
 
         for p in range(2, int(head.get('X-Pages', 1)) + 1):
             f = pool.submit(api.request_esi, "/v1/markets/{}/orders/", (region_id,),
