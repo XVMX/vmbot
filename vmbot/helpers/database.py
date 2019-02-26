@@ -10,9 +10,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
 from sqlalchemy import and_, or_, func
 
-from .files import BOT_DB
+import config
 
-engine = create_engine("sqlite:///" + BOT_DB)
+DB_URL = config.DB_URL
+if not DB_URL or DB_URL.lower() in ("sqlite", "sqlite3", "builtin", "built-in"):
+    from .files import BOT_DB
+    DB_URL = "sqlite:///" + BOT_DB
+
+engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 Model = declarative_base()
 

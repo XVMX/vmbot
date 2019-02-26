@@ -8,6 +8,10 @@ import logging
 # Log level
 LOGLEVEL = logging.INFO
 
+# DB URL (see https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls)
+# Leave at default to use built-in sqlite database
+DB_URL = "sqlite"
+
 # Jabber credentials
 # Primary chatrooms: main corp channel(s), feeds will be posted there
 # Director chatrooms: director channel(s), important data will be posted there
