@@ -10,7 +10,7 @@ class Message(db.Model):
     __tablename__ = "messages"
 
     message_id = db.Column(db.Integer, nullable=False, primary_key=True, autoincrement=True)
-    receiver = db.Column(db.String, nullable=False)
+    receiver = db.Column(db.Text, nullable=False)
     data = db.Column(db.Text, nullable=False)
     message_type = db.Column(db.Enum("chat", "groupchat"), nullable=False)
 

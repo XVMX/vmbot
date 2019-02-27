@@ -21,8 +21,8 @@ class Note(db.Model):
     __tablename__ = "pager"
 
     note_id = db.Column(db.Integer, nullable=False, primary_key=True, autoincrement=True)
-    receiver = db.Column(db.String, nullable=False)
-    room = db.Column(db.String)
+    receiver = db.Column(db.Text, nullable=False)
+    room = db.Column(db.Text)
     data = db.Column(db.Text, nullable=False)
     offset_time = db.Column(db.DateTime, nullable=False)
     message_type = db.Column(db.Enum("chat", "groupchat"), nullable=False)

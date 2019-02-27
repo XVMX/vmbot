@@ -11,7 +11,7 @@ class User(db.Model):
     """Store data about a user."""
     __tablename__ = "users"
 
-    jid = db.Column(db.String, nullable=False, primary_key=True)
+    jid = db.Column(db.Text, nullable=False, primary_key=True)
     allow_director = db.Column(db.Boolean, default=False, nullable=False)
     allow_admin = db.Column(db.Boolean, default=False, nullable=False)
     allow_token = db.Column(db.Boolean, default=False, nullable=False)
@@ -35,8 +35,8 @@ class Nickname(db.Model):
     """Store a nickname belonging to a user."""
     __tablename__ = "nicknames"
 
-    nick = db.Column(db.String, nullable=False, primary_key=True)
-    _user_jid = db.Column("user_jid", db.String, db.ForeignKey("users.jid"),
+    nick = db.Column(db.Text, nullable=False, primary_key=True)
+    _user_jid = db.Column("user_jid", db.Text, db.ForeignKey("users.jid"),
                           nullable=False, primary_key=True)
     last_seen = db.Column(db.DateTime, nullable=False)
     user = db.relationship("User", back_populates="nicks", lazy=True, uselist=False)

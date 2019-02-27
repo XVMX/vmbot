@@ -15,7 +15,7 @@ class Storage(db.Model):
     """Store JSON-compatible Python objects persistently."""
     __tablename__ = "cron_storage"
 
-    key = db.Column(db.String, nullable=False, primary_key=True)
+    key = db.Column(db.Text, nullable=False, primary_key=True)
     _value = db.Column("value", db.Text, nullable=False)
 
     def __init__(self, key, value):
