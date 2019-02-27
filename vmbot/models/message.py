@@ -4,6 +4,8 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from ..helpers import database as db
 
+msg_type_enum = db.Enum("chat", "groupchat", name="message_type")
+
 
 class Message(db.Model):
     """Store a message to be sent to a Jabber entity upon retrieval."""
@@ -12,7 +14,7 @@ class Message(db.Model):
     message_id = db.Column(db.Integer, nullable=False, primary_key=True, autoincrement=True)
     receiver = db.Column(db.Text, nullable=False)
     data = db.Column(db.Text, nullable=False)
-    message_type = db.Column(db.Enum("chat", "groupchat"), nullable=False)
+    message_type = db.Column(msg_type_enum, nullable=False)
 
     def __init__(self, receiver, message, type_="groupchat"):
         self.receiver = receiver

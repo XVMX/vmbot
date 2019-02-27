@@ -9,7 +9,7 @@ from xmpp.protocol import JID
 from sortedcontainers import SortedList
 
 from ..helpers import database as db
-from .message import Message
+from .message import Message, msg_type_enum
 
 QUEUE_UPDATE_INTERVAL = 12 * 60 * 60
 QUEUE_MAX_OFFSET = timedelta(hours=14)
@@ -25,7 +25,7 @@ class Note(db.Model):
     room = db.Column(db.Text)
     data = db.Column(db.Text, nullable=False)
     offset_time = db.Column(db.DateTime, nullable=False)
-    message_type = db.Column(db.Enum("chat", "groupchat"), nullable=False)
+    message_type = db.Column(msg_type_enum, nullable=False)
 
     _queue_update = None
     _note_queue = SortedList()
