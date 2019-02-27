@@ -17,16 +17,16 @@ if not DB_URL or DB_URL.lower() in ("sqlite", "sqlite3", "builtin", "built-in"):
     from .files import BOT_DB
     DB_URL = "sqlite:///" + BOT_DB
 
+    # WAL pragma makes sense only for sqlite
+    @event.listens_for(Engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.close()
+
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 Model = declarative_base()
-
-
-@event.listens_for(Engine, "connect")
-def _set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL;")
-    cursor.close()
 
 
 def init_db(bind=engine):
