@@ -13,14 +13,13 @@ import config
 class GitHubIssueHandler(logging.Handler):
     """Emit logged messages as issues on GitHub."""
 
-    headers = {'Accept': "application/vnd.github.v3+json"}
-    known_issues = set()
-
-    def __init__(self, owner, repo, user, access_token):
+    def __init__(self, owner, repo, access_token):
         super(GitHubIssueHandler, self).__init__()
 
+        self.known_issues = set()
         self.url = "https://api.github.com/repos/{}/{}/issues".format(owner, repo)
-        self.auth = (user, access_token)
+        self._headers = {'Accept': "application/vnd.github.v3+json",
+                         'Authorization': "token " + access_token}
 
     def _detect_duplicate(self, title, labels=None):
         if title in self.known_issues:
@@ -32,10 +31,10 @@ class GitHubIssueHandler(logging.Handler):
 
         issues = []
         try:
-            r = api.request_api(self.url, params=params, headers=self.headers)
+            r = api.request_api(self.url, params=params, headers=self._headers)
             issues.extend(i['title'] for i in r.json())
             while 'next' in r.links:
-                r = api.request_api(r.links['next']['url'], headers=self.headers)
+                r = api.request_api(r.links['next']['url'], headers=self._headers)
                 issues.extend(i['title'] for i in r.json())
         except APIError:
             pass
@@ -59,8 +58,7 @@ class GitHubIssueHandler(logging.Handler):
             return
 
         try:
-            r = api.request_api(self.url, json=payload, auth=self.auth,
-                                headers=self.headers, method="POST")
+            r = api.request_api(self.url, json=payload, headers=self._headers, method="POST")
         except APIError:
             self.handleError(record)
         else:
@@ -80,9 +78,8 @@ def setup_logging(main_handler):
     logger.addHandler(main_handler)
     cc_logger.addHandler(main_handler)
 
-    gh = config.GITHUB
-    if gh['user'] and gh['token']:
-        esi_handler = GitHubIssueHandler("XVMX", "VMBot", gh['user'], gh['token'])
+    if config.GITHUB_TOKEN:
+        esi_handler = GitHubIssueHandler("XVMX", "VMBot", config.GITHUB_TOKEN)
         esi_handler.setLevel(logging.WARNING)
         logging.getLogger("vmbot.helpers.api.esi").addHandler(esi_handler)
 

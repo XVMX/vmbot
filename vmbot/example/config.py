@@ -90,7 +90,4 @@ YT_KEY = ""
 # GitHub personal access token
 # Required scope: public_repo
 # Used to automatically report outdated/deprecated ESI routes
-GITHUB = {
-    'user': "",
-    'token': ""
-}
+GITHUB_TOKEN = ""
