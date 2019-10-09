@@ -80,8 +80,8 @@ class TestAPI(unittest.TestCase):
         self.assertTupleEqual(api.get_tickers(1164409536, 159826257), ("OTHER", "OTHER"))
 
     def test_get_tickers_corponly(self):
-        # corp_id: 2052404106 [XVMX] (member of <CONDI>)
-        self.assertTupleEqual(api.get_tickers(2052404106, None), ("XVMX", "CONDI"))
+        # corp_id: 667531913 [GEWNS] (member of <CONDI>)
+        self.assertTupleEqual(api.get_tickers(667531913, None), ("GEWNS", "CONDI"))
 
     def test_get_tickers_allianceonly(self):
         # ally_id: 99005065 <HKRAB>
