@@ -16,8 +16,7 @@ from vmbot.helpers.logging import GitHubIssueHandler
 
 class TestGitHubIssueHandler(unittest.TestCase):
     def setUp(self):
-        GitHubIssueHandler.known_issues.clear()
-        self.handler = GitHubIssueHandler("owner", "repo", "user", "token")
+        self.handler = GitHubIssueHandler("owner", "repo", "token")
 
     def tearDown(self):
         del self.handler
@@ -59,10 +58,11 @@ class TestGitHubIssueHandler(unittest.TestCase):
         self.assertIn("TestTitle2", self.handler.known_issues)
 
     @mock.patch("vmbot.helpers.logging.GitHubIssueHandler._detect_duplicate", return_value=True)
-    def test_emit_duplicate(self, mock_handler):
+    @mock.patch("vmbot.helpers.api.request_api", return_value=requests.Response())
+    def test_emit_duplicate(self, mock_api, mock_handler):
         rec = logging.makeLogRecord({'msg': "TestTitle"})
         self.handler.emit(rec)
-        mock_handler.assert_called()
+        mock_api.assert_not_called()
 
     @mock.patch("vmbot.helpers.api.request_api",
                 side_effect=APIError(requests.RequestException(), "TestException"))
