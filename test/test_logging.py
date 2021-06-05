@@ -16,7 +16,7 @@ from vmbot.helpers.logging import GitHubIssueHandler
 
 class TestGitHubIssueHandler(unittest.TestCase):
     def setUp(self):
-        self.handler = GitHubIssueHandler("owner", "repo", "token")
+        self.handler = GitHubIssueHandler("owner", "repo", "user", "token")
 
     def tearDown(self):
         del self.handler
