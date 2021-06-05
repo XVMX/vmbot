@@ -65,9 +65,9 @@ class TestNote(unittest.TestCase):
             Note.add_note(note, self.sess)
             self.assertIsNotNone(note.note_id)
 
-        for note in ((note.offset_time, (note.note_id, note.receiver, note.room))
-                     for note in self.notes):
-            self.assertIn(note, Note._note_queue)
+        for note in self.notes:
+            self.assertIn((note.offset_time, (note.note_id, note.receiver, note.room)),
+                          Note._note_queue)
 
         # Clean up database and class
         for note in self.notes:

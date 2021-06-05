@@ -76,8 +76,8 @@ class Note(db.Model):
             return []
 
         # picks is sorted because note_queue is sorted
-        for offset, idx in enumerate(picks):
-            del cls._note_queue[idx - offset]
+        for idx in reversed(picks):
+            del cls._note_queue[idx]
 
         messages = []
         for note in session.query(cls).filter(cls.note_id.in_(ids)).all():
@@ -94,13 +94,13 @@ class Note(db.Model):
         query = session.query(cls.note_id, cls.receiver, cls.room, cls.offset_time)
         query = query.filter(cls.offset_time <= max_offset)
 
-        expired = []
-        cls._note_queue.clear()
+        cls._note_queue, expired = [], []
         for note in query.all():
             if cur_time - note[-1] > NOTE_DELIVERY_FRAME:
                 expired.append(note[0])
             else:
-                cls._note_queue.add((note[-1], note[:-1]))
+                cls._note_queue.append((note[-1], note[:-1]))
+        cls._note_queue = SortedList(cls._note_queue)
 
         if expired:
             # Session is synchronized after commit

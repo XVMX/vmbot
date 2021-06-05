@@ -45,7 +45,7 @@ def get_names(*ids):
         return {id_: "{ERROR}" for id_ in ids}
 
     # ESI returns either names for all ids or none at all
-    # See https://esi.evetech.net/ui/#/operations/Universe/post_universe_names
+    # See https://esi.evetech.net/ui/#/Universe/post_universe_names
     return {item['id']: item['name'] for item in res}
 
 
@@ -55,7 +55,7 @@ def get_tickers(corp_id, ally_id):
     if corp_id:
         corp_ticker = "ERROR"
         try:
-            corp = request_esi("/v4/corporations/{}/", (corp_id,))
+            corp = request_esi("/v5/corporations/{}/", (corp_id,))
         except APIError:
             pass
         else:
@@ -66,7 +66,7 @@ def get_tickers(corp_id, ally_id):
     if ally_id:
         alliance_ticker = "ERROR"
         try:
-            ally = request_esi("/v3/alliances/{}/", (ally_id,))
+            ally = request_esi("/v4/alliances/{}/", (ally_id,))
         except APIError:
             pass
         else:
@@ -99,7 +99,7 @@ def zbot(kill_id):
     killtime = datetime.strptime(killdata['killmail_time'], ISO8601_DATETIME_FMT)
 
     return ("{} {} | {} ({:,} point(s)) | {:.2f} ISK | "
-            "{} ({}) | {} participant(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(
+            "{} ({}) | {:,} attacker(s) ({:,} damage) | {:%Y-%m-%d %H:%M:%S}").format(
         name, format_tickers(corp_ticker, alliance_ticker),
         staticdata.type_name(victim['ship_type_id']), zkb['points'],
         ISK(zkb['totalValue']), system['system_name'], system['region_name'],

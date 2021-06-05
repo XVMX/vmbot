@@ -15,7 +15,7 @@ def format_affil(char_name, sec_status, corp_name, ally_name,
     reply = ("<strong>{} ({:+.2f})</strong> is part of ".format(char_name, sec_status)
              if char_name else "The structure is owned by ")
 
-    reply += "corporation <strong>{} {}</strong>".format(
+    reply += "<strong>{} {}</strong>".format(
         corp_name, format_tickers(corp_ticker, None, html=True)
     )
 
@@ -25,7 +25,7 @@ def format_affil(char_name, sec_status, corp_name, ally_name,
         )
 
     if fac_name:
-        reply += " which is part of the <strong>{}</strong>".format(fac_name)
+        reply += ", which belongs to the <strong>{}</strong>".format(fac_name)
 
     return reply
 

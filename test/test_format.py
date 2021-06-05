@@ -8,8 +8,8 @@ from vmbot.helpers.format import format_ref_type, format_affil, format_tickers, 
 
 
 class TestFormat(unittest.TestCase):
-    _base_affil_template = (" corporation <strong>{} [{}]</strong> in <strong>{} "
-                            "&lt;{}&gt;</strong> which is part of the <strong>{}</strong>")
+    _base_affil_template = (" <strong>{} [{}]</strong> in <strong>{} "
+                            "&lt;{}&gt;</strong>, which belongs to the <strong>{}</strong>")
     char_affil_template = "<strong>{} ({:+.2f})</strong> is part of" + _base_affil_template
     structure_affil_template = "The structure is owned by" + _base_affil_template
 

@@ -40,7 +40,7 @@ def esi_warning_response(*args, **kwargs):
 
 class TestAPI(unittest.TestCase):
     zbot_regex = (r"Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
-                  r"Saranen (Lonetrek) | 47 participant(s) (23,723 damage) | "
+                  r"Saranen (Lonetrek) | 47 attacker(s) (23,723 damage) | "
                   r"2016-06-10 02:09:38")
 
     @classmethod
@@ -211,7 +211,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(api.ytbot("GNFgkN1kbNc"), "TestException")
 
     def test_request_esi(self):
-        test_route = "/v1/status/"
+        test_route = "/v2/status/"
         test_params = {'datasource': "tranquility"}
 
         res, head = api.request_esi(test_route, params=test_params, with_head=True)

@@ -49,8 +49,8 @@ REVENUE_COLS = (
 )
 
 # ESI
-# Data sources: tranquility, singularity
-# Languages: en-us, de, fr, ja, ru, zh
+# Data sources: tranquility
+# Languages: en, en-us, de, fr, ja, ru, ko
 ESI = {
     'base_url': "https://esi.evetech.net",
     'datasource': "tranquility",
@@ -58,7 +58,7 @@ ESI = {
 }
 
 # EVE SSO
-# Base URLs: https://login.eveonline.com (TQ), https://sisilogin.testeveonline.com (Sisi)
+# Base URLs: https://login.eveonline.com (TQ)
 # Required scopes: esi-mail.read_mail.v1, esi-wallet.read_corporation_wallets.v1,
 #                  esi-search.search_structures.v1, esi-universe.read_structures.v1,
 #                  esi-markets.structure_markets.v1

@@ -7,7 +7,7 @@ class ISK(float):
     """Store and properly format an ISK value."""
 
     def __format__(self, format_spec):
-        """Format the stored value with commonly used prefixes."""
+        """Format the stored value with commonly used suffixes."""
         val = float(self)
 
         for unit in ["", 'k', 'm', 'b']:
