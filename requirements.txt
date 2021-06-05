@@ -6,11 +6,11 @@ git+https://github.com/ArchipelProject/xmpppy
 sortedcontainers
 sqlalchemy
 requests
-cachecontrol[filecache]
-pyotp
+cachecontrol[filecache] >=0.12.6
+pyotp <=2.3.0
 numpy
 scikit-learn[alldeps]
 sympy
 pint
 terminaltables
-beautifulsoup4>=4.0.0
+beautifulsoup4 >=4.0.0
