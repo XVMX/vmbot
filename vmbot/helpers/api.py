@@ -30,7 +30,7 @@ def _get_requests_session():
         return _API_REG.http_sess
     except AttributeError:
         sess = requests.session()
-        ua = "XVMX VMBot (JabberBot {}) ".format(jb_version) + sess.headers['User-Agent']
+        ua = "XVMX-VMBot (JabberBot {}) ".format(jb_version) + sess.headers['User-Agent']
         sess.headers['User-Agent'] = ua
 
         _API_REG.http_sess = CacheControl(sess, cache=FileCache(HTTPCACHE))

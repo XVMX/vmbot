@@ -56,7 +56,7 @@ class TestAPI(unittest.TestCase):
     def test_get_requests_session(self):
         sess = api._get_requests_session()
         self.assertIs(api._get_requests_session(), sess)
-        self.assertIn("XVMX VMBot", sess.headers['User-Agent'])
+        self.assertIn("XVMX-VMBot", sess.headers['User-Agent'])
 
     def test_get_names_single(self):
         # character_id: 91754106 Joker Gates
