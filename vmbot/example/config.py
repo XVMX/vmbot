@@ -58,12 +58,12 @@ ESI = {
 }
 
 # EVE SSO
-# Base URLs: https://login.eveonline.com (TQ)
+# Base URLs: https://login.eveonline.com/v2 (TQ)
 # Required scopes: esi-mail.read_mail.v1, esi-wallet.read_corporation_wallets.v1,
 #                  esi-search.search_structures.v1, esi-universe.read_structures.v1,
 #                  esi-markets.structure_markets.v1
 SSO = {
-    'base_url': "https://login.eveonline.com",
+    'base_url': "https://login.eveonline.com/v2",
     'client_id': "",
     'client_secret': "",
     'refresh_token': ""

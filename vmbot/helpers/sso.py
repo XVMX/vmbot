@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 from datetime import datetime, timedelta
 import threading
 import base64
+import json
 
 from .exceptions import TokenExpiredError
 from . import api
@@ -25,10 +26,12 @@ class SSOToken(object):
 
         self._refresh_lock = threading.Lock()
 
-        # See https://github.com/ccpgames/esi-issues/issues/198#issuecomment-318818318
-        res = self.request_esi("/verify/")
-        self.character_id = res['CharacterID']
-        self.scopes = res['Scopes'].split()
+        # Access token is a JWT
+        # We don't verify the signature (that is CCP's job when accessing ESI)
+        claims = self._access_token.encode("ascii").split(b'.')[1]
+        claims = json.loads(base64.urlsafe_b64decode(claims))
+        self.character_id = claims['sub'].split(':')[-1]
+        self.scopes = claims['scp']
 
     @classmethod
     def from_authorization_code(cls, code):
@@ -74,4 +77,4 @@ class SSOToken(object):
         else:
             raise NotImplementedError
 
-        return api.request_api(url, params=payload, headers=headers, method="POST").json()
+        return api.request_api(url, data=payload, headers=headers, method="POST").json()
