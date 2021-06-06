@@ -37,7 +37,7 @@ REVENUE_ROWS = (
 
 class Director(object):
     @staticmethod
-    def _send_bcast(broadcast, author):
+    def _send_bcast(target, broadcast, author):
         # API docs: https://goo.gl/cTYPzg
         messaging = ET.Element("messaging")
         messages = ET.SubElement(messaging, "messages")
@@ -45,8 +45,8 @@ class Director(object):
         message = ET.SubElement(messages, "message")
         id_ = ET.SubElement(message, "id")
         id_.text = "idc"
-        target = ET.SubElement(message, "target")
-        target.text = config.BCAST['target']
+        tgt = ET.SubElement(message, "target")
+        tgt.text = target
         sender = ET.SubElement(message, "from")
         sender.text = author
         text = ET.SubElement(message, "text")
@@ -60,22 +60,26 @@ class Director(object):
     @requires_dir_chat
     @requires_role("director")
     def bcast(self, mess, args):
-        """vm <message> - Sends message as a broadcast to your corp
+        """<target> <message> - Sends message as a broadcast to target
 
         Must contain less than 10,000 characters (<=10.24kb including the tag line).
-        "vm" required to avoid accidental bcasts, only works in director chatrooms.
+        target must be one of the keys specified in the configuration. Omit all arguments
+        to see a list of permitted targets. Restricted to director chatrooms.
         Do not abuse this or Solo's wrath shall be upon you.
         """
-        if not args.startswith("vm "):
-            return None
-        broadcast = args[3:]
+        try:
+            target, broadcast = args.split(None, 1)
+            target = config.BCAST['targets'][target.lower()]
+        except (ValueError, KeyError):
+            return ("Missing or invalid target. Valid targets are: "
+                    + ", ".join(config.BCAST['targets'].keys()))
 
         if len(broadcast) > 10000:
             return "Please limit your broadcast to 10000 characters at once"
 
         try:
-            self._send_bcast(broadcast, self.get_uname_from_mess(mess) + " via VMBot")
-            return "Your broadcast was sent to " + config.BCAST['target']
+            self._send_bcast(target, broadcast, self.get_uname_from_mess(mess) + " via VMBot")
+            return "Your broadcast was sent to " + target
         except APIStatusError as e:
             r = e.response
             res = ET.fromstring(r.content).find(".//response").text

@@ -79,7 +79,9 @@ BCAST = {
     'url': "",
     'id': "",
     'key': "",
-    'target': ""
+    'targets': {
+        'abbrev': ""
+    }
 }
 
 # RC Blacklist API
