@@ -24,7 +24,7 @@ REVENUE_COLS = (
     ("< 30 days", timedelta(days=30))
 )
 
-# See https://esi.tech.ccp.is/latest/#!/Wallet
+# See https://esi.evetech.net/ui/#/Wallet
 REVENUE_ROWS = (
     ("PVE", ("agent_mission_reward", "agent_mission_time_bonus_reward", "bounty_prize",
              "bounty_prizes", "corporate_reward_payout", "project_discovery_reward")),
@@ -56,7 +56,7 @@ class Director(object):
         headers = {'X-SourceID': config.BCAST['id'], 'X-SharedKey': config.BCAST['key']}
         api.request_api(config.BCAST['url'], data=result, headers=headers, timeout=5, method="POST")
 
-    @botcmd
+    @botcmd(disable_if=not config.BCAST['key'])
     @requires_dir_chat
     @requires_role("director")
     def bcast(self, mess, args):
@@ -107,7 +107,7 @@ class Director(object):
         query = session.query(WalletJournalEntry.ref_type, db.func.sum(WalletJournalEntry.amount))
         return query.group_by(WalletJournalEntry.ref_type)
 
-    @botcmd
+    @botcmd(disable_if=not config.REVENUE_TRACKING)
     @inject_db
     @requires_dir_chat
     def revenue(self, mess, args, session):
@@ -150,7 +150,7 @@ class Director(object):
         res = table.table.replace('\n', "<br />")
         return '<br /><span style="font-family: monospace;">' + res + "</span>"
 
-    @botcmd
+    @botcmd(disable_if=not config.REVENUE_TRACKING)
     @inject_db
     @requires_dir_chat
     def income(self, mess, args, session):
@@ -162,7 +162,7 @@ class Director(object):
         res = sorted(query.all(), key=lambda x: x[1], reverse=True)
         return self._type_overview(res)
 
-    @botcmd
+    @botcmd(disable_if=not config.REVENUE_TRACKING)
     @inject_db
     @requires_dir_chat
     def expenses(self, mess, args, session):

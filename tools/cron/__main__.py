@@ -16,7 +16,7 @@ from vmbot.helpers.sso import SSOToken
 import config
 
 FEEDS = (news_feed,)
-ESI_UPDATES = (evemail, wallet_update)
+SSO_FEEDS = (evemail, wallet_update)
 
 if __name__ == "__main__":
     logger = setup_logging(logging.StreamHandler())
@@ -27,10 +27,10 @@ if __name__ == "__main__":
             if feed.needs_run(session):
                 feed.main(session)
 
-        run_updates = [u for u in ESI_UPDATES if u.needs_run(session)]
-        if run_updates:
+        run_sso_feeds = [f for f in SSO_FEEDS if f.needs_run(session)]
+        if run_sso_feeds:
             token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
-            for update in run_updates:
+            for update in run_sso_feeds:
                 update.main(session, token)
     except Exception:
         logger.exception("An error happened in a cron module:")

@@ -33,6 +33,9 @@ UPDATES_BLOCKED_TAGS = {"SKINs"}
 
 
 def init(session):
+    if not config.NEWS_FEEDS:
+        return
+
     try:
         news = read_feed(NEWS_FEED, RFC822_DATETIME_FMT, (None, "Thu, 01 Jan 1970 00:00:00 GMT"))
         devblogs = read_feed(DEVBLOG_FEED, RFC822_DATETIME_FMT,
@@ -45,11 +48,11 @@ def init(session):
     Storage.set(session, "news_feed_last_news", (news[0]['id'], news[0]['updated']))
     Storage.set(session, "news_feed_last_devblog", (devblogs[0]['id'], devblogs[0]['updated']))
     Storage.set(session, "news_feed_last_update", (updates[0]['id'], updates[0]['updated']))
-    Storage.set(session, "news_feed_next_run", time.time())
+    Storage.set(session, "news_feed_next_run", time.time() + FEED_INTERVAL)
 
 
 def needs_run(session):
-    return Storage.get(session, "news_feed_next_run") <= time.time()
+    return config.NEWS_FEEDS and Storage.get(session, "news_feed_next_run") <= time.time()
 
 
 def main(session):

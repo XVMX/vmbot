@@ -17,6 +17,9 @@ WALLET_DIVISION = 1
 
 
 def init(session, token):
+    if not config.REVENUE_TRACKING:
+        return
+
     if "esi-wallet.read_corporation_wallets.v1" not in token.scopes:
         print('SSO token is missing "esi-wallet.read_corporation_wallets.v1" scope')
         return
@@ -25,7 +28,7 @@ def init(session, token):
 
 
 def needs_run(session):
-    return Storage.get(session, "wallet_update_next_run") <= time.time()
+    return config.REVENUE_TRACKING and Storage.get(session, "wallet_update_next_run") <= time.time()
 
 
 def main(session, token):

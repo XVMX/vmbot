@@ -193,7 +193,7 @@ class EVEUtils(object):
 
         return reply
 
-    @botcmd
+    @botcmd(disable_if=not config.BLACKLIST['key'])
     def rcbl(self, mess, args):
         """<character>[, ...] - Blacklist status of character(s)"""
         url = config.BLACKLIST['url'] + config.BLACKLIST['key'] + '/'

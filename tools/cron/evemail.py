@@ -22,6 +22,9 @@ MAIL_FMT = "<strong>{}</strong> by <em>{}</em>"
 
 
 def init(session, token):
+    if not config.NEWS_FEEDS:
+        return
+
     if "esi-mail.read_mail.v1" not in token.scopes:
         print('SSO token is missing "esi-mail.read_mail.v1" scope')
         return
@@ -35,11 +38,11 @@ def init(session, token):
     last_mail = (mails[0]['mail_id'], mails[0]['timestamp']) if mails else (None, None)
 
     Storage.set(session, "evemail_last_mail", last_mail)
-    Storage.set(session, "evemail_next_run", time.time())
+    Storage.set(session, "evemail_next_run", time.time() + MAIL_INTERVAL)
 
 
 def needs_run(session):
-    return Storage.get(session, "evemail_next_run") <= time.time()
+    return config.NEWS_FEEDS and Storage.get(session, "evemail_next_run") <= time.time()
 
 
 def main(session, token):

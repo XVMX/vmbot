@@ -7,7 +7,10 @@ from . import jabberbot
 
 def botcmd(f=None, **kwargs):
     """Mark decorated function as bot command."""
-    def decorate(func, force_pm=False, **kwargs):
+    def decorate(func, disable_if=False, force_pm=False, **kwargs):
+        if disable_if:
+            return func
+
         setattr(func, "_vmbot_forcepm", force_pm)
         return jabberbot.botcmd(func, **kwargs)
 

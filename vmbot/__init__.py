@@ -150,23 +150,24 @@ class MUCJabberBot(JabberBot):
 class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
-        self.message_trigger = None
+        self.message_trigger = time.time() + 30
         self.sess = db.Session()
         self.yt_quota_exceeded = False
 
-        if kwargs.pop('feeds', False):
-            self.message_trigger = time.time() + 30
+        if config.ZKILL_FEED:
             self.km_feed = KMFeed(config.CORPORATION_ID)
 
         super(VMBot, self).__init__(*args, **kwargs)
 
     def idle_proc(self):
         """Retrieve and send stored messages."""
-        if self.message_trigger and self.message_trigger <= time.time():
-            # KM feed
-            for km_res in (res for res in self.km_feed.process() if res):
-                for room in config.JABBER['primary_chatrooms']:
-                    self.send(user=room, text=km_res, message_type="groupchat")
+        if self.message_trigger <= time.time():
+            if config.ZKILL_FEED:
+                for km_res in self.km_feed.process():
+                    if not km_res:
+                        continue
+                    for room in config.JABBER['primary_chatrooms']:
+                        self.send(user=room, text=km_res, message_type="groupchat")
 
             # Cron messages
             for mess in self.sess.query(Message).order_by(Message.message_id.asc()).all():
@@ -188,8 +189,8 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
 
         if jid is not None:
             jid = JID(jid).getStripped()
-            usr = self.sess.query(User).get(jid) or User(jid)
-            nick = self.sess.query(Nickname).get((nick_str, usr.jid))
+            usr = self.sess.get(User, jid) or User(jid)
+            nick = self.sess.get(Nickname, (nick_str, usr.jid))
 
             if nick is None:
                 usr.nicks.append(Nickname(nick_str))
@@ -212,8 +213,8 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         room = mess.getFrom().getStripped()
 
         if msg:
-            # Pubbie smacktalk
-            if PUBBIE_REGEX.search(msg) is not None and room in config.JABBER['primary_chatrooms']:
+            if (config.PUBBIE_SMACKTALK and PUBBIE_REGEX.search(msg) is not None
+                    and room in config.JABBER['primary_chatrooms']):
                 super(MUCJabberBot, self).send_simple_reply(mess, self.pubbiesmack(mess))
 
             # zBot
@@ -253,7 +254,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
             pass
 
         self.sess.close()
-        if self.message_trigger:
+        if config.ZKILL_FEED:
             self.km_feed.close()
 
         return super(VMBot, self).shutdown()
@@ -391,8 +392,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
             self.quit()
             return "afk shower"
 
-    @botcmd(hidden=True)
-    @requires_dir_chat
+    @botcmd(hidden=True, force_pm=True)
     @requires_role("admin")
     def gitpull(self, mess, args):
         """Pulls the latest commit from the active remote/branch"""

@@ -12,9 +12,15 @@ LOGLEVEL = logging.INFO
 # Leave at default to use built-in sqlite database
 DB_URL = "sqlite"
 
+# Feature flags (some additional features are enabled by setting certain credentials)
+NEWS_FEEDS = True
+ZKILL_FEED = True
+PUBBIE_SMACKTALK = False
+REVENUE_TRACKING = False
+
 # Jabber credentials
-# Primary chatrooms: main corp channel(s), feeds will be posted there
-# Director chatrooms: director channel(s), important data will be posted there
+# Primary chatrooms: main corp channel(s), feeds will be posted there (if enabled)
+# Director chatrooms: director channel(s), some commands are restricted to those channels
 JABBER = {
     'username': "username@domain.tld",
     'password': "yourpassword",
@@ -49,7 +55,6 @@ REVENUE_COLS = (
 )
 
 # ESI
-# Data sources: tranquility
 # Languages: en, en-us, de, fr, ja, ru, ko
 ESI = {
     'base_url': "https://esi.evetech.net",
@@ -57,11 +62,11 @@ ESI = {
     'lang': "en-us"
 }
 
-# EVE SSO
-# Base URLs: https://login.eveonline.com/v2 (TQ)
-# Required scopes: esi-mail.read_mail.v1, esi-wallet.read_corporation_wallets.v1,
-#                  esi-search.search_structures.v1, esi-universe.read_structures.v1,
-#                  esi-markets.structure_markets.v1
+# EVE SSO (register an application at https://developers.eveonline.com/)
+# Required scopes:
+#   esi-search.search_structures.v1, esi-universe.read_structures.v1,
+#   esi-markets.structure_markets.v1, esi-mail.read_mail.v1 (NEWS_FEEDS),
+#   esi-wallet.read_corporation_wallets.v1 (REVENUE_TRACKING)
 SSO = {
     'base_url': "https://login.eveonline.com/v2",
     'client_id': "",
@@ -83,11 +88,11 @@ BLACKLIST = {
     'key': ""
 }
 
-# Google API key
+# Google API key (https://cloud.google.com/docs/authentication/api-keys)
 # Required API: YouTube Data API v3
 YT_KEY = ""
 
-# GitHub personal access token
+# GitHub personal access token (https://github.com/settings/tokens)
 # Required scope: public_repo
 # Used to automatically report outdated/deprecated ESI routes
 GITHUB = {

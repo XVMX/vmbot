@@ -26,7 +26,7 @@ if __name__ == "__main__":
                                                     backupCount=3, encoding="utf-8"))
 
     jbc = config.JABBER
-    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'], feeds=True)
+    morgooglie = VMBot(jbc['username'], jbc['password'], jbc['res'])
     for room in jbc['chatrooms']:
         morgooglie.muc_join_room(room, jbc['nickname'])
 

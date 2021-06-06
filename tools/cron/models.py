@@ -10,6 +10,8 @@ from . import path
 
 import vmbot.helpers.database as db
 
+JSON_SEPS = (',', ':')
+
 
 class Storage(db.Model):
     """Store JSON-compatible Python objects persistently."""
@@ -28,7 +30,7 @@ class Storage(db.Model):
 
     @value.setter
     def value(self, value):
-        self._value = json.dumps(value)
+        self._value = json.dumps(value, separators=JSON_SEPS)
 
     @value.expression
     def value(self):
@@ -37,7 +39,7 @@ class Storage(db.Model):
     @classmethod
     def get(cls, session, key):
         """Return value stored at key."""
-        res = session.query(cls).filter_by(key=key).scalar()
+        res = session.get(cls, key)
         if res is None:
             raise KeyError
 

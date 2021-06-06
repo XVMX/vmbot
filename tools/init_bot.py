@@ -21,7 +21,7 @@ session = db.Session()
 # Initialize feeds
 news_feed.init(session)
 
-# Initialize API updates
+# Initialize SSO feeds
 token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
 evemail.init(session, token)
 wallet_update.init(session, token)
