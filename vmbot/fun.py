@@ -213,9 +213,7 @@ class Fun(object):
         """Like a box of chocolates, you never know what you're gonna get"""
         with open(EMOTES, 'r') as emotes_file:
             emotes = emotes_file.read().splitlines()
-
-        while not emotes.pop(0) == "[default]":
-            pass
+        del emotes[:emotes.index("[default]") + 1]
 
         return random.choice(emotes).split()[-1]
 
@@ -259,8 +257,8 @@ class Fun(object):
         except ValueError:
             return "Failed to load xkcd #{} from {}".format(comic_id, comic_url)
 
-        return "<strong>{}</strong> (<em>{}/{}/{}</em>): {}".format(
-            comic['safe_title'], comic['year'], comic['month'], comic['day'], comic_url
+        return '<a href="{}">{}</a> (<em>{}/{}/{}</em>)'.format(
+            comic_url, comic['safe_title'], comic['year'], comic['month'], comic['day']
         )
 
     @botcmd
@@ -311,9 +309,9 @@ class Fun(object):
         desc = re.sub(r"((?:\r|\n|\r\n)+)", "<br />", desc).rstrip("<br />")
         desc = re.sub(r"\[([\S ]+?)\]", urban_link, desc)
 
-        desc = "<strong>{}</strong> by <em>{}</em> rated {:+}: {}<br />{}".format(
-            entry['word'], entry['author'], entry['thumbs_up'] - entry['thumbs_down'],
-            entry['permalink'], desc
+        desc = '<a href="{}">{}</a> by <em>{}</em> rated {:+}<br />{}'.format(
+            entry['permalink'], entry['word'], entry['author'],
+            entry['thumbs_up'] - entry['thumbs_down'], desc
         )
 
         if 'tags' in res and res['tags']:

@@ -58,7 +58,9 @@ class Pager(object):
             return "Please specify a time offset and a message"
 
         # _process_pager_args parameter can always be split into 3 parts here
-        user, text, offset = self._process_pager_args(self.get_sender_username(mess) + ' ' + args)
+        user, text, offset = self._process_pager_args(
+            '"{}" {}'.format(self.get_sender_username(mess), args)
+        )
         text = REMINDER_FMT.format(user, datetime.utcnow(), text)
         note = Note(user, text, offset, room=mess.getFrom().getStripped())
 

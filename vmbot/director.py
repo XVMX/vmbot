@@ -22,7 +22,7 @@ import config
 REVENUE_COLS = (
     ("< 24h", timedelta(days=1)), ("< 1 week", timedelta(weeks=1)),
     ("< 30 days", timedelta(days=30))
-)
+) + config.REVENUE_COLS
 
 # See https://esi.evetech.net/ui/#/Wallet
 REVENUE_ROWS = (
@@ -117,7 +117,7 @@ class Director(object):
         now = datetime.utcnow()
         query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
 
-        for title, from_date in REVENUE_COLS + config.REVENUE_COLS:
+        for title, from_date in REVENUE_COLS:
             table[0].append(title)
 
             if isinstance(from_date, timedelta):

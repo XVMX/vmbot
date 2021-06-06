@@ -93,8 +93,8 @@ class TestFun(unittest.TestCase):
         except ValueError:
             self.skipTest("Failed to load xkcd from {} in test_rtxkcd".format(comic_url))
 
-        self.assertEqual(res, "<strong>{}</strong> (<em>{}/{}/{}</em>): {}".format(
-            comic['safe_title'], comic['year'], comic['month'], comic['day'], comic_url
+        self.assertEqual(res, '<a href="{}">{}</a> (<em>{}/{}/{}</em>)'.format(
+            comic_url, comic['safe_title'], comic['year'], comic['month'], comic['day']
         ))
 
     def test_rtxkcd_APIError(self):
@@ -154,13 +154,13 @@ class TestFun(unittest.TestCase):
 
     def test_urban(self):
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
-                                 (r"<strong>[\S ]+</strong> by <em>[\S ]+</em> "
-                                  r"rated (?:\+|-)\d+: .+<br />.+"))
+                                 (r'<a href=".+">[\S ]+</a> by <em>[\S ]+</em> '
+                                  r"rated (?:\+|-)\d+<br />.+"))
 
     def test_urban_random(self):
         self.assertRegexpMatches(self.fun.rtud(self.default_mess, self.default_args),
-                                 (r"<strong>[\S ]+</strong> by <em>[\S ]+</em> "
-                                  r"rated (?:\+|-)\d+: .+<br />.+"))
+                                 (r'<a href=".+">[\S ]+</a> by <em>[\S ]+</em> '
+                                  r"rated (?:\+|-)\d+<br />.+"))
 
     @mock.patch("cgi.escape", return_value="[API]")
     def test_urban_link(self, mock_cgi):

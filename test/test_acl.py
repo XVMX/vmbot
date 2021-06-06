@@ -75,7 +75,7 @@ class TestACL(unittest.TestCase):
     def test_promote(self):
         self.acl.promote(self.default_mess, "user director admin token")
 
-        usr = self.sess.query(User).get("user@domain.tld")
+        usr = self.sess.get(User, "user@domain.tld")
         self.assertTrue(usr.allow_director)
         self.assertTrue(usr.allow_admin)
         self.assertTrue(usr.allow_token)
@@ -89,7 +89,7 @@ class TestACL(unittest.TestCase):
         self.acl.get_uname_from_mess.return_value = JID("user@domain.tld/res")
         self.acl.promote(self.default_mess, "user director")
 
-        usr = self.sess.query(User).get("user@domain.tld")
+        usr = self.sess.get(User, "user@domain.tld")
         self.assertFalse(usr.allow_director)
 
     def test_promote_hasroles(self):
@@ -99,7 +99,7 @@ class TestACL(unittest.TestCase):
     def test_demote(self):
         self.acl.demote(self.default_mess, "admin director admin token")
 
-        admin = self.sess.query(User).get("admin@domain.tld")
+        admin = self.sess.get(User, "admin@domain.tld")
         self.assertFalse(admin.allow_director)
         self.assertFalse(admin.allow_admin)
         self.assertFalse(admin.allow_token)
@@ -113,7 +113,7 @@ class TestACL(unittest.TestCase):
         self.acl.get_uname_from_mess.return_value = JID("user@domain.tld/res")
         self.acl.demote(self.default_mess, "admin director")
 
-        admin = self.sess.query(User).get("admin@domain.tld")
+        admin = self.sess.get(User, "admin@domain.tld")
         self.assertTrue(admin.allow_director)
 
     def test_demote_noroles(self):
@@ -129,7 +129,7 @@ class TestACL(unittest.TestCase):
                          "Invalid role")
 
     def test_list_notassigned(self):
-        admin = self.sess.query(User).get("admin@domain.tld")
+        admin = self.sess.get(User, "admin@domain.tld")
         admin.allow_admin = False
         self.sess.commit()
 

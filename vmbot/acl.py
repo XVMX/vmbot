@@ -31,7 +31,7 @@ class ACL(object):
         # Remove roles that giver is not allowed to manage
         # Allow assignment if the role is not assigned to anybody yet
         giver = self.get_uname_from_mess(mess, full_jid=True).getStripped()
-        giver = u_qry.get(giver) or User(giver)
+        giver = session.get(User, giver) or User(giver)
 
         giver_role_map = generate_role_attr_map(giver)
         roles = [role for role in roles if giver_role_map[role] or

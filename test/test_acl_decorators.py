@@ -57,6 +57,7 @@ class TestACLDecorators(unittest.TestCase):
         self.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
                                                   return_value=JID("admin@domain.tld/res"))
         self.assertTrue(role_acl(self, self.default_mess, self.default_args))
+        del self.get_uname_from_mess
 
     def test_requires_role_denied(self):
         self.assertIsNone(role_acl(self, self.default_mess, self.default_args))
