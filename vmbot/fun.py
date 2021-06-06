@@ -314,9 +314,6 @@ class Fun(object):
             entry['thumbs_up'] - entry['thumbs_down'], desc
         )
 
-        if 'tags' in res and res['tags']:
-            desc += "<br />" + ' '.join('#' + tag for tag in res['tags'])
-
         return desc
 
 
