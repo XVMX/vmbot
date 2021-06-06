@@ -73,8 +73,8 @@ class MUCJabberBot(JabberBot):
         cmd = self.commands.get(cmd, None)
 
         lines = text.count('\n') + text.count("<br/>") + text.count("<br />")
-        if (len(text) > self.MAX_CHAT_CHARS or lines > self.MAX_CHAT_LINES or
-                getattr(cmd, "_vmbot_forcepm", False)):
+        if (len(text) > self.MAX_CHAT_CHARS or lines > self.MAX_CHAT_LINES
+                or getattr(cmd, "_vmbot_forcepm", False)):
             self.send_message(self.build_reply(mess, text, private=True))
             text = "Private message sent"
 
@@ -205,8 +205,8 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
 
-        if (self.get_uname_from_mess(mess, full_jid=True) == self.jid or
-                mess.getType() != "groupchat" or XEP_0203_DELAY in mess.getProperties()):
+        if (self.get_uname_from_mess(mess, full_jid=True) == self.jid
+                or mess.getType() != "groupchat" or XEP_0203_DELAY in mess.getProperties()):
             return reply
 
         msg = mess.getBody()

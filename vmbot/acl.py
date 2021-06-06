@@ -34,8 +34,10 @@ class ACL(object):
         giver = session.get(User, giver) or User(giver)
 
         giver_role_map = generate_role_attr_map(giver)
-        roles = [role for role in roles if giver_role_map[role] or
-                 not session.query(u_qry.filter(ROLE_ATTR_MAP[role].is_(True)).exists()).scalar()]
+        roles = [
+            role for role in roles if giver_role_map[role]
+            or not session.query(u_qry.filter(ROLE_ATTR_MAP[role].is_(True)).exists()).scalar()
+        ]
 
         if not roles:
             raise ValueError(None)
@@ -68,8 +70,8 @@ class ACL(object):
 
         session.add(receiver)
         session.commit()
-        return ("The following role(s) have been added to {}: ".format(receiver.jid) +
-                ", ".join(roles))
+        return ("The following role(s) have been added to {}: ".format(receiver.jid)
+                + ", ".join(roles))
 
     @botcmd
     @inject_db
@@ -98,8 +100,8 @@ class ACL(object):
 
         session.add(receiver)
         session.commit()
-        return ("The following role(s) have been removed from {}: ".format(receiver.jid) +
-                ", ".join(roles))
+        return ("The following role(s) have been removed from {}: ".format(receiver.jid)
+                + ", ".join(roles))
 
     @botcmd
     @inject_db

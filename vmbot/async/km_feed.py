@@ -179,8 +179,8 @@ class KMFeed(object):
             if res is None:
                 continue
 
-            if (res['killmail']['victim']['corporation_id'] == self.corp_id and
-                    res['zkb']['totalValue'] >= KM_MIN_VAL):
+            if (res['killmail']['victim']['corporation_id'] == self.corp_id
+                    and res['zkb']['totalValue'] >= KM_MIN_VAL):
                 self.loss_queue.put(Lossmail(res))
             elif any(att['corporation_id'] == self.corp_id
                      for att in res['killmail']['attackers'] if 'corporation_id' in att):
