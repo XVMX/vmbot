@@ -23,6 +23,24 @@ def type_name(type_id):
     return item[1]
 
 
+def search_market_types(term):
+    """Resolve a search term to types that are listed on the market."""
+    # Sort by name length so that the most similar item is first
+    conn = sqlite3.connect(STATICDATA_DB)
+    items = conn.execute(
+        """SELECT typeID, typeName
+           FROM invTypes
+           WHERE typeName LIKE :name
+             AND published
+             AND marketGroupID IS NOT NULL
+           ORDER BY LENGTH(typeName) ASC;""",
+        {'name': "%{}%".format(term)}
+    ).fetchall()
+    conn.close()
+
+    return items
+
+
 def region_data(region_id):
     """Resolve a region_id to its data."""
     conn = sqlite3.connect(STATICDATA_DB)

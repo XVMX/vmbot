@@ -7,6 +7,7 @@ import mock
 
 import shutil
 
+from concurrent import futures
 import requests
 
 from vmbot.helpers.files import HTTPCACHE
@@ -47,6 +48,7 @@ class TestPrice(unittest.TestCase):
 
     def setUp(self):
         self.price = Price()
+        self.price.api_pool = futures.ThreadPoolExecutor(max_workers=10)
 
     def tearDown(self):
         del self.price
@@ -139,7 +141,7 @@ class TestPrice(unittest.TestCase):
             self.no_spread_template.format("Pyerite", "Jita", 0, 0, 0, 0)
         )
 
-    @mock.patch("vmbot.helpers.sso.SSOToken.from_refresh_token", return_value=object())
+    @mock.patch("vmbot.helpers.sso.SSOToken.from_refresh_token", side_effect=lambda x: object())
     def test_get_token(self, mock_sso):
         tk = self.price._get_token()
         self.assertIs(self.price._get_token(), tk)
@@ -153,15 +155,13 @@ class TestPrice(unittest.TestCase):
         self.assertTupleEqual(self.price._calc_totals(orders), ((56.00, 700), (42.33, 500)))
 
     def test_calc_totals_noorders(self):
-        self.assertTupleEqual(self.price._calc_totals([]), ((0, 0), (0, 0)))
+        self.assertTupleEqual(self.price._calc_totals([]), ((0.0, 0), (0.0, 0)))
 
     def test_get_region_orders(self):
-        # The Forge
-        region_id = 10000002
-        # Tritanium
-        type_id = 34
+        # region_id: 10000002 The Forge
+        # type_id: 34 Tritanium
 
-        res_r = Price._get_region_orders(region_id, type_id)
+        res_r = Price._get_region_orders(10000002, 34)
         self.assertIsInstance(res_r[0][0], float)
         self.assertIsInstance(res_r[0][1], (int, long))
         self.assertIsInstance(res_r[1][0], float)
@@ -169,12 +169,10 @@ class TestPrice(unittest.TestCase):
 
     @mock.patch("vmbot.helpers.api.request_esi", side_effect=[([], {'X-Pages': 2}), []])
     def test_get_region_orders_paginated(self, mock_esi):
-        # The Forge
-        region_id = 10000002
-        # Mexallon
-        type_id = 36
+        # region_id: 10000002 The Forge
+        # type_id: 36 Mexallon
 
-        res = Price._get_region_orders(region_id, type_id)
+        res = Price._get_region_orders(10000002, 36)
         self.assertEqual(res[0][0], 0)
         self.assertEqual(res[0][1], 0)
         self.assertEqual(res[1][0], 0)

@@ -15,6 +15,14 @@ class TestStaticdata(unittest.TestCase):
     def test_type_name_invaliditem(self):
         self.assertEqual(staticdata.type_name(-1), "{Failed to load}")
 
+    def test_search_market_types(self):
+        # types: 34 Tritanium, 25595 Alloyed Tritanium Bar
+        self.assertListEqual(staticdata.search_market_types("trit"),
+                             [(34, "Tritanium"), (25595, "Alloyed Tritanium Bar")])
+
+    def test_search_market_types_empty(self):
+        self.assertListEqual(staticdata.search_market_types("InvalidItem"), [])
+
     def test_region_data(self):
         # region_id: 10000002 The Forge
         self.assertDictEqual(

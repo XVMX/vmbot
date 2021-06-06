@@ -8,6 +8,7 @@ from os import path, pardir
 import subprocess
 import random
 
+from concurrent import futures
 from xmpp.protocol import JID
 from .jabberbot import JabberBot
 from sympy.parsing.sympy_parser import parse_expr
@@ -154,6 +155,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         self.sess = db.Session()
         self.yt_quota_exceeded = False
 
+        self.api_pool = futures.ThreadPoolExecutor(max_workers=20)
         if config.ZKILL_FEED:
             self.km_feed = KMFeed(config.CORPORATION_ID)
 
