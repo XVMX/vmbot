@@ -91,7 +91,7 @@ class Director(object):
         reply += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
         return reply
 
-    @botcmd(hidden=True)
+    @botcmd(hidden=True, force_pm=True)
     @requires_role("token")
     def token(self, mess, args):
         """<account> - Generates the current login code for account"""
