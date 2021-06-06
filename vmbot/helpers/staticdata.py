@@ -95,3 +95,17 @@ def faction_name(faction_id):
     if not faction:
         return "{Failed to load}"
     return faction[1]
+
+
+def system_stations(system_id):
+    """Resolve a system_id to all station_ids contained within the system."""
+    conn = sqlite3.connect(STATICDATA_DB)
+    stations = conn.execute(
+        """SELECT stationID
+           FROM staStations
+           WHERE solarSystemID = :id;""",
+        {'id': system_id}
+    ).fetchall()
+    conn.close()
+
+    return [r[0] for r in stations]

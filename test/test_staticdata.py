@@ -59,6 +59,18 @@ class TestStaticdata(unittest.TestCase):
     def test_faction_name_invalidfaction(self):
         self.assertEqual(staticdata.faction_name(-1), "{Failed to load}")
 
+    def test_system_stations(self):
+        # system_id: 30000001 Tanoo
+        # station_ids: 60012526, 60014437
+        self.assertListEqual(staticdata.system_stations(30000001), [60012526, 60014437])
+
+    def test_system_stations_empty(self):
+        # system_id: 30000004 Jark
+        self.assertListEqual(staticdata.system_stations(30000004), [])
+
+    def test_system_stations_invalidsystem(self):
+        self.assertListEqual(staticdata.system_stations(-1), [])
+
 
 if __name__ == "__main__":
     unittest.main()
