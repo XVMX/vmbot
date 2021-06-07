@@ -14,7 +14,7 @@ from cachecontrol.caches import FileCache
 
 from .files import HTTPCACHE
 from .exceptions import APIError, APIStatusError, APIRequestError
-from .time import ISO8601_DATETIME_FMT, ISO8601_DATETIME_MICRO_FMT, parse_iso8601_duration
+from .time import ISO8601_DATETIME_FMT, parse_iso8601_duration
 from . import staticdata
 from .format import format_tickers
 from ..models import ISK
@@ -154,7 +154,7 @@ def ytbot(video_id):
         perc_like = likes / float(likes + dislikes)
         res += " | {:.2%} likes (+{:,}/-{:,})".format(perc_like, likes, dislikes)
 
-    published = datetime.strptime(yt['snippet']['publishedAt'], ISO8601_DATETIME_MICRO_FMT)
+    published = datetime.strptime(yt['snippet']['publishedAt'], ISO8601_DATETIME_FMT)
     res += " | {:%Y-%m-%d %H:%M:%S}".format(published)
 
     return res

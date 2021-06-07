@@ -121,7 +121,7 @@ class TestAPI(unittest.TestCase):
 
         # Live stream
         mock_api.return_value._content = (
-            b'{"items":[{"snippet":{"publishedAt":"2019-01-08T22:16:44.000Z",'
+            b'{"items":[{"snippet":{"publishedAt":"2019-01-08T22:16:44Z",'
             b'"channelTitle": "ABCDEF","liveBroadcastContent":"live",'
             b'"localized":{"title":"Some stream"}},"contentDetails":{"duration":"PT0S",'
             b'"definition": "sd"},"statistics":{"viewCount": "1963"}}]}'
@@ -131,7 +131,7 @@ class TestAPI(unittest.TestCase):
 
         # Upcoming stream
         mock_api.return_value._content = (
-            b'{"items":[{"snippet":{"publishedAt":"2018-10-29T10:18:23.000Z",'
+            b'{"items":[{"snippet":{"publishedAt":"2018-10-29T10:18:23Z",'
             b'"channelTitle": "ABCDEF","liveBroadcastContent":"upcoming",'
             b'"localized":{"title":"Some future stream"}},"contentDetails":{"duration":"PT0S",'
             b'"definition": "sd"},"statistics":{"viewCount": "84"}}]}'
@@ -141,7 +141,7 @@ class TestAPI(unittest.TestCase):
 
         # Video
         mock_api.return_value._content = (
-            b'{"items":[{"snippet":{"publishedAt":"2019-01-01T03:52:19.000Z",'
+            b'{"items":[{"snippet":{"publishedAt":"2019-01-01T03:52:19Z",'
             b'"channelTitle": "ABCDEF","liveBroadcastContent":"none",'
             b'"localized":{"title":"Some video"}},"contentDetails":{"duration":"PT22S",'
             b'"definition": "hd"},"statistics":{"viewCount": "784301",'
