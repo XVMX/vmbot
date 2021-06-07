@@ -9,11 +9,11 @@ def format_ref_type(ref_type):
     return ref_type.replace('_', ' ').title()
 
 
-def format_affil(char_name, sec_status, corp_name, ally_name,
-                 fac_name, corp_ticker, alliance_ticker):
+def format_affil(char_name, sec_status, birthday, corp_name,
+                 ally_name, fac_name, corp_ticker, alliance_ticker):
     """Represent character or structure data in a common format."""
-    reply = ("<strong>{} ({:+.2f})</strong> is part of ".format(char_name, sec_status)
-             if char_name else "The structure is owned by ")
+    reply = ("<strong>{}</strong> ({:+.2f}, born {:%m/%Y}) ".format(char_name, sec_status, birthday)
+             + "is part of ") if char_name else "The structure is owned by "
 
     reply += "<strong>{} {}</strong>".format(
         corp_name, format_tickers(corp_ticker, None, html=True)

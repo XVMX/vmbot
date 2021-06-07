@@ -4,13 +4,16 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import unittest
 
+from datetime import datetime
+
 from vmbot.helpers.format import format_ref_type, format_affil, format_tickers, disambiguate
 
 
 class TestFormat(unittest.TestCase):
     _base_affil_template = (" <strong>{} [{}]</strong> in <strong>{} "
                             "&lt;{}&gt;</strong>, which belongs to the <strong>{}</strong>")
-    char_affil_template = "<strong>{} ({:+.2f})</strong> is part of" + _base_affil_template
+    char_affil_template = ("<strong>{}</strong> ({:+.2f}, born {:%m/%Y}) is part of"
+                           + _base_affil_template)
     structure_affil_template = "The structure is owned by" + _base_affil_template
 
     simple_disambiguate_template = 'Other {} like "{}": {}'
@@ -20,14 +23,15 @@ class TestFormat(unittest.TestCase):
         self.assertEqual(format_ref_type("abc_def"), "Abc Def")
 
     def test_format_character(self):
+        birthday = datetime(year=2020, month=07, day=5, hour=16, minute=39, second=0)
         self.assertEqual(
-            format_affil("A", 2.3, "B", "C", "D", "E", "F"),
-            self.char_affil_template.format("A", 2.3, "B", "E", "C", "F", "D")
+            format_affil("A", 2.3, birthday, "B", "C", "D", "E", "F"),
+            self.char_affil_template.format("A", 2.3, birthday, "B", "E", "C", "F", "D")
         )
 
     def test_format_structure(self):
         self.assertEqual(
-            format_affil("", None, "B", "C", "D", "E", "F"),
+            format_affil(None, None, None, "B", "C", "D", "E", "F"),
             self.structure_affil_template.format("B", "E", "C", "F", "D")
         )
 
