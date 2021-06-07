@@ -241,7 +241,7 @@ class Fun(object):
     def rtxkcd(self, mess, args):
         """Like a box of chocolates, but with xkcds"""
         try:
-            res = api.request_api("https://xkcd.com/info.0.json", timeout=3).json()
+            res = api.request_api("https://xkcd.com/info.0.json").json()
         except APIError as e:
             return unicode(e)
         except ValueError:
@@ -251,7 +251,7 @@ class Fun(object):
         comic_url = "https://xkcd.com/{}/".format(comic_id)
 
         try:
-            comic = api.request_api(comic_url + "info.0.json", timeout=3).json()
+            comic = api.request_api(comic_url + "info.0.json").json()
         except APIError as e:
             return unicode(e)
         except ValueError:
@@ -274,7 +274,7 @@ class Fun(object):
         params = None if not args else {'term': args}
 
         try:
-            res = api.request_api(url, params=params, timeout=3).json()
+            res = api.request_api(url, params=params).json()
         except APIError as e:
             return unicode(e)
         except ValueError:

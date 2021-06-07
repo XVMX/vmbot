@@ -180,7 +180,7 @@ class EVEUtils(object):
         reply = "The current EVE time is {:%Y-%m-%d %H:%M:%S}".format(datetime.utcnow())
 
         try:
-            stat = api.request_esi("/v1/status/")
+            stat = api.request_esi("/v2/status/")
         except APIStatusError:
             reply += ". The server is offline."
         except APIError:
@@ -189,7 +189,7 @@ class EVEUtils(object):
             reply += ". The server is online"
             if stat.get('vip', False):
                 reply += " (VIP mode)"
-            reply += " and {:,} players are playing.".format(stat['players'])
+            reply += " with {:,} players.".format(stat['players'])
 
         return reply
 
