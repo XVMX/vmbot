@@ -1,0 +1,67 @@
+name: Static data update
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 18 2 * * *
+
+jobs:
+  update-staticdata:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Activate PR branch
+        run: |
+          if git fetch --depth=2 origin auto-update-staticdata 2>/dev/null; then
+            git checkout auto-update-staticdata
+            git rebase --onto "$GITHUB_REF" HEAD~ || git rebase --abort
+          else
+            git checkout -b auto-update-staticdata
+          fi
+
+      - name: Cache resource ETags
+        uses: actions/cache@v2
+        with:
+          path: .ci-etag
+          key: update-staticdata-etags-${{ github.run_id }}
+          restore-keys: update-staticdata-etags-
+      - name: Create emotes.txt
+        run: tools/ci/create_emotes.sh
+      - name: Create staticdata.sqlite
+        run: tools/ci/create_staticdata.sh
+      - name: Stage updates
+        id: git-add
+        run: |
+          mv emotes.txt staticdata.sqlite vmbot/data/ 2>/dev/null || true
+          git add vmbot/data/
+          if git diff --staged --quiet; then
+            echo "::set-output name=changes::false"
+          else
+            echo "::set-output name=changes::true"
+          fi
+
+      - name: Update PR
+        if: steps.git-add.outputs.changes
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+          commit_body="ETags:
+          pidgin_nosmile.zip       $(cat .ci-etag/pidgin_nosmile.zip.txt)
+          sqlite-latest.sqlite.bz2 $(cat .ci-etag/sqlite-latest.sqlite.bz2.txt)"
+
+          commits=($(git rev-parse HEAD "$GITHUB_REF"))
+          if [[ "${commits[0]}" != "${commits[1]}" ]]; then
+            modifier="--amend"
+          fi
+          git commit ${modifier:-} -m "Updated static data" -m "$commit_body"
+          git push --force-with-lease -u origin auto-update-staticdata
+
+          if ! gh pr view --json number >/dev/null 2>&1; then
+            gh pr create -t "Updated static data" -l auto-update \
+                         -b "*This PR has been generated automatically*"
+          fi
