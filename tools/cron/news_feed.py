@@ -46,6 +46,8 @@ def main(session):
         news = read_feed(NEWS_FEED, Storage.get(session, "news_feed_last_news"))
     except APIError:
         return
+    if not news:
+        return
 
     reply = "{} new EVE news:<br />".format(len(news)) if len(news) > 1 else ""
     reply += "<br />".join(FEED_FMT.format(**entry) for entry in news)
