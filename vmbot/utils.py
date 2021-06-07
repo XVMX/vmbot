@@ -193,15 +193,13 @@ class EVEUtils(object):
 
         return reply
 
-    @botcmd(disable_if=not config.BLACKLIST['key'])
+    @botcmd(disable_if=not config.BLACKLIST_URL)
     def rcbl(self, mess, args):
-        """<character>[, ...] - Blacklist status of character(s)"""
-        url = config.BLACKLIST['url'] + config.BLACKLIST['key'] + '/'
+        """<character>[, ...] - Query blacklist status of character(s)"""
         results = []
-
         for character in (item.strip() for item in args.split(',')):
             try:
-                res = api.request_api(url + character).json()
+                res = api.request_api(config.BLACKLIST_URL + '/' + character).json()
             except APIError:
                 results.append("Failed to load blacklist entry for " + character)
             else:

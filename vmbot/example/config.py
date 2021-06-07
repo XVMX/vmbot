@@ -85,10 +85,7 @@ BCAST = {
 }
 
 # RC Blacklist API
-BLACKLIST = {
-    'url': "",
-    'key': ""
-}
+BLACKLIST_URL = ""
 
 # Google API key (https://cloud.google.com/docs/authentication/api-keys)
 # Required API: YouTube Data API v3
