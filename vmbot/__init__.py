@@ -26,6 +26,7 @@ from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
+from .helpers import bots
 from .helpers.decorators import timeout, requires_role, requires_dir_chat, inject_db
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
 from .models.message import Message
@@ -221,7 +222,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
 
             # zBot
             matches = {match.group(1) for match in ZKB_REGEX.finditer(msg)}
-            replies = [api.zbot(match) for match in matches]
+            replies = [bots.zbot(match) for match in matches]
             if replies:
                 super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
 
@@ -230,7 +231,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
                 matches = {match.group(1) for match in YT_REGEX.finditer(msg)}
                 replies = []
                 for match in matches:
-                    reply = api.ytbot(match)
+                    reply = bots.ytbot(match)
                     if reply is None:
                         continue
                     if reply is False:
