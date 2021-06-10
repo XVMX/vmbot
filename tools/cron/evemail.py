@@ -22,7 +22,7 @@ MAIL_FMT = "<strong>{}</strong> by <em>{}</em>"
 
 
 def init(session, token):
-    if not config.NEWS_FEEDS:
+    if not config.EVEMAIL_FEED:
         return
 
     if "esi-mail.read_mail.v1" not in token.scopes:
@@ -42,7 +42,7 @@ def init(session, token):
 
 
 def needs_run(session):
-    return config.NEWS_FEEDS and Storage.get(session, "evemail_next_run") <= time.time()
+    return config.EVEMAIL_FEED and Storage.get(session, "evemail_next_run") <= time.time()
 
 
 def main(session, token):

@@ -153,9 +153,9 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         self.startup_time = datetime.utcnow()
         self.message_trigger = time.time() + 30
         self.sess = db.Session()
-        self.yt_quota_exceeded = False
 
         self.api_pool = futures.ThreadPoolExecutor(max_workers=20)
+        self.yt_quota_exceeded = False
         if config.ZKILL_FEED:
             self.km_feed = KMFeed(config.CORPORATION_ID)
 
@@ -213,17 +213,17 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
 
         msg = mess.getBody()
         room = mess.getFrom().getStripped()
-
         if msg:
             if (config.PUBBIE_SMACKTALK and PUBBIE_REGEX.search(msg) is not None
                     and room in config.JABBER['primary_chatrooms']):
                 super(MUCJabberBot, self).send_simple_reply(mess, self.pubbiesmack(mess))
 
             # zBot
-            matches = {match.group(1) for match in ZKB_REGEX.finditer(msg)}
-            replies = [api.zbot(match) for match in matches]
-            if replies:
-                super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
+            if config.ZBOT:
+                matches = {match.group(1) for match in ZKB_REGEX.finditer(msg)}
+                replies = [api.zbot(match) for match in matches]
+                if replies:
+                    super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
 
             # YTBot
             if not self.yt_quota_exceeded:

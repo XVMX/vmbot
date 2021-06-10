@@ -13,9 +13,11 @@ LOGLEVEL = logging.INFO
 DB_URL = "sqlite"
 
 # Feature flags (some additional features are enabled by setting certain credentials)
-NEWS_FEEDS = True
+NEWS_FEED = True
+EVEMAIL_FEED = True
 ZKILL_FEED = True
 PUBBIE_SMACKTALK = False
+ZBOT = True
 REVENUE_TRACKING = False
 
 # Jabber credentials
@@ -48,7 +50,7 @@ TOTP_KEYS = {
     'account name': "account key"
 }
 
-# Custom revenue table columns
+# Custom revenue table columns (REVENUE_TRACKING)
 REVENUE_COLS = (
     ("< 3 months", timedelta(days=90)),
     ("Since 2018", datetime(2018, 1, 1))
@@ -65,7 +67,7 @@ ESI = {
 # EVE SSO (register an application at https://developers.eveonline.com/)
 # Required scopes:
 #   esi-search.search_structures.v1, esi-universe.read_structures.v1,
-#   esi-markets.structure_markets.v1, esi-mail.read_mail.v1 (NEWS_FEEDS),
+#   esi-markets.structure_markets.v1, esi-mail.read_mail.v1 (EVEMAIL_FEED),
 #   esi-wallet.read_corporation_wallets.v1 (REVENUE_TRACKING)
 SSO = {
     'base_url': "https://login.eveonline.com/v2",
@@ -89,6 +91,7 @@ BLACKLIST_URL = ""
 
 # Google API key (https://cloud.google.com/docs/authentication/api-keys)
 # Required API: YouTube Data API v3
+# Used to post context for YouTube links. Leave empty to disable.
 YT_KEY = ""
 
 # GitHub personal access token (https://github.com/settings/tokens)

@@ -22,7 +22,7 @@ FEED_FMT = '<a href="{url}">{title}</a> by <em>{author}</em>'
 
 
 def init(session):
-    if not config.NEWS_FEEDS:
+    if not config.NEWS_FEED:
         return
 
     try:
@@ -36,7 +36,7 @@ def init(session):
 
 
 def needs_run(session):
-    return config.NEWS_FEEDS and Storage.get(session, "news_feed_next_run") <= time.time()
+    return config.NEWS_FEED and Storage.get(session, "news_feed_next_run") <= time.time()
 
 
 def main(session):
