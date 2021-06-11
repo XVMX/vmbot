@@ -4,11 +4,15 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import time
 from datetime import datetime
+from collections import defaultdict
+import signal
 from os import path, pardir
 import subprocess
 import random
 
 from concurrent import futures
+from multiset import Multiset
+from xmpp import NS_DELAY as XEP_0091_DELAY
 from xmpp.protocol import JID
 from .jabberbot import JabberBot
 from sympy.parsing.sympy_parser import parse_expr
@@ -26,7 +30,7 @@ from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
-from .helpers.decorators import timeout, requires_role, requires_dir_chat, inject_db
+from .helpers.decorators import timeout, requires_role, inject_db
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
 from .models.message import Message
 from .models.user import User, Nickname
@@ -35,7 +39,8 @@ from .models import Note
 import config
 
 # See XEP-0203: Delayed Delivery (https://xmpp.org/extensions/xep-0203.html)
-XEP_0203_DELAY = "urn:xmpp:delay"
+XEP_0203_DELAY = b"urn:xmpp:delay"
+DELAY_NS_SET = {XEP_0203_DELAY, XEP_0091_DELAY}
 MESSAGE_INTERVAL = 60
 
 
@@ -49,68 +54,115 @@ class MUCJabberBot(JabberBot):
     PING_TIMEOUT = 5
 
     def __init__(self, username, password, res, *args, **kwargs):
-        self.nick_dict = {}
+        self.occupant_jids = Multiset()
+        self.nick_dict = defaultdict(dict)
         super(MUCJabberBot, self).__init__(username, password, res, *args, **kwargs)
         self.jid.setResource(res)
 
+    def get_sender_username(self, mess):
+        from_ = mess.getFrom()
+
+        # In MUCs and MUC PMs, the from attribute contains the sender's MUC address
+        if mess.getType() == b"groupchat" or from_.getStripped() in config.JABBER['chatrooms']:
+            return from_.getResource()
+        else:
+            return from_.getNode()
+
     def get_uname_from_mess(self, mess, full_jid=False):
-        nick = self.get_sender_username(mess)
-        node = mess.getFrom().getNode()
+        from_ = mess.getFrom()
 
-        # Private message
-        if nick == node:
-            return mess.getFrom() if full_jid else nick
+        # In MUCs and MUC PMs, the from attribute contains the sender's MUC address
+        if mess.getType() == b"groupchat" or from_.getStripped() in config.JABBER['chatrooms']:
+            room, nick = from_.getNode(), from_.getResource()
+            try:
+                from_ = self.nick_dict[room][nick]
+            except KeyError:
+                from_ = JID(b"default")
 
-        # MUC message
-        try:
-            jid = self.nick_dict[node][nick]
-        except KeyError:
-            jid = JID("default")
+        return from_ if full_jid else from_.getNode()
 
-        return jid if full_jid else jid.getNode()
+    def build_reply(self, mess, text=None, private=False):
+        res = super(MUCJabberBot, self).build_reply(mess, text=text, private=private)
+        if mess.getType() == b"chat":
+            # Ensure response is sent to correct resource for (MUC) PMs
+            res.setTo(mess.getFrom())
 
-    def send_simple_reply(self, mess, text, private=False):
-        cmd = mess.getBody().split(' ', 1)[0].lower()
-        cmd = self.commands.get(cmd, None)
-
-        lines = text.count('\n') + text.count("<br/>") + text.count("<br />")
-        if (len(text) > self.MAX_CHAT_CHARS or lines > self.MAX_CHAT_LINES
-                or getattr(cmd, "_vmbot_forcepm", False)):
-            self.send_message(self.build_reply(mess, text, private=True))
-            text = "Private message sent"
-
-        return super(MUCJabberBot, self).send_simple_reply(mess, text, private)
+        return res
 
     def callback_presence(self, conn, presence):
+        room = presence.getFrom().getNode()
         nick = presence.getFrom().getResource()
-        node = presence.getFrom().getNode()
         jid = presence.getJid()
 
         if jid is not None:
-            if node not in self.nick_dict:
-                self.nick_dict[node] = {}
-
-            if presence.getType() == self.OFFLINE and nick in self.nick_dict[node]:
-                del self.nick_dict[node][nick]
+            # JID attribute is only included in MUC presence stanzas
+            jid = JID(jid)
+            if presence.getType() == self.OFFLINE:
+                self.nick_dict[room].pop(nick, None)
+                self.occupant_jids[jid] -= 1
             else:
-                self.nick_dict[node][nick] = JID(jid)
+                self.occupant_jids[jid] += 1
+                self.nick_dict[room][nick] = jid
 
         return super(MUCJabberBot, self).callback_presence(conn, presence)
 
-    def callback_message(self, conn, mess):
+    def should_ignore_message(self, mess):
         # solodrakban (PM) protection
-        # Discard non-groupchat messages
-        if mess.getType() != "groupchat":
-            return
+        # Discard PMs unless they are sent via a MUC or from a known MUC occupant
+        type_ = mess.getType()
+        if type_ == b"chat":
+            sender = mess.getFrom()
+            stripped = sender.getStripped()
+            if ((sender not in self.occupant_jids or stripped in config.JABBER['pm_blacklist'])
+                    and stripped not in config.JABBER['chatrooms']):
+                return True
+        elif type_ != b"groupchat":
+            return True
 
-        if XEP_0203_DELAY in mess.getProperties():
-            return
+        # Discard delayed messages
+        if any(prop in DELAY_NS_SET for prop in mess.getProperties()):
+            return True
 
         # Discard messages from myself
         if self.get_uname_from_mess(mess, full_jid=True) == self.jid:
+            return True
+
+        return False
+
+    def get_cmd_from_text(self, text):
+        text = text.split(b' ', 1)
+        cmd = text.pop(0).lower()
+        args = text[0] if text else b""
+
+        return self.commands.get(cmd, None), args
+
+    def callback_message(self, conn, mess):
+        if self.should_ignore_message(mess):
             return
 
-        return super(MUCJabberBot, self).callback_message(conn, mess)
+        text = mess.getBody()
+        if not text:
+            return
+
+        cmd, args = self.get_cmd_from_text(text)
+        if cmd is None:
+            return
+
+        try:
+            reply = cmd(mess, args)
+        except Exception:
+            self.log.exception('An error happened while processing a message ("%s") from %s:',
+                               text, mess.getFrom())
+            reply = self.MSG_ERROR_OCCURRED
+
+        if reply:
+            lines = reply.count('\n') + reply.count("<br/>") + reply.count("<br />")
+            if (len(reply) > self.MAX_CHAT_CHARS or lines > self.MAX_CHAT_LINES
+                    or cmd._vmbot_forcepm) and mess.getType() == b"groupchat":
+                self.send_simple_reply(mess, reply, private=True)
+                reply = "Private message sent"
+
+            self.send_simple_reply(mess, reply)
 
     @botcmd
     def help(self, mess, args):
@@ -138,14 +190,9 @@ class MUCJabberBot(JabberBot):
     @botcmd
     def nopm(self, mess, args):
         """<command> [args] - Forces command to be sent to the channel"""
-        if ' ' in args:
-            cmd, args = args.split(' ', 1)
-        else:
-            cmd, args = args, ""
-        cmd = cmd.lower()
-
-        if cmd in self.commands:
-            super(MUCJabberBot, self).send_simple_reply(mess, self.commands[cmd](mess, args))
+        cmd, args = self.get_cmd_from_text(args.lstrip())
+        if cmd is not None:
+            self.send_simple_reply(mess, cmd(mess, args))
 
 
 class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
@@ -206,9 +253,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
 
     def callback_message(self, conn, mess):
         reply = super(VMBot, self).callback_message(conn, mess)
-
-        if (self.get_uname_from_mess(mess, full_jid=True) == self.jid
-                or mess.getType() != "groupchat" or XEP_0203_DELAY in mess.getProperties()):
+        if self.should_ignore_message(mess):
             return reply
 
         msg = mess.getBody()
@@ -216,14 +261,14 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         if msg:
             if (config.PUBBIE_SMACKTALK and PUBBIE_REGEX.search(msg) is not None
                     and room in config.JABBER['primary_chatrooms']):
-                super(MUCJabberBot, self).send_simple_reply(mess, self.pubbiesmack(mess))
+                self.send_simple_reply(mess, self.pubbiesmack(mess))
 
             # zBot
             if config.ZBOT:
                 matches = {match.group(1) for match in ZKB_REGEX.finditer(msg)}
                 replies = [api.zbot(match) for match in matches]
                 if replies:
-                    super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
+                    self.send_simple_reply(mess, '\n'.join(replies))
 
             # YTBot
             if not self.yt_quota_exceeded:
@@ -239,7 +284,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
                     replies.append(reply)
 
                 if replies:
-                    super(MUCJabberBot, self).send_simple_reply(mess, '\n'.join(replies))
+                    self.send_simple_reply(mess, '\n'.join(replies))
 
         return reply
 
@@ -261,15 +306,16 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
 
         return super(VMBot, self).shutdown()
 
-    @botcmd
+    @staticmethod
+    @timeout(5, "Your calculation is too expensive and was killed off")
+    def _do_math(args):
+        return pretty(parse_expr(args), full_prec=False, use_unicode=True)
+
+    @botcmd(disable_if=not hasattr(signal, "alarm"))
     def math(self, mess, args):
         """<expr> - Evaluates expr mathematically"""
-        @timeout(5, "Your calculation is too expensive and was killed off")
-        def do_math(args):
-            return pretty(parse_expr(args), full_prec=False, use_unicode=True)
-
         try:
-            reply = do_math(args)
+            reply = self._do_math(args)
         except TimeoutError as e:
             return unicode(e)
         except Exception as e:

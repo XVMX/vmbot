@@ -3,11 +3,12 @@ futures
 dnspython
 # Fixed xmpppy version
 git+https://github.com/ArchipelProject/xmpppy
+multiset
 sortedcontainers
 sqlalchemy
 requests
 cachecontrol[filecache] >=0.12.6
-pyotp <=2.3.0
+pyotp <2.4.0
 numpy
 scikit-learn[alldeps]
 sympy

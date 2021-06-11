@@ -4,10 +4,8 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 from datetime import datetime, timedelta
 
-from xmpp.protocol import JID
-
 from .botcmd import botcmd
-from .helpers.decorators import inject_db
+from .helpers.decorators import requires_muc, inject_db
 from .helpers.regex import TIME_OFFSET_REGEX
 from .models import Note
 
@@ -17,7 +15,7 @@ REMINDER_FMT = "Reminder for {} set at {:%Y-%m-%d %H:%M:%S}:\n{}"
 
 class Pager(object):
     @staticmethod
-    def _process_pager_args(args):
+    def _process_pager_args(args, require_offset=False):
         args = args.strip()
 
         quot_end = args.find('"', 1)
@@ -32,16 +30,19 @@ class Pager(object):
                                  "and optionally a time offset: <user> [offset] <msg>")
             user, data = args
 
-        delta, text = timedelta(), None
         try:
             days, hours, mins = TIME_OFFSET_REGEX.match(data).groups()
             delta = timedelta(days=int(days or 0), hours=int(hours or 0), minutes=int(mins or 0))
             text = data.split(None, 1)[1]
         except AttributeError:
+            delta = timedelta()
             text = data
         except IndexError:
             raise ValueError("Please provide a username, a message to send, "
                              "and optionally a time offset: <user> [offset] <msg>")
+
+        if require_offset and not delta:
+            raise ValueError("Please provide a non-zero time offset")
 
         return user, text, datetime.utcnow() + delta
 
@@ -57,20 +58,28 @@ class Pager(object):
         if len(args.split(None, 1)) < 2:
             return "Please specify a time offset and a message"
 
-        # _process_pager_args parameter can always be split into 3 parts here
-        user, text, offset = self._process_pager_args(
-            '"{}" {}'.format(self.get_sender_username(mess), args)
-        )
-        text = REMINDER_FMT.format(user, datetime.utcnow(), text)
-        note = Note(user, text, offset, room=mess.getFrom().getStripped())
+        try:
+            _, text, offset = self._process_pager_args("x " + args, require_offset=True)
+        except ValueError as e:
+            return unicode(e)
 
-        Note.add_note(note, session)
+        type_ = mess.getType()
+        if type_ == b"groupchat":
+            user = self.get_sender_username(mess)
+            room = mess.getFrom().getStripped()
+        else:
+            user = self.get_uname_from_mess(mess, full_jid=True).getStripped()
+            room = None
+
+        text = REMINDER_FMT.format(user, datetime.utcnow(), text)
+        Note.add_note(Note(user, text, offset, room=room, type_=type_), session)
         return "Reminder for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
+    @requires_muc
     @inject_db
     def sendmsg(self, mess, args, session):
-        """<user> [offset] <msg> - Sends msg to user in the current channel
+        """<user> [offset] <msg> - Sends msg to user in the current multi-user chatroom
 
         If offset is present, message delivery will be delayed until that
         amount of time has passed. Messages will be discarded 30 days after their offset ran out.
@@ -80,12 +89,14 @@ class Pager(object):
         """
         try:
             user, text, offset = self._process_pager_args(args)
-            text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
-            note = Note(user, text, offset, room=mess.getFrom().getStripped())
+            if '@' in user:
+                user = user.split('@', 1)[0]
         except ValueError as e:
             return unicode(e)
 
-        Note.add_note(note, session)
+        text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
+        room = mess.getFrom().getStripped()
+        Note.add_note(Note(user, text, offset, room=room), session)
         return "Message for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
@@ -101,12 +112,11 @@ class Pager(object):
         """
         try:
             user, text, offset = self._process_pager_args(args)
-            jid = (JID(node=user, domain=self.jid.getDomain()).getStripped()
-                   if '@' not in user else user)
-            text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
-            note = Note(jid, text, offset, type_="chat")
+            if '@' not in user:
+                user += '@' + self.jid.getDomain()
         except ValueError as e:
             return unicode(e)
 
-        Note.add_note(note, session)
+        text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
+        Note.add_note(Note(user, text, offset, type_="chat"), session)
         return "PM for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)

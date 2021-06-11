@@ -28,17 +28,20 @@ JABBER = {
     'password': "yourpassword",
     'res': "VMBot",
     'nickname': "BotNickname",
-    'chatrooms': (
+    'chatrooms': {
         "room1@conference.domain.tld",
         "room2@conference.domain.tld",
         "room3@conference.domain.tld"
-    ),
-    'primary_chatrooms': (
-        "room1@conference.domain.tld",
-    ),
-    'director_chatrooms': (
-        "room3@conference.domain.tld",
-    )
+    },
+    'primary_chatrooms': {
+        "room1@conference.domain.tld"
+    },
+    'director_chatrooms': {
+        "room3@conference.domain.tld"
+    },
+    'pm_blacklist': {
+        "broadcast_bot@domain.tld"
+    }
 }
 
 # Bot owner's corporation/alliance id

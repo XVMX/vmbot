@@ -13,7 +13,7 @@ from .botcmd import botcmd
 from .helpers.exceptions import APIError, APIStatusError
 from .helpers import database as db
 from .helpers import api
-from .helpers.decorators import requires_role, requires_dir_chat, inject_db
+from .helpers.decorators import requires_role, requires_dir_chat, requires_muc, inject_db
 from .helpers.format import format_ref_type
 from .models import ISK, WalletJournalEntry
 
@@ -88,9 +88,10 @@ class Director(object):
             return unicode(e)
 
     @botcmd
+    @requires_muc
     @requires_role("director")
     def pingall(self, mess, args):
-        """Pings everyone in the current chatroom"""
+        """Pings everyone in the current multi-user chatroom"""
         reply = "All hands on {} dick!\n".format(self.get_sender_username(mess))
         reply += ", ".join(self.nick_dict[mess.getFrom().getNode()].keys())
         return reply

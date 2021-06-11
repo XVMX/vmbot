@@ -2,8 +2,6 @@
 
 from __future__ import absolute_import, division, unicode_literals, print_function
 
-from xmpp.protocol import JID
-
 from .botcmd import botcmd
 from .helpers.decorators import ROLE_ATTR_MAP, generate_role_attr_map, inject_db
 from .models.user import User
@@ -24,8 +22,8 @@ class ACL(object):
 
         # Load receiver from db
         u_qry = session.query(User)
-        receiver = (JID(node=receiver, domain=self.jid.getDomain()).getStripped()
-                    if '@' not in receiver else receiver)
+        if '@' not in receiver:
+            receiver += '@' + self.jid.getDomain()
         receiver = u_qry.filter(User.jid.ilike(receiver)).one_or_none() or User(receiver)
 
         # Remove roles that giver is not allowed to manage
@@ -53,7 +51,7 @@ class ACL(object):
         try:
             receiver, roles = self._process_acl_args(mess, args, session)
         except ValueError as e:
-            return e.message
+            return unicode(e)
 
         recv_role_map = generate_role_attr_map(receiver)
         roles = [role for role in roles if not recv_role_map[role]]
@@ -83,7 +81,7 @@ class ACL(object):
         try:
             receiver, roles = self._process_acl_args(mess, args, session)
         except ValueError as e:
-            return e.message
+            return unicode(e)
 
         recv_role_map = generate_role_attr_map(receiver)
         roles = [role for role in roles if recv_role_map[role]]

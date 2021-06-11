@@ -57,6 +57,13 @@ class TestACL(unittest.TestCase):
         self.assertEqual(recv.jid, "user@domain.tld")
         self.assertListEqual(roles, ["director", "admin"])
 
+    def test_process_acl_args_jid(self):
+        recv, roles = self.acl._process_acl_args(self.default_mess,
+                                                 "user@domain2.tld director admin", self.sess)
+
+        self.assertEqual(recv.jid, "user@domain2.tld")
+        self.assertListEqual(roles, ["director", "admin"])
+
     def test_process_acl_args_noargs(self):
         self.assertRaises(ValueError, self.acl._process_acl_args,
                           self.default_mess, "", self.sess)

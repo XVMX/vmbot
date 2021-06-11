@@ -73,6 +73,15 @@ def requires_dir_chat(func):
     return check_dir_chat
 
 
+def requires_muc(func):
+    @wraps(func)
+    def check_muc(self, mess, args, **kwargs):
+        if mess.getType() == b"groupchat":
+            return func(self, mess, args, **kwargs)
+
+    return check_muc
+
+
 def inject_db(func):
     @wraps(func)
     def pass_db(*args, **kwargs):
