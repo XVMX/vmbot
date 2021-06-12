@@ -43,6 +43,14 @@ def format_tickers(corp_ticker, alliance_ticker, html=False):
     return esc(' '.join(tickers))
 
 
+def format_jid_nick(jid, nick):
+    jid = jid.split('@', 1)[0]
+    if nick is not None:
+        return "{} ({})".format(nick, jid)
+
+    return jid
+
+
 def disambiguate(given, like, category):
     """Disambiguate a list of names from the same category."""
     reply = 'Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))

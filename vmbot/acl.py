@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from .botcmd import botcmd
+from .helpers import database as db
 from .helpers.decorators import ROLE_ATTR_MAP, generate_role_attr_map, inject_db
 from .models.user import User
 
@@ -21,10 +22,10 @@ class ACL(object):
                              "<user> <role> [role...]")
 
         # Load receiver from db
-        u_qry = session.query(User)
         if '@' not in receiver:
             receiver += '@' + self.jid.getDomain()
-        receiver = u_qry.filter(User.jid.ilike(receiver)).one_or_none() or User(receiver)
+        receiver = (session.execute(db.select(User).where(User.jid.ilike(receiver)))
+                    .scalar_one_or_none()) or User(receiver.lower())
 
         # Remove roles that giver is not allowed to manage
         # Allow assignment if the role is not assigned to anybody yet
@@ -34,7 +35,7 @@ class ACL(object):
         giver_role_map = generate_role_attr_map(giver)
         roles = [
             role for role in roles if giver_role_map[role]
-            or not session.query(u_qry.filter(ROLE_ATTR_MAP[role].is_(True)).exists()).scalar()
+            or not session.execute(db.select(1).where(ROLE_ATTR_MAP[role].is_(True))).scalar()
         ]
 
         if not roles:
@@ -112,7 +113,7 @@ class ACL(object):
         if args not in ROLE_ATTR_MAP:
             return "Invalid role"
 
-        usrs = session.query(User).filter(ROLE_ATTR_MAP[args].is_(True)).all()
+        usrs = session.execute(db.select(User).where(ROLE_ATTR_MAP[args].is_(True))).scalars().all()
         if not usrs:
             return "This role is not assigned to anyone"
 

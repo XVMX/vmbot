@@ -31,6 +31,7 @@ from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
 from .helpers.decorators import timeout, requires_role, inject_db
+from .helpers.format import format_jid_nick
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
 from .models.message import Message
 from .models.user import User, Nickname
@@ -219,7 +220,8 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
                         self.send(user=room, text=km_res, message_type="groupchat")
 
             # Cron messages
-            for mess in self.sess.query(Message).order_by(Message.message_id.asc()).all():
+            select_msg = db.select(Message).order_by(Message.message_id.asc())
+            for mess in self.sess.execute(select_msg).scalars():
                 self.send(**mess.send_dict)
                 self.sess.delete(mess)
 
@@ -238,15 +240,16 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
 
         if jid is not None:
             jid = JID(jid).getStripped()
-            usr = self.sess.get(User, jid) or User(jid)
-            nick = self.sess.get(Nickname, (nick_str, usr.jid))
+            nick = self.sess.get(Nickname, (nick_str, jid))
 
             if nick is None:
-                usr.nicks.append(Nickname(nick_str))
+                nick = Nickname(nick_str)
+                nick.user = (self.sess.get(User, jid, options=(db.joinedload(User.nicks),))
+                             or User(jid))
+                self.sess.add(nick)
             else:
                 nick.last_seen = datetime.utcnow()
 
-            self.sess.add(usr)
             self.sess.commit()
 
         return super(VMBot, self).callback_presence(conn, presence)
@@ -289,13 +292,16 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         return reply
 
     def shutdown(self):
-        nicks = {(nick, jid.getStripped()) for node in self.nick_dict.values()
-                 for nick, jid in node.items()}
+        nicks = {(nick, jid.getStripped()) for room in self.nick_dict.values()
+                 for nick, jid in room.items()}
+        update_nicks = (
+            db.update(Nickname).
+            where(Nickname.nick == db.bindparam("n"),
+                  Nickname._user_jid == db.bindparam("j")).
+            values(last_seen=datetime.utcnow()).execution_options(synchronize_session=False)
+        )
         try:
-            self.sess.query(Nickname).filter(db.or_(
-                False,  # Prevents matching everything if nicks is empty
-                *(db.and_(Nickname.nick == nick, Nickname._user_jid == jid) for nick, jid in nicks)
-            )).update({'last_seen': datetime.utcnow()}, synchronize_session=False)
+            self.sess.execute(update_nicks, [{"n": nick, "j": jid} for nick, jid in nicks])
             self.sess.commit()
         except db.OperationalError:
             pass
@@ -393,29 +399,28 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         """<user> - Looks up the last time user was seen by the bot"""
         if not args:
             return
+        jid = args + "@%" if '@' not in args else args
 
-        # Join prevents users without associated nickname(s) from being selected
-        usrs = session.query(User).join(User.nicks).filter(User.jid.ilike(args + "@%")).all()
-        nicks = session.query(Nickname).filter(Nickname.nick.ilike(args),
-                                               Nickname._user_jid.notin_(u.jid for u in usrs)).all()
+        select_usrs = db.select(
+            User.jid, db.null().label("nick"),
+            db.func.max(Nickname.last_seen).label("last_seen")
+        ).join(Nickname).where(User.jid.ilike(jid)).group_by(User.jid)
+        select_nicks = db.select(
+            Nickname._user_jid.label("jid"), Nickname.nick, Nickname.last_seen
+        ).where(Nickname.nick.ilike(args), ~Nickname._user_jid.ilike(jid))
 
-        if not usrs and not nicks:
+        seen = session.execute(select_usrs.union_all(select_nicks)).all()
+        if not seen:
             return "I've never seen that user before"
 
-        if len(usrs) + len(nicks) == 1:
-            if usrs:
-                return "The last time I've seen {} was at {:%Y-%m-%d %H:%M:%S}".format(
-                    usrs[0].uname, usrs[0].last_seen
-                )
-            else:
-                return "The last time I've seen {} ({}) was at {:%Y-%m-%d %H:%M:%S}".format(
-                    nicks[0].nick, nicks[0].user.uname, nicks[0].last_seen
-                )
+        if len(seen) == 1:
+            jid, nick, last_seen = seen[0]
+            return ("The last time I've seen {} was at {:%Y-%m-%d %H:%M:%S}"
+                    .format(format_jid_nick(jid, nick), last_seen))
 
         res = ["I've seen the following people use that name:"]
-        res.extend("{} at {:%Y-%m-%d %H:%M:%S}".format(usr.uname, usr.last_seen) for usr in usrs)
-        res.extend("{} ({}) at {:%Y-%m-%d %H:%M:%S}".format(nick.nick, nick.user.uname,
-                                                            nick.last_seen) for nick in nicks)
+        res.extend("{} at {:%Y-%m-%d %H:%M:%S}".format(format_jid_nick(jid, nick), last_seen)
+                   for jid, nick, last_seen in seen)
         return '\n'.join(res)
 
     @botcmd

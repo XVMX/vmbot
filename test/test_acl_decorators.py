@@ -45,10 +45,8 @@ class TestACLDecorators(unittest.TestCase):
         admin_usr = User("admin@domain.tld")
         admin_usr.allow_admin = True
 
-        sess = db.Session()
-        sess.add(admin_usr)
-        sess.commit()
-        sess.close()
+        with db.Session.begin() as sess:
+            sess.add(admin_usr)
 
     @classmethod
     def tearDownClass(cls):

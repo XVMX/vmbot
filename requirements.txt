@@ -4,8 +4,7 @@ dnspython
 # Fixed xmpppy version
 git+https://github.com/ArchipelProject/xmpppy
 multiset
-sortedcontainers
-sqlalchemy
+sqlalchemy ~=1.4
 requests
 cachecontrol[filecache] >=0.12.6
 pyotp <2.4.0

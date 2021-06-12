@@ -108,9 +108,9 @@ class Director(object):
         return totp.now()
 
     @staticmethod
-    def _wallet_type_query(session):
-        query = session.query(WalletJournalEntry.ref_type, db.func.sum(WalletJournalEntry.amount))
-        return query.group_by(WalletJournalEntry.ref_type)
+    def _wallet_type_stmt():
+        select_refs = db.select(WalletJournalEntry.ref_type, db.func.sum(WalletJournalEntry.amount))
+        return select_refs.group_by(WalletJournalEntry.ref_type)
 
     @botcmd(disable_if=not config.REVENUE_TRACKING)
     @inject_db
@@ -120,14 +120,16 @@ class Director(object):
         data = []
         table = [["Type"]]
         now = datetime.utcnow()
-        query = self._wallet_type_query(session).filter(WalletJournalEntry.amount > 0)
+        select_refs = self._wallet_type_stmt().where(WalletJournalEntry.amount > 0)
 
         for title, from_date in REVENUE_COLS:
             table[0].append(title)
 
             if isinstance(from_date, timedelta):
                 from_date = now - from_date
-            data.append(dict(query.filter(WalletJournalEntry.date > from_date).all()))
+            data.append(dict(
+                session.execute(select_refs.where(WalletJournalEntry.date > from_date))
+            ))
 
         for name, types in REVENUE_ROWS:
             row = [name]
@@ -160,11 +162,12 @@ class Director(object):
     @requires_dir_chat
     def income(self, mess, args, session):
         """Income statistics for the last month"""
-        query = self._wallet_type_query(session)
-        query = query.filter(WalletJournalEntry.amount > 0,
-                             WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
+        select_refs = self._wallet_type_stmt().where(
+            WalletJournalEntry.amount > 0,
+            WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30)
+        )
 
-        res = sorted(query.all(), key=lambda x: x[1], reverse=True)
+        res = sorted(session.execute(select_refs).all(), key=lambda x: x[1], reverse=True)
         return self._type_overview(res)
 
     @botcmd(disable_if=not config.REVENUE_TRACKING)
@@ -172,9 +175,10 @@ class Director(object):
     @requires_dir_chat
     def expenses(self, mess, args, session):
         """Expense statistics for the last month"""
-        query = self._wallet_type_query(session)
-        query = query.filter(WalletJournalEntry.amount < 0,
-                             WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30))
+        select_refs = self._wallet_type_stmt().where(
+            WalletJournalEntry.amount < 0,
+            WalletJournalEntry.date > datetime.utcnow() - timedelta(days=30)
+        )
 
-        res = sorted(query.all(), key=lambda x: x[1])
+        res = sorted(session.execute(select_refs).all(), key=lambda x: x[1])
         return self._type_overview(res)

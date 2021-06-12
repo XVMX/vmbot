@@ -16,7 +16,7 @@ class User(db.Model):
     allow_admin = db.Column(db.Boolean, default=False, nullable=False)
     allow_token = db.Column(db.Boolean, default=False, nullable=False)
     nicks = db.relationship("Nickname", back_populates="user", cascade="all, delete-orphan",
-                            lazy=False, order_by="Nickname.last_seen.desc()", uselist=True)
+                            lazy=True, order_by="Nickname.last_seen.desc()", uselist=True)
 
     def __init__(self, jid):
         self.jid = jid

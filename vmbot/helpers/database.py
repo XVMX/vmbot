@@ -5,10 +5,9 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 from sqlalchemy import (create_engine, event, Column, Boolean, Integer, BigInteger, Float,
                         String, Text, Enum, DateTime, LargeBinary, PickleType, ForeignKey)
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship, joinedload, selectinload
+from sqlalchemy.sql import select, update, delete, bindparam, null, func
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import and_, or_, func
 
 import config
 
@@ -24,8 +23,8 @@ if not DB_URL or DB_URL.lower() in ("sqlite", "sqlite3", "builtin", "built-in"):
         cursor.execute("PRAGMA journal_mode=WAL;")
         cursor.close()
 
-engine = create_engine(DB_URL)
-Session = sessionmaker(bind=engine)
+engine = create_engine(DB_URL, future=True)
+Session = sessionmaker(bind=engine, future=True)
 Model = declarative_base()
 
 

@@ -28,10 +28,8 @@ class TestACL(unittest.TestCase):
         full_usr.allow_director = True
         full_usr.allow_token = True
 
-        sess = db.Session()
-        sess.add_all([def_user, full_usr])
-        sess.commit()
-        sess.close()
+        with db.Session.begin() as sess:
+            sess.add_all([def_user, full_usr])
 
     @classmethod
     def tearDownClass(cls):

@@ -8,11 +8,13 @@ from . import path
 from .models import Storage
 
 from vmbot.helpers.exceptions import APIError
+from vmbot.helpers import database as db
 from vmbot.models import WalletJournalEntry
 
 import config
 
-WALLET_UPDATE_INTERVAL = 30 * 60
+# Wallet journal route is cached for up to 1h
+WALLET_UPDATE_INTERVAL = 60 * 60
 WALLET_DIVISION = 1
 
 
@@ -37,11 +39,11 @@ def main(session, token):
 
 
 def walk_journal(session, token):
-    known_ids = {res[0] for res in session.query(WalletJournalEntry.ref_id).all()}
+    min_id = session.execute(db.select(db.func.max(WalletJournalEntry.ref_id))).scalar()
 
     entries, pages = get_entries(token)
     raw_len = len(entries)
-    entries = filter_known_entries(known_ids, entries)
+    entries = filter_known_entries(min_id, entries)
     session.add_all(entries)
     session.commit()
 
@@ -51,7 +53,7 @@ def walk_journal(session, token):
 
         entries = get_entries(token, page=p)
         raw_len = len(entries)
-        entries = filter_known_entries(known_ids, entries)
+        entries = filter_known_entries(min_id, entries)
         session.add_all(entries)
         session.commit()
 
@@ -69,18 +71,22 @@ def get_entries(token, page=None):
 
     if page is None:
         recs, head = recs
-        return ([WalletJournalEntry.from_esi_record(rec) for rec in recs],
-                int(head.get('X-Pages', 1)))
+        return list(map(WalletJournalEntry.from_esi_record, recs)), int(head.get('X-Pages', 1))
 
-    return [WalletJournalEntry.from_esi_record(rec) for rec in recs]
+    return list(map(WalletJournalEntry.from_esi_record, recs))
 
 
-def filter_known_entries(known_ids, entries):
-    new_entries = []
+def filter_known_entries(min_id, entries):
+    if min_id is None:
+        return entries
 
-    for entry in entries:
-        if entry.ref_id not in known_ids:
-            known_ids.add(entry.ref_id)
-            new_entries.append(entry)
+    # Binary search for min_id (entries is sorted in descending order)
+    lo, hi = 0, len(entries)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if entries[mid].ref_id > min_id:
+            lo = mid + 1
+        else:
+            hi = mid
 
-    return new_entries
+    return entries[:lo]

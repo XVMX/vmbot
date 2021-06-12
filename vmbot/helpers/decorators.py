@@ -52,7 +52,7 @@ def requires_role(role):
             jid = self.get_uname_from_mess(mess, full_jid=True).getStripped()
             sess = kwargs.get('session', None) or db.Session()
 
-            allow = sess.query(ROLE_ATTR_MAP[role]).filter_by(jid=jid).scalar()
+            allow = sess.execute(db.select(ROLE_ATTR_MAP[role]).filter_by(jid=jid)).scalar()
             if 'session' not in kwargs:
                 sess.close()
 
@@ -85,10 +85,7 @@ def requires_muc(func):
 def inject_db(func):
     @wraps(func)
     def pass_db(*args, **kwargs):
-        sess = db.Session()
-        res = func(*args, session=sess, **kwargs)
-        sess.close()
-
-        return res
+        with db.Session() as sess:
+            return func(*args, session=sess, **kwargs)
 
     return pass_db

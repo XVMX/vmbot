@@ -54,5 +54,8 @@ class Storage(db.Model):
     @classmethod
     def delete(cls, session, key):
         """Delete value stored at key."""
-        session.query(cls).filter_by(key=key).delete()
-        session.commit()
+        try:
+            session.get(cls, key).delete()
+            session.commit()
+        except AttributeError:
+            pass

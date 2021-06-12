@@ -24,10 +24,10 @@ NOTES = [
 ]
 NICK_DICT = {
     'room1': {
-        'user1': JID("receiver1@example.com"),
-        'user2': JID("receiver2@example.com"),
-        'user4': JID("receiver4@example.com"),
-        'user5': JID("receiver5@example.com")
+        'user1': JID("receiver1@example.com/res1"),
+        'user2': JID("receiver2@example.com/res2"),
+        'user4': JID("receiver4@example.com/res4"),
+        'user5': JID("receiver5@example.com/res5")
     }
 }
 
@@ -75,7 +75,7 @@ class TestNote(unittest.TestCase):
         self.sess.commit()
 
         Note._queue_update = None
-        Note._note_queue.clear()
+        Note._note_queue = []
 
     def test_queue(self):
         for note in self.notes:

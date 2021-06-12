@@ -6,7 +6,8 @@ import unittest
 
 from datetime import datetime
 
-from vmbot.helpers.format import format_ref_type, format_affil, format_tickers, disambiguate
+from vmbot.helpers.format import (format_ref_type, format_affil, format_tickers,
+                                  format_jid_nick, disambiguate)
 
 
 class TestFormat(unittest.TestCase):
@@ -40,6 +41,12 @@ class TestFormat(unittest.TestCase):
 
     def test_format_tickers_html(self):
         self.assertEqual(format_tickers("CORP", "ALLIANCE", html=True), "[CORP] &lt;ALLIANCE&gt;")
+
+    def test_format_jid_nick(self):
+        self.assertEqual(format_jid_nick("user@domain.tld", "nick"), "nick (user)")
+
+    def test_format_jid_nick_nonick(self):
+        self.assertEqual(format_jid_nick("user@domain.tld", None), "user")
 
     def test_disambiguate_simple(self):
         self.assertEqual(
