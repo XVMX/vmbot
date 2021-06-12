@@ -97,7 +97,8 @@ SCOTTISMS = (
 JOKERISMS = (
     "dont be a retard",
     "dont ruin our zkb efficiency",
-    "urbad"
+    "urbad",
+    ":sun:"
 )
 
 PUBBIESMACK = (
