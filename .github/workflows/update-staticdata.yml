@@ -64,8 +64,8 @@ jobs:
           git commit ${modifier:-} -m "Updated static data" -m "$commit_body"
           git push --force-with-lease -u origin auto-update-staticdata
 
-          pr="$(gh pr list -s open -l auto-update -A '@me' -S "static data" \
-                           -L 1 --json url --template '{{ pluck "url" . | join "\n" }}')"
+          pr="$(gh pr list -s open -l auto-update -S "static data" -L 1 \
+                           --json url --template '{{ pluck "url" . | join "\n" }}')"
           if [[ -z "$pr" ]]; then
             gh pr create -t "Updated static data" -l auto-update \
                          -b "*This PR has been generated automatically*"
