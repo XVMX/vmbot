@@ -33,6 +33,7 @@ from .helpers import api
 from .helpers.decorators import timeout, requires_role, inject_db
 from .helpers.format import format_jid_nick
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
+from .helpers.notequeue import NoteQueue
 from .models.message import Message
 from .models.user import User, Nickname
 from .models import Note
@@ -201,6 +202,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
         self.startup_time = datetime.utcnow()
         self.message_trigger = time.time() + 30
         self.sess = db.Session()
+        self.notes = NoteQueue()
 
         self.api_pool = futures.ThreadPoolExecutor(max_workers=20)
         self.yt_quota_exceeded = False
@@ -226,7 +228,7 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
                 self.sess.delete(mess)
 
             # Notes
-            for mess in Note.process_notes(self.nick_dict, self.sess):
+            for mess in self.notes.fetch(self.nick_dict, self.sess):
                 self.send(**mess.send_dict)
 
             self.sess.commit()
@@ -294,12 +296,10 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
     def shutdown(self):
         nicks = {(nick, jid.getStripped()) for room in self.nick_dict.values()
                  for nick, jid in room.items()}
-        update_nicks = (
-            db.update(Nickname).
-            where(Nickname.nick == db.bindparam("n"),
-                  Nickname._user_jid == db.bindparam("j")).
-            values(last_seen=datetime.utcnow()).execution_options(synchronize_session=False)
-        )
+        update_nicks = (db.update(Nickname).where(Nickname.nick == db.bindparam("n"),
+                                                  Nickname._user_jid == db.bindparam("j")).
+                        values(last_seen=datetime.utcnow()).
+                        execution_options(synchronize_session=False))
         try:
             self.sess.execute(update_nicks, [{"n": nick, "j": jid} for nick, jid in nicks])
             self.sess.commit()

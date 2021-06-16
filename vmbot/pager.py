@@ -72,7 +72,7 @@ class Pager(object):
             room = None
 
         text = REMINDER_FMT.format(user, datetime.utcnow(), text)
-        Note.add_note(Note(user, text, offset, room=room, type_=type_), session)
+        self.notes.add_note(Note(user, text, offset, room=room, type_=type_), session)
         return "Reminder for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
@@ -96,7 +96,7 @@ class Pager(object):
 
         text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
         room = mess.getFrom().getStripped()
-        Note.add_note(Note(user, text, offset, room=room), session)
+        self.notes.add_note(Note(user, text, offset, room=room), session)
         return "Message for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
@@ -118,5 +118,5 @@ class Pager(object):
             return unicode(e)
 
         text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
-        Note.add_note(Note(user, text, offset, type_="chat"), session)
+        self.notes.add_note(Note(user, text, offset, type_="chat"), session)
         return "PM for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)

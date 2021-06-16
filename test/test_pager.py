@@ -12,6 +12,7 @@ from xmpp.protocol import JID, Message
 import vmbot.helpers.database as db
 
 from vmbot.pager import Pager
+from vmbot.helpers.notequeue import NoteQueue
 
 
 def mock_uname_from_mess(mess, full_jid=False):
@@ -42,6 +43,7 @@ class TestPager(unittest.TestCase):
                                                         side_effect=mock_uname_from_mess)
         self.pager.get_sender_username = mock.MagicMock(name="get_sender_username",
                                                         return_value="sender")
+        self.pager.notes = mock.MagicMock(name="notes", spec=NoteQueue)
 
     def tearDown(self):
         del self.pager
