@@ -8,6 +8,12 @@ from vmbot.helpers import staticdata
 
 
 class TestStaticdata(unittest.TestCase):
+    def test_get_sde_conn(self):
+        with staticdata._get_sde_conn() as c:
+            conn = c
+        with staticdata._get_sde_conn() as c:
+            self.assertIs(c, conn)
+
     def test_type_name(self):
         # type_id: 34 Tritanium
         self.assertEqual(staticdata.type_name(34), "Tritanium")
