@@ -44,6 +44,7 @@ def format_tickers(corp_ticker, alliance_ticker, html=False):
 
 
 def format_jid_nick(jid, nick):
+    """Join a JID with a nickname for output, if present."""
     jid = jid.split('@', 1)[0]
     if nick is not None:
         return "{} ({})".format(nick, jid)
