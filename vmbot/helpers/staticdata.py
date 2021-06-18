@@ -6,6 +6,8 @@ import threading
 from contextlib import contextmanager
 import sqlite3
 
+import cachetools.func
+
 from .files import STATICDATA_DB
 
 _sde_lock = threading.Lock()
@@ -23,6 +25,7 @@ def _get_sde_conn():
         yield _sde_conn
 
 
+@cachetools.func.lru_cache(maxsize=128)
 def type_name(type_id):
     """Resolve a type_id to its name."""
     with _get_sde_conn() as conn:
@@ -51,6 +54,7 @@ def search_market_types(term):
         ).fetchall()
 
 
+@cachetools.func.lru_cache(maxsize=4)
 def region_data(region_id):
     """Resolve a region_id to its data."""
     with _get_sde_conn() as conn:
@@ -66,6 +70,7 @@ def region_data(region_id):
     return {'region_id': region_id, 'region_name': region[0]}
 
 
+@cachetools.func.lru_cache(maxsize=128)
 def system_data(system_id):
     """Resolve a system_id to its data."""
     with _get_sde_conn() as conn:
@@ -91,6 +96,7 @@ def system_data(system_id):
             'region_id': system[3], 'region_name': system[4]}
 
 
+@cachetools.func.lru_cache(maxsize=64)
 def item_name(item_id):
     """Resolve an item_id to its name."""
     with _get_sde_conn() as conn:
@@ -104,6 +110,7 @@ def item_name(item_id):
     return item[0] if item else "{Failed to load}"
 
 
+@cachetools.func.lru_cache(maxsize=None)
 def faction_name(faction_id):
     """Resolve a faction_id to its name."""
     with _get_sde_conn() as conn:
