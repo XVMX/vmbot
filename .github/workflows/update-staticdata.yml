@@ -3,6 +3,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: 18 1 * * *
+  push:
+    branches:
+      - master
+    paths:
+      - tools/ci/staticdata/*.sh
 
 jobs:
   update-staticdata:
@@ -29,12 +34,12 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .ci-etag
-          key: update-staticdata-etags-${{ github.run_id }}
-          restore-keys: update-staticdata-etags-
+          key: update-staticdata-etags-${{ hashFiles('tools/ci/staticdata/*.sh') }}-${{ github.run_id }}
+          restore-keys: update-staticdata-etags-${{ hashFiles('tools/ci/staticdata/*.sh') }}-
       - name: Create emotes.txt
-        run: tools/ci/create_emotes.sh
+        run: tools/ci/staticdata/create_emotes.sh
       - name: Create staticdata.sqlite
-        run: tools/ci/create_staticdata.sh
+        run: tools/ci/staticdata/create_staticdata.sh
       - name: Stage updates
         id: git-add
         run: |
