@@ -134,4 +134,13 @@ def system_stations(system_id):
             {'id': system_id}
         ).fetchall()
 
-    return [r[0] for r in stations]
+    return {r[0] for r in stations}
+
+
+@cachetools.func.lru_cache(maxsize=None)
+def market_structure_types():
+    """List all structure types capable of fitting the market service module."""
+    with _get_sde_conn() as conn:
+        structures = conn.execute("SELECT typeID FROM market_structures;").fetchall()
+
+    return {s[0] for s in structures}

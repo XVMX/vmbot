@@ -71,7 +71,7 @@ class Price(object):
             f.req_id = id_
             struct_futs.append(f)
 
-        stations = set(staticdata.system_stations(system_id))
+        stations = staticdata.system_stations(system_id)
         structs = set()
         for f in futures.as_completed(struct_futs):
             if f.result()['solar_system_id'] == system_id:

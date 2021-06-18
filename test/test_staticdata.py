@@ -76,14 +76,21 @@ class TestStaticdata(unittest.TestCase):
     def test_system_stations(self):
         # system_id: 30000001 Tanoo
         # station_ids: 60012526, 60014437
-        self.assertListEqual(staticdata.system_stations(30000001), [60012526, 60014437])
+        self.assertSetEqual(staticdata.system_stations(30000001), {60012526, 60014437})
 
     def test_system_stations_empty(self):
         # system_id: 30000004 Jark
-        self.assertListEqual(staticdata.system_stations(30000004), [])
+        self.assertSetEqual(staticdata.system_stations(30000004), set())
 
     def test_system_stations_invalidsystem(self):
-        self.assertListEqual(staticdata.system_stations(-1), [])
+        self.assertSetEqual(staticdata.system_stations(-1), set())
+
+    def test_market_structure_types(self):
+        # types: 35834 Keepstar, 35826 Azbel, 35836 Tatara
+        market_structures = staticdata.market_structure_types.__wrapped__()
+        self.assertIn(35834, market_structures)
+        self.assertIn(35826, market_structures)
+        self.assertIn(35836, market_structures)
 
 
 if __name__ == "__main__":
