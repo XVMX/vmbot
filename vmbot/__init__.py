@@ -33,7 +33,6 @@ from .helpers import api
 from .helpers.decorators import timeout, requires_role, inject_db
 from .helpers.format import format_jid_nick
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
-from .helpers.notequeue import NoteQueue
 from .models.message import Message
 from .models.user import User, Nickname
 from .models import Note
@@ -43,23 +42,23 @@ import config
 # See XEP-0203: Delayed Delivery (https://xmpp.org/extensions/xep-0203.html)
 XEP_0203_DELAY = b"urn:xmpp:delay"
 DELAY_NS_SET = {XEP_0203_DELAY, XEP_0091_DELAY}
-MESSAGE_INTERVAL = 60
 
 
 class MUCJabberBot(JabberBot):
     """Add features in JabberBot to allow it to handle specific characteristics of MUCs."""
 
     # Overriding JabberBot base class
-    MAX_CHAT_CHARS = 2000
-    MAX_CHAT_LINES = 10
     PING_FREQUENCY = 60
     PING_TIMEOUT = 5
 
+    MAX_CHAT_CHARS = 2000
+    MAX_CHAT_LINES = 10
+
     def __init__(self, username, password, res, *args, **kwargs):
-        self.occupant_jids = Multiset()
-        self.nick_dict = defaultdict(dict)
         super(MUCJabberBot, self).__init__(username, password, res, *args, **kwargs)
         self.jid.setResource(res)
+        self.occupant_jids = Multiset()
+        self.nick_dict = defaultdict(dict)
 
     def get_sender_username(self, mess):
         from_ = mess.getFrom()
@@ -197,19 +196,22 @@ class MUCJabberBot(JabberBot):
             self.send_simple_reply(mess, cmd(mess, args))
 
 
-class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils):
+class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBot):
+    """Aggregate base commands and mixins into a combined bot."""
+
+    MESSAGE_INTERVAL = 60
+
     def __init__(self, *args, **kwargs):
         self.startup_time = datetime.utcnow()
+        super(VMBot, self).__init__(*args, **kwargs)
+
         self.message_trigger = time.time() + 30
         self.sess = db.Session()
-        self.notes = NoteQueue()
 
         self.api_pool = futures.ThreadPoolExecutor(max_workers=20)
         self.yt_quota_exceeded = False
         if config.ZKILL_FEED:
             self.km_feed = KMFeed(config.CORPORATION_ID)
-
-        super(VMBot, self).__init__(*args, **kwargs)
 
     def idle_proc(self):
         """Retrieve and send stored messages."""
@@ -228,11 +230,11 @@ class VMBot(MUCJabberBot, ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtil
                 self.sess.delete(mess)
 
             # Notes
-            for mess in self.notes.fetch(self.nick_dict, self.sess):
+            for mess in self.pager_queue.fetch(self.nick_dict, self.sess):
                 self.send(**mess.send_dict)
 
             self.sess.commit()
-            self.message_trigger += MESSAGE_INTERVAL
+            self.message_trigger += self.MESSAGE_INTERVAL
 
         return super(VMBot, self).idle_proc()
 

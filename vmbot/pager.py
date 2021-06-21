@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from .botcmd import botcmd
 from .helpers.decorators import requires_muc, inject_db
 from .helpers.regex import TIME_OFFSET_REGEX
+from .services.notequeue import NoteQueue
 from .models import Note
 
 NOTE_FMT = "Message from {} for {} sent at {:%Y-%m-%d %H:%M:%S}:\n{}"
@@ -14,6 +15,10 @@ REMINDER_FMT = "Reminder for {} set at {:%Y-%m-%d %H:%M:%S}:\n{}"
 
 
 class Pager(object):
+    def __init__(self, *args, **kwargs):
+        super(Pager, self).__init__(*args, **kwargs)
+        self.pager_queue = NoteQueue()
+
     @staticmethod
     def _process_pager_args(args, require_offset=False):
         args = args.strip()
@@ -72,7 +77,7 @@ class Pager(object):
             room = None
 
         text = REMINDER_FMT.format(user, datetime.utcnow(), text)
-        self.notes.add_note(Note(user, text, offset, room=room, type_=type_), session)
+        self.pager_queue.add_note(Note(user, text, offset, room=room, type_=type_), session)
         return "Reminder for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
@@ -96,7 +101,7 @@ class Pager(object):
 
         text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
         room = mess.getFrom().getStripped()
-        self.notes.add_note(Note(user, text, offset, room=room), session)
+        self.pager_queue.add_note(Note(user, text, offset, room=room), session)
         return "Message for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)
 
     @botcmd
@@ -118,5 +123,5 @@ class Pager(object):
             return unicode(e)
 
         text = NOTE_FMT.format(self.get_uname_from_mess(mess), user, datetime.utcnow(), text)
-        self.notes.add_note(Note(user, text, offset, type_="chat"), session)
+        self.pager_queue.add_note(Note(user, text, offset, type_="chat"), session)
         return "PM for {} will be sent at {:%Y-%m-%d %H:%M:%S}".format(user, offset)

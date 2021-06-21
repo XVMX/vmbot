@@ -8,16 +8,16 @@ import bisect
 
 from xmpp.protocol import JID
 
-from . import database as db
+from ..helpers import database as db
 from ..models import Note
-
-QUEUE_UPDATE_INTERVAL = 12 * 60 * 60
-QUEUE_MAX_OFFSET = timedelta(hours=14)
-NOTE_DELIVERY_FRAME = timedelta(days=30)
 
 
 class NoteQueue(object):
     """Store upcoming notes in memory until they are delivered."""
+
+    QUEUE_UPDATE_INTERVAL = 12 * 60 * 60
+    QUEUE_MAX_OFFSET = timedelta(hours=14)
+    NOTE_DELIVERY_FRAME = timedelta(days=30)
 
     def __init__(self):
         self._next_update = time.time()
@@ -74,12 +74,12 @@ class NoteQueue(object):
     def update_queue(self, session):
         cur_time = datetime.utcnow()
         select_notes = (db.select(Note.note_id, Note.receiver, Note.room, Note.offset_time).
-                        where(Note.offset_time <= cur_time + QUEUE_MAX_OFFSET).
+                        where(Note.offset_time <= cur_time + self.QUEUE_MAX_OFFSET).
                         order_by(Note.offset_time.asc()))
 
         self._queue, expired = [], []
         for note in session.execute(select_notes):
-            if cur_time - note[-1] > NOTE_DELIVERY_FRAME:
+            if cur_time - note[-1] > self.NOTE_DELIVERY_FRAME:
                 expired.append(note[0])
             else:
                 self._queue.append((note[-1], note[:-1]))
@@ -91,13 +91,13 @@ class NoteQueue(object):
                             execution_options(synchronize_session=False))
             session.commit()
 
-        self._next_update = time.time() + QUEUE_UPDATE_INTERVAL
+        self._next_update = time.time() + self.QUEUE_UPDATE_INTERVAL
 
     def add_note(self, note, session):
         session.add(note)
         session.commit()
 
         # Update note queue, keeping it sorted
-        if note.offset_time <= datetime.utcnow() + QUEUE_MAX_OFFSET:
+        if note.offset_time <= datetime.utcnow() + self.QUEUE_MAX_OFFSET:
             bisect.insort(self._queue,
                           (note.offset_time, (note.note_id, note.receiver, note.room)))

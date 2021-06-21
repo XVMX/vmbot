@@ -10,12 +10,12 @@ from xmpp.protocol import JID
 
 import vmbot.helpers.database as db
 
-from vmbot.helpers.notequeue import NoteQueue, NOTE_DELIVERY_FRAME
+from vmbot.services.notequeue import NoteQueue
 from vmbot.models.note import Note
 
 CUR_TIME = datetime.utcnow()
 FUT_TIME = datetime.utcnow() + timedelta(hours=3)
-EXP_TIME = datetime.utcnow() - (NOTE_DELIVERY_FRAME + timedelta(days=5))
+EXP_TIME = datetime.utcnow() - (NoteQueue.NOTE_DELIVERY_FRAME + timedelta(days=5))
 NOTES = [
     ["receiver1@example.com", "PM text", CUR_TIME, None, "chat"],
     ["receiver2@example.com", "Future text", FUT_TIME, None, "chat"],
