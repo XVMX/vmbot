@@ -91,7 +91,11 @@ def main(session, token):
                 session.add(Message(room, ally_res, "groupchat"))
     else:
         for mail in corp_mails + ally_mails:
-            res = mail['header'] + "<br />" + get_mail_body(token, mail['id'])
+            body = get_mail_body(token, mail['id'])
+            if not body:
+                continue
+
+            res = mail['header'] + "<br />" + body
             for room in config.JABBER['primary_chatrooms']:
                 session.add(Message(room, res, "groupchat"))
 
