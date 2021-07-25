@@ -3,9 +3,10 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import time
+import re
 import cgi
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 from . import path
 from .models import Storage
@@ -19,6 +20,7 @@ import config
 
 MAIL_INTERVAL = 60 * 60
 MAIL_FMT = "<strong>{}</strong> by <em>{}</em>"
+REPLY_REGEX = re.compile(r"-{32}")
 
 
 def init(session, token):
@@ -143,13 +145,29 @@ def get_mail_body(token, mail_id):
     except APIError:
         return "<em>Failed to load mail body</em>"
 
-    # Use BeautifulSoup to translate EVE HTML markup into XHTML-IM (XEP-0071)
+    # Remove reply chains from mail body
     html = BeautifulSoup(res, "html.parser")
+    t = html.find(string=REPLY_REGEX)
+    while t is not html:
+        while t.next_sibling is not None:
+            t.next_sibling.extract()
+        tmp = t
+        t = t.parent
+        if isinstance(tmp, NavigableString) or not tmp.contents:
+            tmp.extract()
+
+    # Strip empty trailing tags (including linebreaks)
+    for t in reversed(list(html.descendants)):
+        if isinstance(t, NavigableString):
+            break
+        t.extract()
+
+    # Translate EVE font markup into XHTML-IM (XEP-0071)
     for t in html.find_all("font"):
         t.name = "span"
         style = ""
 
-        if "color" in t.attrs and t['color'] != "#bfffffff":  # Default color is white (not black)
+        if "color" in t.attrs and t['color'] != "#ff999999":  # Default color is grey (not black)
             style += "color: #" + t['color'][3:] + ";"  # Ignore alpha channel
         if "size" in t.attrs:
             style += "font-size: " + t['size'] + "pt;"
@@ -157,5 +175,11 @@ def get_mail_body(token, mail_id):
         t.attrs.clear()
         if style:
             t['style'] = style
+
+    # Remove EVE's custom showinfo: scheme links
+    for t in html.find_all("a"):
+        if "href" in t.attrs and t["href"].startswith("showinfo:"):
+            t.name = "span"
+            t.attrs.clear()
 
     return unicode(html)
