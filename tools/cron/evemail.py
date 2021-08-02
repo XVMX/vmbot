@@ -152,17 +152,18 @@ def get_mail_body(token, mail_id):
     # Remove reply chains from mail body
     html = BeautifulSoup(res, "html.parser")
     t = html.find(string=REPLY_REGEX)
-    while t is not html:
-        while t.next_sibling is not None:
-            t.next_sibling.extract()
-        tmp = t
-        t = t.parent
-        if isinstance(tmp, NavigableString) or not tmp.contents:
-            tmp.extract()
+    if t is not None:
+        while t is not html:
+            while t.next_sibling is not None:
+                t.next_sibling.extract()
+            tmp = t
+            t = t.parent
+            if isinstance(tmp, NavigableString) or not tmp.contents:
+                tmp.extract()
 
     # Strip empty trailing tags (including linebreaks)
     for t in reversed(list(html.descendants)):
-        if isinstance(t, NavigableString):
+        if isinstance(t, NavigableString) and t.strip():
             break
         t.extract()
 
