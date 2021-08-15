@@ -25,7 +25,7 @@ KILLREPORT_REGEX = re.compile(r"killReport:(\d+):[0-9a-f]+", re.IGNORECASE)
 
 
 def init(session, token):
-    if not config.EVEMAIL_FEED:
+    if not config.EVEMAIL_IDS:
         return
 
     if "esi-mail.read_mail.v1" not in token.scopes:
@@ -45,7 +45,7 @@ def init(session, token):
 
 
 def needs_run(session):
-    return config.EVEMAIL_FEED and Storage.get(session, "evemail_next_run") <= time.time()
+    return config.EVEMAIL_IDS and Storage.get(session, "evemail_next_run") <= time.time()
 
 
 def main(session, token):
@@ -57,46 +57,29 @@ def main(session, token):
 
     Storage.set(session, "evemail_last_mail", (mails[0]['mail_id'], mails[0]['timestamp']))
 
-    corp_mails, ally_mails = [], []
-    for mail in mails:
-        recv_ids = {recv['recipient_id'] for recv in mail['recipients']}
-        if config.ALLIANCE_ID in recv_ids:
-            ally_mails.append(mail)
-        elif config.CORPORATION_ID in recv_ids:
-            corp_mails.append(mail)
-
-    if not corp_mails and not ally_mails:
+    mails = [m for m in mails
+             if any(r['recipient_id'] in config.EVEMAIL_IDS for r in m['recipients'])]
+    if not mails:
         return
 
-    chars = api.get_names(*{mail['from'] for mail in corp_mails + ally_mails})
-    corp_mails = [{'id': mail['mail_id'],
-                   'header': MAIL_FMT.format(cgi.escape(mail['subject']), chars[mail['from']])}
-                  for mail in corp_mails]
-    ally_mails = [{'id': mail['mail_id'],
-                   'header': MAIL_FMT.format(cgi.escape(mail['subject']), chars[mail['from']])}
-                  for mail in ally_mails]
+    chars = api.get_names(*{m['from'] for m in mails})
+    mails = [{'id': m['mail_id'],
+              'header': MAIL_FMT.format(cgi.escape(m['subject']), chars[m['from']])}
+             for m in mails]
 
-    if len(corp_mails) + len(ally_mails) > 3:
-        if corp_mails:
-            corp_res = "{} new corp mail(s):<br />".format(len(corp_mails))
-            corp_res += "<br />".join(mail['header'] for mail in corp_mails)
+    if len(mails) > 3:
+        res = "{} new EVE mail(s):<br />".format(len(mails))
+        res += "<br />".join(m['header'] for m in mails)
 
-            for room in config.JABBER['primary_chatrooms']:
-                session.add(Message(room, corp_res, "groupchat"))
-
-        if ally_mails:
-            ally_res = "{} new alliance mail(s):<br />".format(len(ally_mails))
-            ally_res += "<br />".join(mail['header'] for mail in ally_mails)
-
-            for room in config.JABBER['primary_chatrooms']:
-                session.add(Message(room, ally_res, "groupchat"))
+        for room in config.JABBER['primary_chatrooms']:
+            session.add(Message(room, res, "groupchat"))
     else:
-        for mail in corp_mails + ally_mails:
-            body = get_mail_body(token, mail['id'])
-            if not body:
-                continue
+        for m in mails:
+            res = m['header']
+            body = get_mail_body(token, m['id'])
+            if body:
+                res += "<br />" + body
 
-            res = mail['header'] + "<br />" + body
             for room in config.JABBER['primary_chatrooms']:
                 session.add(Message(room, res, "groupchat"))
 

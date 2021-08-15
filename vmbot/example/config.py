@@ -14,7 +14,6 @@ DB_URL = "sqlite"
 
 # Feature flags (some additional features are enabled by setting certain credentials)
 NEWS_FEED = True
-EVEMAIL_FEED = True
 ZKILL_FEED = True
 PUBBIE_SMACKTALK = False
 ZBOT = True
@@ -44,9 +43,11 @@ JABBER = {
     }
 }
 
-# Bot owner's corporation/alliance id
+# Bot owner's corporation ID
 CORPORATION_ID = 1234567890
-ALLIANCE_ID = None
+
+# EVE mails addressed to one of these recipient IDs will be displayed as a feed
+EVEMAIL_IDS = {CORPORATION_ID}
 
 # TOTP account keys
 TOTP_KEYS = {
@@ -70,7 +71,7 @@ ESI = {
 # EVE SSO (register an application at https://developers.eveonline.com/)
 # Required scopes:
 #   esi-search.search_structures.v1, esi-universe.read_structures.v1,
-#   esi-markets.structure_markets.v1, esi-mail.read_mail.v1 (EVEMAIL_FEED),
+#   esi-markets.structure_markets.v1, esi-mail.read_mail.v1 (EVE mail feed),
 #   esi-wallet.read_corporation_wallets.v1 (REVENUE_TRACKING)
 SSO = {
     'base_url': "https://login.eveonline.com/v2",
