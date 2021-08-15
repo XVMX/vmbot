@@ -21,6 +21,7 @@ import config
 MAIL_INTERVAL = 60 * 60
 MAIL_FMT = "<strong>{}</strong> by <em>{}</em>"
 REPLY_REGEX = re.compile(r"-{32}")
+KILLREPORT_REGEX = re.compile(r"killReport:(\d+):[0-9a-f]+", re.IGNORECASE)
 
 
 def init(session, token):
@@ -181,10 +182,22 @@ def get_mail_body(token, mail_id):
         if style:
             t['style'] = style
 
-    # Remove EVE's custom showinfo: scheme links
     for t in html.find_all("a"):
-        if "href" in t.attrs and t["href"].startswith("showinfo:"):
+        try:
+            href = t['href']
+        except KeyError:
+            continue
+
+        # Remove EVE's custom showinfo: scheme links
+        if href.startswith("showinfo:"):
             t.name = "span"
             t.attrs.clear()
+            continue
+
+        # Replace EVE's custom killReport: scheme links with zKB links
+        m = KILLREPORT_REGEX.match(href)
+        if m is not None:
+            t['href'] = "https://zkillboard.com/kill/{}/".format(m.group(1))
+            continue
 
     return unicode(html)
