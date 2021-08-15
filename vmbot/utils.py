@@ -35,9 +35,9 @@ class EVEUtils(object):
             return "This character doesn't exist"
 
         # Process ESI lookups in parallel
-        sheet_fut = self.api_pool.submit(api.request_esi, "/v4/characters/{}/", (char_id,))
+        sheet_fut = self.api_pool.submit(api.request_esi, "/v5/characters/{}/", (char_id,))
         try:
-            corp_hist = api.request_esi("/v1/characters/{}/corporationhistory/", (char_id,))
+            corp_hist = api.request_esi("/v2/characters/{}/corporationhistory/", (char_id,))
         except APIError:
             corp_hist = []
 
