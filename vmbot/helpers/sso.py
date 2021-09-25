@@ -26,10 +26,14 @@ class SSOToken(object):
 
         self._refresh_lock = threading.Lock()
 
-        # Access token is a JWT
+        # Access token is a JWT (with base64 padding stripped)
         # We don't verify the signature (that is CCP's job when accessing ESI)
         claims = self._access_token.encode("ascii").split(b'.')[1]
-        claims = json.loads(base64.urlsafe_b64decode(claims))
+        pad = 4 - (len(claims) % 4)
+        if pad > 2:
+            pad = 0
+
+        claims = json.loads(base64.urlsafe_b64decode(claims + b"=" * pad))
         self.character_id = claims['sub'].split(':')[-1]
         self.scopes = claims['scp']
 
