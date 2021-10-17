@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 
-class APIError(Exception):
+class APIError(RuntimeError):
     def __init__(self, exc, *args):
         super(APIError, self).__init__(*args)
         self.response = exc.response
@@ -20,7 +20,7 @@ class APIRequestError(APIError):
     pass
 
 
-class TokenExpiredError(Exception):
+class TokenExpiredError(RuntimeError):
     pass
 
 

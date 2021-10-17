@@ -12,6 +12,7 @@ from .helpers import api
 from .helpers.sso import SSOToken
 from .helpers import staticdata
 from .helpers.format import disambiguate
+from .services.marketcache import MarketStructureLookup
 
 import config
 
@@ -59,20 +60,12 @@ class Price(object):
         """
         if struct_ids and not {"esi-universe.read_structures.v1",
                                "esi-markets.structure_markets.v1"}.issubset(token.scopes):
-            raise APIError("SSO token is missing required scopes")
+            raise RuntimeError("SSO token is missing required scopes")
 
         # Filter valid locations
-        struct_futs = []
-        for id_ in struct_ids:
-            f = self.api_pool.submit(token.request_esi, "/v2/universe/structures/{}/", (id_,))
-            f.req_id = id_
-            struct_futs.append(f)
-
+        lookup = MarketStructureLookup(self.api_pool, token)
+        structs = lookup(system_id, struct_ids)
         stations = staticdata.system_stations(system_id)
-        structs = set()
-        for f in futures.as_completed(struct_futs):
-            if f.result()['solar_system_id'] == system_id:
-                structs.add(f.req_id)
 
         # Collect matching orders
         reg_fut = self.api_pool.submit(
@@ -112,6 +105,7 @@ class Price(object):
                 if e.status_code != 403:
                     raise e
                 # 403/Market access denied (cannot be determined otherwise currently)
+                lookup.mark_inaccessible(f.req_id)
                 continue
             with orders_lock:
                 orders.extend(o for o in res if o['type_id'] == type_id)
@@ -122,6 +116,7 @@ class Price(object):
                 page_f.add_done_callback(add_struct_orders)
                 order_futs.append(page_f)
 
+        lookup.finalize()
         futures.wait(order_futs)
         return Price._calc_totals(orders)
 
@@ -179,7 +174,7 @@ class Price(object):
                 market_name = sys_data['system_name']
                 totals = self._get_system_orders(token, sys_data['region_id'],
                                                  system_id, struct_ids, type_id)
-        except APIError as e:
+        except RuntimeError as e:
             return unicode(e)
 
         (sell_price, sell_volume), (buy_price, buy_volume) = totals
