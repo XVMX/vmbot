@@ -157,7 +157,7 @@ class TestPrice(unittest.TestCase):
         # region_id: 10000002 The Forge
         # type_id: 34 Tritanium
 
-        res_r = Price._get_region_orders(10000002, 34)
+        res_r = self.price._get_region_orders(10000002, 34)
         self.assertIsInstance(res_r[0][0], float)
         self.assertIsInstance(res_r[0][1], (int, long))
         self.assertIsInstance(res_r[1][0], float)
@@ -168,7 +168,7 @@ class TestPrice(unittest.TestCase):
         # region_id: 10000002 The Forge
         # type_id: 36 Mexallon
 
-        res = Price._get_region_orders(10000002, 36)
+        res = self.price._get_region_orders(10000002, 36)
         self.assertEqual(res[0][0], 0)
         self.assertEqual(res[0][1], 0)
         self.assertEqual(res[1][0], 0)

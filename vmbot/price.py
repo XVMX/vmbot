@@ -35,8 +35,7 @@ class Price(object):
 
         return (sell_price or 0.0, sell_vol), (buy_price or 0.0, buy_vol)
 
-    @staticmethod
-    def _get_region_orders(region_id, type_id):
+    def _get_region_orders(self, region_id, type_id):
         """Collect buy and sell order stats for item in region.
 
         Output format: ((sell_price, sell_volume), (buy_price, buy_volume))
@@ -44,12 +43,12 @@ class Price(object):
         params = {'page': 1, 'type_id': type_id}
         orders, head = api.request_esi("/v1/markets/{}/orders/", (region_id,),
                                        params=params, timeout=5, with_head=True)
-        max_page = int(head.get('X-Pages', 1))
 
-        while params['page'] < max_page:
-            params['page'] += 1
-            orders += api.request_esi("/v1/markets/{}/orders/", (region_id,),
-                                      params=params, timeout=5)
+        futs = [self.api_pool.submit(api.request_esi, "/v1/markets/{}/orders/", (region_id,),
+                                     params={'page': p, 'type_id': type_id}, timeout=5)
+                for p in range(2, int(head.get('X-Pages', 1)) + 1)]
+        for f in futures.as_completed(futs):
+            orders += f.result()
 
         return Price._calc_totals(orders)
 
