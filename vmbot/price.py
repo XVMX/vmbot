@@ -3,12 +3,10 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import threading
-import sqlite3
 
 from concurrent import futures
 
 from .botcmd import botcmd
-from .helpers.files import STATICDATA_DB
 from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
 from .helpers.sso import SSOToken
