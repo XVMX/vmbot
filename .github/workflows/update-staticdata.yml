@@ -7,7 +7,7 @@ on:
     branches:
       - master
     paths:
-      - tools/ci/staticdata/*.sh
+      - tools/ci/staticdata/**
 
 jobs:
   update-staticdata:
