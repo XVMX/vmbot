@@ -306,7 +306,7 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
             self.sess.execute(update_nicks, [{"n": nick, "j": jid} for nick, jid in nicks])
             self.sess.commit()
         except db.OperationalError:
-            pass
+            self.sess.rollback()
 
         self.sess.close()
         if config.ZKILL_FEED:
