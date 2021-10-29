@@ -297,7 +297,7 @@ class Fun(object):
         """[word] - Urban Dictionary's definition of word or, if missing, of a random word"""
         if args:
             url = "https://api.urbandictionary.com/v0/define"
-            params = {'term': args}
+            params = {'term': args.strip()}
         else:
             url = "https://api.urbandictionary.com/v0/random"
             params = None

@@ -3,35 +3,32 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import unittest
-import mock
 
 import shutil
 import re
 
-import requests
+import responses
 from bs4 import BeautifulSoup
 
-from .test_api import flawed_response
+from .support.xmpp import mock_muc_mess
+from .support import api as api_support
+from .support import files as files_support
 from vmbot.helpers.files import EMOTES, HTTPCACHE
-from vmbot.helpers.exceptions import APIError
 from vmbot.helpers import api
 
 from vmbot.fun import Fun
 
 
+@api_support.disable_cache()
 class TestFun(unittest.TestCase):
-    default_mess = ""
+    default_mess = mock_muc_mess(b"")
     default_args = ""
-
-    @classmethod
-    def setUpClass(cls):
-        shutil.rmtree(HTTPCACHE, ignore_errors=True)
+    rating_regex = r"(?:\+|-)(?:\d+,)*\d+"
 
     @classmethod
     def tearDownClass(cls):
-        # _API_REG may still hold a FileCache
+        # Reset _API_REG to re-enable caching
         api._API_REG = api.threading.local()
-        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     def setUp(self):
         self.fun = Fun()
@@ -45,140 +42,104 @@ class TestFun(unittest.TestCase):
 
         self.assertIn(self.fun.rtd(self.default_mess, self.default_args), emotes)
 
+    @responses.activate
     def test_rtq(self):
+        api_support.add_bash_org_random_200(responses)
         res = self.fun.rtq(self.default_mess, self.default_args)
 
         try:
-            quote_url = re.search(r"http://bash\.org/\?\d+", res).group(0)
+            quote_href = re.search(r"http://bash\.org/(\?\d+)", res).group(1)
         except AttributeError:
             self.fail("rtq didn't return an http://bash.org link in test_rtq")
 
-        try:
-            r = requests.get(quote_url, timeout=5)
-        except requests.RequestException as e:
-            self.skipTest("Error while connecting to http://bash.org in test_rtq: {}".format(e))
-        soup = BeautifulSoup(r.text, "html.parser")
+        with files_support.open("bash_org_random_200.html", 'r') as f:
+            soup = BeautifulSoup(f, "html.parser")
 
-        try:
-            quote = soup.find("p", class_="quote")
-            quote_rating = int(quote.find("font").text)
-            quote = quote.next_sibling.text
-        except AttributeError:
-            self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
+        if soup.find("a", href=quote_href) is None:
+            self.fail("Failed to find quote {} in test_rtq".format(quote_href))
 
-        self.assertEqual(res, "{} ({:+,})\n{}".format(quote_url, quote_rating, quote))
+        self.assertRegexpMatches(res, r"^http://bash\.org/\?\d+ \({}\)\n".format(self.rating_regex))
 
-    @mock.patch("vmbot.helpers.api.request_api",
-                side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_rtq_APIError(self, mock_api):
-        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args), "TestException")
+    @responses.activate
+    def test_rtq_APIError(self):
+        api_support.add_plain_404(responses, url="http://bash.org/?random")
+        self.assertEqual(self.fun.rtq(self.default_mess, self.default_args),
+                         "API returned error code 404")
 
-    @mock.patch("vmbot.helpers.api.request_api", side_effect=flawed_response)
-    def test_rtq_flawedresponse(self, mock_api):
+    @responses.activate
+    def test_rtq_unexpected(self):
+        api_support.add_plain_200(responses, url="http://bash.org/?random")
         self.assertEqual(self.fun.rtq(self.default_mess, self.default_args),
                          "Failed to load any quotes from http://bash.org/?random")
 
     def test_rtxkcd(self):
         res = self.fun.rtxkcd(self.default_mess, self.default_args)
 
-        try:
-            comic_url = re.search(r"https://xkcd\.com/\d+/", res).group(0)
-        except AttributeError:
+        if re.search(r"https://xkcd\.com/\d+/", res) is None:
             self.fail("rtxkcd didn't return an https://xkcd.com link in test_rtxkcd")
 
-        try:
-            comic = requests.get(comic_url + "info.0.json", timeout=5).json()
-        except requests.RequestException as e:
-            self.skipTest("Error while connecting to https://xkcd.com in test_rtxkcd: {}".format(e))
-        except ValueError:
-            self.skipTest("Failed to load xkcd from {} in test_rtxkcd".format(comic_url))
-
-        self.assertEqual(res, '<a href="{}">{}</a> (<em>{}/{}/{}</em>)'.format(
-            comic_url, comic['safe_title'], comic['year'], comic['month'], comic['day']
-        ))
+        self.assertRegexpMatches(res, r'^<a href=".+">.+</a> \(<em>\d{1,4}(?:/\d{1,2}){2}</em>\)$')
 
     def test_rtxkcd_APIError(self):
-        def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request."""
-            api_patcher.stop()
-            try:
-                r = requests.get(*args, **kwargs)
-            except requests.RequestException as e:
-                self.skipTest(
-                    "Error while emulating request in test_rtxkcd_RequestException: {}".format(e)
-                )
-            api_patcher.start()
-            return r
+        # Exception on first request
+        with responses.RequestsMock() as rsps:
+            api_support.add_plain_404(rsps, url="https://xkcd.com/info.0.json")
+            self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args),
+                             "API returned error code 404")
 
-        # Exception at first request
-        api_patcher = mock.patch("vmbot.helpers.api.request_api",
-                                 side_effect=APIError(requests.RequestException(), "TestException"))
-        mock_api = api_patcher.start()
+        # Exception on second request
+        with responses.RequestsMock() as rsps:
+            api_support.add_xkcd_info_200(rsps)
+            api_support.add_plain_404(rsps, url=re.compile(r"https://xkcd.com/\d+/info.0.json"))
+            self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args),
+                             "API returned error code 404")
 
-        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), "TestException")
+    def test_rtxkcd_unexpected(self):
+        # Non-JSON response to first request
+        with responses.RequestsMock() as rsps:
+            api_support.add_plain_200(rsps, url="https://xkcd.com/info.0.json")
+            self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args),
+                             "Error while parsing response")
 
-        # Exception at second request
-        mock_api.side_effect = side_effect
+        # Non-JSON response to second request
+        with responses.RequestsMock() as rsps:
+            api_support.add_xkcd_info_200(rsps)
+            api_support.add_plain_200(rsps, url=re.compile(r"https://xkcd.com/\d+/info.0.json"))
+            self.assertRegexpMatches(self.fun.rtxkcd(self.default_mess, self.default_args),
+                                     r"^Failed to load xkcd #\d+ from ")
 
-        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args), "TestException")
-
-        api_patcher.stop()
-
-    def test_rtxkcd_flawedresponse(self):
-        def side_effect(*args, **kwargs):
-            """Emulate call and restart patcher to use default side_effect for second request."""
-            api_patcher.stop()
-            try:
-                r = requests.get(*args, **kwargs)
-            except requests.RequestException as e:
-                self.skipTest(
-                    "Error while emulating request in test_rtxkcd_flawedresponse: {}".format(e)
-                )
-            api_patcher.start()
-            return r
-
-        # 404 response after first request
-        api_patcher = mock.patch("vmbot.helpers.api.request_api", side_effect=flawed_response)
-        mock_api = api_patcher.start()
-
-        self.assertEqual(self.fun.rtxkcd(self.default_mess, self.default_args),
-                         "Error while parsing response")
-
-        # 404 response after second request
-        mock_api.side_effect = side_effect
-
-        self.assertRegexpMatches(self.fun.rtxkcd(self.default_mess, self.default_args),
-                                 r"Failed to load xkcd #\d+ from https://xkcd\.com/\d+/")
-
-        api_patcher.stop()
-
+    @responses.activate
     def test_urban(self):
+        api_support.add_ud_define_api_200(responses)
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
-                                 (r'<a href=".+">[\S ]+</a> by <em>[\S ]+</em> '
-                                  r"rated (?:\+|-)(?:\d+,)*\d+<br />.+"))
+                                 (r'^<a href=".+?">.+?</a> by <em>.+?</em> '
+                                  r"rated {}<br />").format(self.rating_regex))
 
     def test_urban_random(self):
         self.assertRegexpMatches(self.fun.rtud(self.default_mess, self.default_args),
-                                 (r'<a href=".+">[\S ]+</a> by <em>[\S ]+</em> '
-                                  r"rated (?:\+|-)(?:\d+,)*\d+<br />.+"))
+                                 (r'^<a href=".+?">.+?</a> by <em>.+?</em> '
+                                  r"rated {}<br />").format(self.rating_regex))
 
-    @mock.patch("cgi.escape", return_value="[API]")
-    def test_urban_link(self, mock_cgi):
-        self.assertIn('<a href="https://www.urbandictionary.com/define.php?term=API">API</a>',
-                      self.fun.urban(self.default_mess, "API"))
+    def test_urban_link(self):
+        match = re.search("(.+)", "API")  # hack to create a suitable MatchObject
+        self.assertEqual(self.fun.urban_link(match),
+                         '<a href="https://www.urbandictionary.com/define.php?term=API">API</a>')
 
-    @mock.patch("requests.Response.json", return_value={'list': []})
-    def test_urban_unknown(self, mock_json):
+    @responses.activate
+    def test_urban_unk(self):
+        api_support.add_ud_define_unk_200(responses)
         self.assertEqual(self.fun.urban(self.default_mess, "API"),
                          'Failed to find any definitions for "API"')
 
-    @mock.patch("vmbot.helpers.api.request_api",
-                side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_urban_APIError(self, mock_api):
-        self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"), "TestException")
+    @responses.activate
+    def test_urban_APIError(self):
+        api_support.add_plain_404(responses, url="https://api.urbandictionary.com/v0/define")
+        self.assertEqual(self.fun.urban(self.default_mess, "API"),
+                         "API returned error code 404")
 
-    @mock.patch("vmbot.helpers.api.request_api", side_effect=flawed_response)
-    def test_urban_flawedresponse(self, mock_api):
+    @responses.activate
+    def test_urban_unexpected(self):
+        api_support.add_plain_200(responses, url="https://api.urbandictionary.com/v0/define")
         self.assertEqual(self.fun.urban(self.default_mess, "API"), "Error while parsing response")
 
 

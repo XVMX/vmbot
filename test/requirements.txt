@@ -1,3 +1,4 @@
 # unittest.mock backport for Python < 3.3
 mock
+responses
 coverage
