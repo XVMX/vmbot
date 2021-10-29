@@ -16,8 +16,10 @@ if [[ ! -s pidgin_nosmile.zip ]]; then
   exit 0
 fi
 
+# Requires GNU sed extensions
 echo "Extracting emotes.txt..."
-unzip -p pidgin_nosmile.zip "pidgin_nosmile/theme" > emotes.txt
+unzip -p pidgin_nosmile.zip "pidgin_nosmile/theme" |
+  sed '0,/^\[default\]$/Id' > emotes.txt
 chmod 444 emotes.txt
 
 echo "Deleting pidgin_nosmile.zip..."

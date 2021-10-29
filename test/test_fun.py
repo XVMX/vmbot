@@ -40,7 +40,7 @@ class TestFun(unittest.TestCase):
         del self.fun
 
     def test_rtd(self):
-        with open(EMOTES, 'r') as emotes_file:
+        with open(EMOTES, "rU") as emotes_file:
             emotes = emotes_file.read()
 
         self.assertIn(self.fun.rtd(self.default_mess, self.default_args), emotes)

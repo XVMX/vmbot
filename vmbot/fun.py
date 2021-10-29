@@ -7,6 +7,7 @@ import re
 import cgi
 import urllib
 
+import cachetools.func
 from bs4 import BeautifulSoup
 
 from .botcmd import botcmd
@@ -117,6 +118,12 @@ PUBBIESMACK = (
 )
 
 
+@cachetools.func.lru_cache(maxsize=1)
+def _read_lines(path):
+    with open(path, 'r') as f:
+        return f.read().splitlines()
+
+
 class Say(object):
     def pubbiesmack(self, mess):
         """Smack that pubbie."""
@@ -188,10 +195,7 @@ class Say(object):
     @botcmd
     def handysay(self, mess, args):
         """Like fishsay but blame lofac for the misspelled name"""
-        with open(HANDEY_QUOTES, 'r') as says_file:
-            says = says_file.read().splitlines()
-
-        return random.choice(says)
+        return random.choice(_read_lines(HANDEY_QUOTES))
 
     @botcmd(name="8ball")
     def bot_8ball(self, mess, args):
@@ -212,11 +216,7 @@ class Fun(object):
     @botcmd
     def rtd(self, mess, args):
         """Like a box of chocolates, you never know what you're gonna get"""
-        with open(EMOTES, 'r') as emotes_file:
-            emotes = emotes_file.read().splitlines()
-        del emotes[:emotes.index("[default]") + 1]
-
-        return random.choice(emotes).split()[-1]
+        return random.choice(_read_lines(EMOTES)).split()[-1]
 
     @botcmd
     def rtq(self, mess, args):

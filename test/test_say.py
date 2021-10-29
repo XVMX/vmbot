@@ -104,7 +104,7 @@ class TestSay(unittest.TestCase):
                       [test_arg + ' ' + line for line in JOKERISMS])
 
     def test_handysay(self):
-        with open(HANDEY_QUOTES, 'r') as says_file:
+        with open(HANDEY_QUOTES, "rU") as says_file:
             says = says_file.read()
 
         self.assertIn(self.say.handysay(self.default_mess, self.default_args), says)

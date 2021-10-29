@@ -1,9 +1,3 @@
-Name=SA-GF Pack, No-Smile Version
-Description=Last Updated: October 15th, 2021
-Icon=smugjones.001.gif
-Author=Querns
-
-[default]
 ! 44O1K.gif :gettheehence:
 44O1K.gif :gth:
 ! ashomad.png :ashomad:
