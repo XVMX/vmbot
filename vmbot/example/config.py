@@ -22,6 +22,7 @@ REVENUE_TRACKING = False
 # Jabber credentials
 # Primary chatrooms: main corp channel(s), feeds will be posted there (if enabled)
 # Director chatrooms: director channel(s), some commands are restricted to those channels
+# PM blacklist: never respond to PMs from these JIDs
 JABBER = {
     'username': "username@domain.tld",
     'password': "yourpassword",
@@ -100,7 +101,7 @@ YT_KEY = ""
 
 # GitHub personal access token (https://github.com/settings/tokens)
 # Required scope: public_repo
-# Used to automatically report outdated/deprecated ESI routes
+# Used to automatically report outdated/deprecated ESI routes. Leave empty to disable.
 GITHUB = {
     'user': "",
     'token': ""
