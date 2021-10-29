@@ -16,6 +16,8 @@ from .helpers.files import EMOTES, HANDEY_QUOTES
 from .helpers.exceptions import APIError
 from .helpers import api
 
+import config
+
 # 8ball answers like the original, as per https://en.wikipedia.org/wiki/Magic_8-Ball
 EBALL_ANSWERS = (
     "It is certain",
@@ -322,6 +324,37 @@ class Fun(object):
         return '<a href="{}">{}</a> by <em>{}</em> rated {:+,}<br />{}'.format(
             entry['permalink'], entry['word'], entry['author'],
             entry['thumbs_up'] - entry['thumbs_down'], desc
+        )
+
+    @botcmd(disable_if=not config.IMGUR_ID)
+    def corgitax(self, mess, args):
+        """Like a box of chocolates, if chocolates were doggos"""
+        return self.imgur(mess, "corgi")
+
+    @botcmd(disable_if=not config.IMGUR_ID)
+    def imgur(self, mess, args):
+        """<query> - Viral images straight off Imgur's search bar"""
+        headers = {'Authorization': "Client-ID {}".format(config.IMGUR_ID)}
+        params = {'mature': "false", "album_previews": "false"}
+        if args:
+            url = "https://api.imgur.com/3/gallery/search/viral"
+            params['q'] = args.strip()
+        else:
+            url = "https://api.imgur.com/3/gallery/hot/viral"
+
+        try:
+            res = api.request_api(url, params=params, headers=headers).json()
+        except APIError as e:
+            return unicode(e)
+        except ValueError:
+            return "Error while parsing response"
+
+        if not res['data']:
+            return 'Failed to find any images for "{}"'.format(args)
+
+        image = _scored_choice(res['data'], (img['score'] for img in res['data']))
+        return '<a href="{}">{}</a> ({:+,})'.format(
+            image['link'], image['title'], image['points']
         )
 
 

@@ -99,6 +99,10 @@ BLACKLIST_URL = ""
 # Used to post context for YouTube links. Leave empty to disable.
 YT_KEY = ""
 
+# Imgur API client ID (https://apidocs.imgur.com/#intro)
+# Used for corgitax and imgur commands. Leave empty to disable.
+IMGUR_ID = ""
+
 # GitHub personal access token (https://github.com/settings/tokens)
 # Required scope: public_repo
 # Used to automatically report outdated/deprecated ESI routes. Leave empty to disable.
