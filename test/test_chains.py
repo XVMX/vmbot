@@ -5,11 +5,13 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
+from .support.xmpp import mock_muc_mess
+
 from vmbot.fun import Chains
 
 
 class TestChains(unittest.TestCase):
-    default_mess = ""
+    default_mess = mock_muc_mess(b"")
     default_args = ""
 
     def setUp(self):
@@ -27,8 +29,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_every(self.default_mess, self.default_args))
 
     def test_every_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_every(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_every(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_lion_out(self, mock_random):
@@ -39,8 +40,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_lion(self.default_mess, self.default_args))
 
     def test_lion_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_lion(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_lion(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_except_out(self, mock_random):
@@ -51,8 +51,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_except(self.default_mess, self.default_args))
 
     def test_except_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_except(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_except(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_for_out(self, mock_random):
@@ -63,8 +62,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_for(self.default_mess, self.default_args))
 
     def test_for_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_for(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_for(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_at_out(self, mock_random):
@@ -75,8 +73,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_at(self.default_mess, self.default_args))
 
     def test_at_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_at(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_at(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_most_out(self, mock_random):
@@ -87,8 +84,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_most(self.default_mess, self.default_args))
 
     def test_most_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_most(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_most(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_one_out(self, mock_random):
@@ -99,8 +95,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_one(self.default_mess, self.default_args))
 
     def test_one_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_one(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_one(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_z_out(self, mock_random):
@@ -111,8 +106,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_z(self.default_mess, self.default_args))
 
     def test_z_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_z(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_z(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_0_out(self, mock_random):
@@ -123,8 +117,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_0(self.default_mess, self.default_args))
 
     def test_0_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_0(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_0(self.default_mess, "some words"))
 
     @mock.patch("random.randint", return_value=1)
     def test_r_out(self, mock_random):
@@ -135,8 +128,7 @@ class TestChains(unittest.TestCase):
         self.assertIsNone(self.chains.bot_r(self.default_mess, self.default_args))
 
     def test_r_args(self):
-        test_arg = "TestArg"
-        self.assertIsNone(self.chains.bot_r(self.default_mess, test_arg))
+        self.assertIsNone(self.chains.bot_r(self.default_mess, "some words"))
 
 
 if __name__ == "__main__":
