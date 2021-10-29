@@ -56,6 +56,6 @@ def disambiguate(given, like, category):
     """Disambiguate a list of names from the same category."""
     reply = 'Other {} like "{}": {}'.format(category, given, ", ".join(like[:3]))
     if len(like) > 3:
-        reply += ", and {} others".format(len(like) - 3)
+        reply += ", and {:,} others".format(len(like) - 3)
 
     return reply

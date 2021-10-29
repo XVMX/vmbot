@@ -18,7 +18,7 @@ class TestFormat(unittest.TestCase):
     structure_affil_template = "The structure is owned by" + _base_affil_template
 
     simple_disambiguate_template = 'Other {} like "{}": {}'
-    extended_disambiguate_template = simple_disambiguate_template + ", and {} others"
+    extended_disambiguate_template = simple_disambiguate_template + ", and {:,} others"
 
     def test_format_ref_type(self):
         self.assertEqual(format_ref_type("abc_def"), "Abc Def")
