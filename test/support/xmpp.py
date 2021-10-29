@@ -24,3 +24,8 @@ def mock_get_uname_from_mess(jid):
         return jid if full_jid else jid.getNode()
 
     return get_uname_from_mess
+
+
+def get_sender_username(mess):
+    frm = mess.getFrom()
+    return frm.getResource() if mess.getType() == b"groupchat" else frm.getNode()
