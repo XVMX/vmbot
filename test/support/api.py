@@ -10,6 +10,8 @@ import responses
 
 from . import files
 
+import config
+
 
 def _noop_cache(sess, *args, **kwargs):
     return sess
@@ -50,4 +52,22 @@ add_ud_define_unk_200 = partial(
 add_ud_define_api_200 = partial(
     _add_to_mock, method=responses.GET, url="https://api.urbandictionary.com/v0/define",
     status=200, content_type="application/json;charset=utf-8", f="ud_define_api_200.json"
+)
+
+# Imgur API requires authentication with client ID
+_IMGUR_AUTH = "Client-ID {}".format(config.IMGUR_ID)
+add_imgur_viral_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://api.imgur.com/3/gallery/hot/viral",
+    status=200, content_type="application/json", f="imgur_viral_200.json",
+    match=[responses.matchers.header_matcher({'Authorization': _IMGUR_AUTH})]
+)
+add_imgur_search_corgi_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://api.imgur.com/3/gallery/search/viral",
+    status=200, content_type="application/json", f="imgur_search_corgi_200.json",
+    match=[responses.matchers.header_matcher({'Authorization': _IMGUR_AUTH})]
+)
+add_imgur_search_empty_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://api.imgur.com/3/gallery/search/viral",
+    status=200, content_type="application/json", f="imgur_search_empty_200.json",
+    match=[responses.matchers.header_matcher({'Authorization': _IMGUR_AUTH})]
 )

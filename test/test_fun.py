@@ -142,6 +142,36 @@ class TestFun(unittest.TestCase):
         api_support.add_plain_200(responses, url="https://api.urbandictionary.com/v0/define")
         self.assertEqual(self.fun.urban(self.default_mess, "API"), "Error while parsing response")
 
+    @responses.activate
+    def test_imgur(self):
+        api_support.add_imgur_search_corgi_200(responses)
+        self.assertRegexpMatches(self.fun.corgitax(self.default_mess, self.default_args),
+                                 r'^<a href=".+">.+</a> \({}\)$'.format(self.rating_regex))
+
+    @responses.activate
+    def test_imgur_random(self):
+        api_support.add_imgur_viral_200(responses)
+        self.assertRegexpMatches(self.fun.imgur(self.default_mess, self.default_args),
+                                 r'^<a href=".+">.+</a> \({}\)$'.format(self.rating_regex))
+
+    @responses.activate
+    def test_imgur_empty(self):
+        api_support.add_imgur_search_empty_200(responses)
+        self.assertEqual(self.fun.imgur(self.default_mess, "e94iwps0mfks3"),
+                         'Failed to find any images for "e94iwps0mfks3"')
+
+    @responses.activate
+    def test_imgur_APIError(self):
+        api_support.add_plain_404(responses, url="https://api.imgur.com/3/gallery/hot/viral")
+        self.assertEqual(self.fun.imgur(self.default_mess, self.default_args),
+                         "API returned error code 404")
+
+    @responses.activate
+    def test_imgur_unexpected(self):
+        api_support.add_plain_200(responses, url="https://api.imgur.com/3/gallery/hot/viral")
+        self.assertEqual(self.fun.imgur(self.default_mess, self.default_args),
+                         "Error while parsing response")
+
 
 if __name__ == "__main__":
     unittest.main()
