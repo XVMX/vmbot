@@ -3,10 +3,9 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import unittest
-import mock
 
-from xmpp.protocol import JID
-
+from .support.xmpp import (BOT_JID, USER_JID, ADMIN_JID, ADMIN_MUC_JID,
+                           mock_muc_mess, mock_get_uname_from_mess)
 from vmbot.helpers import database as db
 from vmbot.models.user import User
 
@@ -15,33 +14,29 @@ from vmbot.acl import ACL
 
 class TestACL(unittest.TestCase):
     db_engine = db.create_engine("sqlite://")
-    default_mess = ""
+    default_mess = mock_muc_mess(b"", frm=ADMIN_MUC_JID)
 
     @classmethod
     def setUpClass(cls):
         db.init_db(cls.db_engine)
         db.Session.configure(bind=cls.db_engine)
 
-        def_user = User("user@domain.tld")
-        full_usr = User("admin@domain.tld")
-        full_usr.allow_admin = True
-        full_usr.allow_director = True
-        full_usr.allow_token = True
+        usr = User(USER_JID.getStripped())
+        admin = User(ADMIN_JID.getStripped())
+        admin.allow_admin = admin.allow_director = admin.allow_token = True
 
         with db.Session.begin() as sess:
-            sess.add_all([def_user, full_usr])
+            sess.add_all([usr, admin])
 
     @classmethod
     def tearDownClass(cls):
         db.Session.configure(bind=db.engine)
         cls.db_engine.dispose()
-        del cls.db_engine
 
     def setUp(self):
         self.acl = ACL()
-        self.acl.jid = JID("bot@domain.tld/res")
-        self.acl.get_uname_from_mess = mock.MagicMock(name="get_uname_from_mess",
-                                                      return_value=JID("admin@domain.tld/res"))
+        self.acl.jid = BOT_JID
+        self.acl.get_uname_from_mess = mock_get_uname_from_mess(ADMIN_JID)
         self.sess = db.Session()
 
     def tearDown(self):
@@ -49,38 +44,39 @@ class TestACL(unittest.TestCase):
         del self.acl
 
     def test_process_acl_args(self):
-        recv, roles = self.acl._process_acl_args(self.default_mess,
-                                                 "user director admin", self.sess)
+        args = "{} director admin".format(USER_JID.getNode())
+        recv, roles = self.acl._process_acl_args(self.default_mess, args, self.sess)
 
-        self.assertEqual(recv.jid, "user@domain.tld")
+        self.assertEqual(recv.jid, USER_JID.getStripped())
         self.assertListEqual(roles, ["director", "admin"])
 
     def test_process_acl_args_jid(self):
-        recv, roles = self.acl._process_acl_args(self.default_mess,
-                                                 "user@domain2.tld director admin", self.sess)
+        args = "{} director admin".format(USER_JID.getStripped())
+        recv, roles = self.acl._process_acl_args(self.default_mess, args, self.sess)
 
-        self.assertEqual(recv.jid, "user@domain2.tld")
+        self.assertEqual(recv.jid, USER_JID.getStripped())
         self.assertListEqual(roles, ["director", "admin"])
 
     def test_process_acl_args_noargs(self):
         self.assertRaises(ValueError, self.acl._process_acl_args,
                           self.default_mess, "", self.sess)
         self.assertRaises(ValueError, self.acl._process_acl_args,
-                          self.default_mess, "user", self.sess)
+                          self.default_mess, "asdf", self.sess)
 
     def test_process_acl_args_invalidroles(self):
         self.assertRaises(ValueError, self.acl._process_acl_args,
-                          self.default_mess, "user xyz", self.sess)
+                          self.default_mess, "asdf xyz", self.sess)
 
     def test_process_acl_args_denied(self):
-        self.acl.get_uname_from_mess.return_value = JID("user@domain.tld/res")
+        self.acl.get_uname_from_mess = mock_get_uname_from_mess(USER_JID)
         self.assertRaises(ValueError, self.acl._process_acl_args,
-                          self.default_mess, "user admin", self.sess)
+                          self.default_mess, "asdf admin", self.sess)
 
     def test_promote(self):
-        self.acl.promote(self.default_mess, "user director admin token")
+        args = "{} director admin token".format(USER_JID.getNode())
+        self.acl.promote(self.default_mess, args)
 
-        usr = self.sess.get(User, "user@domain.tld")
+        usr = self.sess.get(User, USER_JID.getStripped())
         self.assertTrue(usr.allow_director)
         self.assertTrue(usr.allow_admin)
         self.assertTrue(usr.allow_token)
@@ -91,20 +87,22 @@ class TestACL(unittest.TestCase):
         self.sess.commit()
 
     def test_promote_denied(self):
-        self.acl.get_uname_from_mess.return_value = JID("user@domain.tld/res")
-        self.acl.promote(self.default_mess, "user director")
+        self.acl.get_uname_from_mess = mock_get_uname_from_mess(USER_JID)
+        self.acl.promote(self.default_mess, "asdf director")
 
-        usr = self.sess.get(User, "user@domain.tld")
+        usr = self.sess.get(User, USER_JID.getStripped())
         self.assertFalse(usr.allow_director)
 
     def test_promote_hasroles(self):
-        self.assertEqual(self.acl.promote(self.default_mess, "admin director"),
+        args = "{} director".format(ADMIN_JID.getNode())
+        self.assertEqual(self.acl.promote(self.default_mess, args),
                          "The user already has all specified roles")
 
     def test_demote(self):
-        self.acl.demote(self.default_mess, "admin director admin token")
+        args = "{} director admin token".format(ADMIN_JID.getNode())
+        self.acl.demote(self.default_mess, args)
 
-        admin = self.sess.get(User, "admin@domain.tld")
+        admin = self.sess.get(User, ADMIN_JID.getStripped())
         self.assertFalse(admin.allow_director)
         self.assertFalse(admin.allow_admin)
         self.assertFalse(admin.allow_token)
@@ -115,26 +113,27 @@ class TestACL(unittest.TestCase):
         self.sess.commit()
 
     def test_demote_denied(self):
-        self.acl.get_uname_from_mess.return_value = JID("user@domain.tld/res")
-        self.acl.demote(self.default_mess, "admin director")
+        self.acl.get_uname_from_mess = mock_get_uname_from_mess(USER_JID)
+        self.acl.demote(self.default_mess, "asdf director")
 
-        admin = self.sess.get(User, "admin@domain.tld")
+        admin = self.sess.get(User, ADMIN_JID.getStripped())
         self.assertTrue(admin.allow_director)
 
     def test_demote_noroles(self):
-        self.assertEqual(self.acl.demote(self.default_mess, "user director"),
+        args = "{} director".format(USER_JID.getNode())
+        self.assertEqual(self.acl.demote(self.default_mess, args),
                          "The user doesn't have any of the specified roles")
 
     def test_list(self):
         self.assertEqual(self.acl.list(self.default_mess, "admin"),
-                         "This role is assigned to admin")
+                         "This role is assigned to {}".format(ADMIN_JID.getNode()))
 
     def test_list_invalidrole(self):
         self.assertEqual(self.acl.list(self.default_mess, "xyz"),
                          "Invalid role")
 
     def test_list_notassigned(self):
-        admin = self.sess.get(User, "admin@domain.tld")
+        admin = self.sess.get(User, ADMIN_JID.getStripped())
         admin.allow_admin = False
         self.sess.commit()
 
