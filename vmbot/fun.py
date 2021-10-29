@@ -8,6 +8,7 @@ import cgi
 import urllib
 
 import cachetools.func
+import numpy as np
 from bs4 import BeautifulSoup
 
 from .botcmd import botcmd
@@ -124,6 +125,22 @@ def _read_lines(path):
         return f.read().splitlines()
 
 
+def _scored_choice(items, scores):
+    n = len(items)
+    scores = np.fromiter(scores, dtype=np.float64, count=n)
+
+    # Normalize minimum score to >= 1
+    min_score = np.amin(scores, initial=0)
+    if min_score < 1:
+        scores += 1 - min_score
+
+    # Every item has a uniform base probability to be selected,
+    # to which an additional 4x log-score boost is applied.
+    scores = np.log(scores)
+    p = 0.2 / n + 0.8 * (scores / scores.sum())
+    return np.random.choice(items, p=p)
+
+
 class Say(object):
     def pubbiesmack(self, mess):
         """Smack that pubbie."""
@@ -236,7 +253,7 @@ class Fun(object):
         quote_rating = int(quote.find("font").text)
         quote = quote.next_sibling.text
 
-        return "http://bash.org/{} ({:+})\n{}".format(quote_href, quote_rating, quote)
+        return "http://bash.org/{} ({:+,})\n{}".format(quote_href, quote_rating, quote)
 
     @botcmd
     def rtxkcd(self, mess, args):
@@ -267,12 +284,21 @@ class Fun(object):
         """Like a box of chocolates, but with loads of pubbie talk"""
         return self.urban(mess, "")
 
+    @staticmethod
+    def urban_link(match):
+        return '<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
+            urllib.quote_plus(match.group(1)), match.group(1)
+        )
+
     @botcmd
     def urban(self, mess, args):
         """[word] - Urban Dictionary's definition of word or, if missing, of a random word"""
-        url = "https://api.urbandictionary.com/v0/"
-        url += "random" if not args else "define"
-        params = None if not args else {'term': args}
+        if args:
+            url = "https://api.urbandictionary.com/v0/define"
+            params = {'term': args}
+        else:
+            url = "https://api.urbandictionary.com/v0/random"
+            params = None
 
         try:
             res = api.request_api(url, params=params).json()
@@ -284,38 +310,19 @@ class Fun(object):
         if not res['list']:
             return 'Failed to find any definitions for "{}"'.format(args)
 
-        # Create a list of definitions with positive (>= 0) rating numbers
-        choices = [(desc, desc['thumbs_up'] - desc['thumbs_down']) for desc in res['list']]
-        min_rating = min(desc[1] for desc in choices)
-        if min_rating < 0:
-            abs_min = abs(min_rating)
-            choices = [(desc[0], desc[1] + abs_min) for desc in choices]
-
-        # Select a random definition using rating as weight
-        rand = random.uniform(0, sum(choice[1] for choice in choices))
-        entry = None
-
-        for desc, weight in choices:
-            rand -= weight
-            if rand <= 0:
-                entry = desc
-                break
-
-        def urban_link(match):
-            return '<a href="https://www.urbandictionary.com/define.php?term={}">{}</a>'.format(
-                urllib.quote_plus(match.group(1).encode("utf-8")), match.group(1)
-            )
+        entry = _scored_choice(
+            res['list'],
+            (desc['thumbs_up'] - desc['thumbs_down'] for desc in res['list'])
+        )
 
         desc = cgi.escape(entry['definition'])
         desc = re.sub(r"((?:\r|\n|\r\n)+)", "<br />", desc).rstrip("<br />")
-        desc = re.sub(r"\[([\S ]+?)\]", urban_link, desc)
+        desc = re.sub(r"\[([\S ]+?)\]", self.urban_link, desc)
 
-        desc = '<a href="{}">{}</a> by <em>{}</em> rated {:+}<br />{}'.format(
+        return '<a href="{}">{}</a> by <em>{}</em> rated {:+,}<br />{}'.format(
             entry['permalink'], entry['word'], entry['author'],
             entry['thumbs_up'] - entry['thumbs_down'], desc
         )
-
-        return desc
 
 
 class Chains(object):

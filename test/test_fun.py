@@ -66,7 +66,7 @@ class TestFun(unittest.TestCase):
         except AttributeError:
             self.skipTest("Failed to load quote from {} in test_rtq".format(quote_url))
 
-        self.assertEqual(res, "{} ({:+})\n{}".format(quote_url, quote_rating, quote))
+        self.assertEqual(res, "{} ({:+,})\n{}".format(quote_url, quote_rating, quote))
 
     @mock.patch("vmbot.helpers.api.request_api",
                 side_effect=APIError(requests.RequestException(), "TestException"))
@@ -155,12 +155,12 @@ class TestFun(unittest.TestCase):
     def test_urban(self):
         self.assertRegexpMatches(self.fun.urban(self.default_mess, "API"),
                                  (r'<a href=".+">[\S ]+</a> by <em>[\S ]+</em> '
-                                  r"rated (?:\+|-)\d+<br />.+"))
+                                  r"rated (?:\+|-)(?:\d+,)*\d+<br />.+"))
 
     def test_urban_random(self):
         self.assertRegexpMatches(self.fun.rtud(self.default_mess, self.default_args),
                                  (r'<a href=".+">[\S ]+</a> by <em>[\S ]+</em> '
-                                  r"rated (?:\+|-)\d+<br />.+"))
+                                  r"rated (?:\+|-)(?:\d+,)*\d+<br />.+"))
 
     @mock.patch("cgi.escape", return_value="[API]")
     def test_urban_link(self, mock_cgi):
