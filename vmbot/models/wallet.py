@@ -11,9 +11,12 @@ from ..helpers import database as db
 class WalletJournalEntry(db.Model):
     """Store a wallet journal entry."""
     __tablename__ = "corp_wallet"
+    __table_args__ = (
+        db.Index("ix_corp_wallet_diragg", "date", "amount"),
+    )
 
     ref_id = db.Column(db.BigInteger, nullable=False, primary_key=True, autoincrement=False)
-    ref_type = db.Column(db.Text, nullable=False, index=True)
+    ref_type = db.Column(db.Text, nullable=False)
     amount = db.Column(db.Float, nullable=False)
     date = db.Column(db.DateTime, nullable=False)
 

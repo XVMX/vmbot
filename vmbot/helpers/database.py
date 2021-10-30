@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 from sqlalchemy import (create_engine, event, Column, Boolean, Integer, BigInteger, Float,
-                        String, Text, Enum, DateTime, LargeBinary, PickleType, ForeignKey)
+                        String, Text, Enum, DateTime, LargeBinary, PickleType, ForeignKey, Index)
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, joinedload, selectinload
 from sqlalchemy.sql import select, update, delete, bindparam, null, func
