@@ -59,7 +59,7 @@ class NoteQueue(object):
         if not ids:
             return []
 
-        # picks is sorted because note_queue is sorted
+        # picks is sorted because self._queue is sorted
         for idx in reversed(picks):
             del self._queue[idx]
 
@@ -83,7 +83,7 @@ class NoteQueue(object):
                 expired.append(note[0])
             else:
                 self._queue.append((note[-1], note[:-1]))
-        # note_queue is sorted because the database results are
+        # self._queue is sorted because the database results are
 
         if expired:
             # Session is synchronized after commit
