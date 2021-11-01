@@ -5,53 +5,23 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import unittest
 import mock
 
-import shutil
 import StringIO
 import logging
 
-import requests
+import responses
 
-from vmbot.helpers.files import HTTPCACHE
-from vmbot.helpers.exceptions import APIError, APIStatusError, APIRequestError
+from .support import api as api_support
+from vmbot.helpers.exceptions import APIStatusError, APIRequestError
 
 from vmbot.helpers import api
 
 
-def flawed_response(*args, **kwargs):
-    """Return a requests.Response with 404 status code."""
-    res = requests.Response()
-    res.status_code = 404
-    res._content = b"ASCII text"
-    res.encoding = "ascii"
-    res.from_cache = False
-    return res
-
-
-def esi_warning_response(*args, **kwargs):
-    """Return a requests.Response with a deprecation warning header."""
-    res = requests.Response()
-    res.status_code = 200
-    res.headers['warning'] = "299 - This endpoint is deprecated."
-    res._content = b'{"res": true}'
-    res.encoding = "ascii"
-    res.from_cache = False
-    return res
-
-
+@api_support.disable_cache()
 class TestAPI(unittest.TestCase):
-    zbot_regex = (r"Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
-                  r"Saranen (Lonetrek) | 47 attacker(s) (23,723 damage) | "
-                  r"2016-06-10 02:09:38")
-
-    @classmethod
-    def setUpClass(cls):
-        shutil.rmtree(HTTPCACHE, ignore_errors=True)
-
     @classmethod
     def tearDownClass(cls):
-        # _API_REG may still hold a FileCache
+        # Reset _API_REG to re-enable caching
         api._API_REG = api.threading.local()
-        shutil.rmtree(HTTPCACHE, ignore_errors=True)
 
     def test_get_requests_session(self):
         sess = api._get_requests_session()
@@ -93,6 +63,10 @@ class TestAPI(unittest.TestCase):
     def test_get_tickers_none(self):
         self.assertTupleEqual(api.get_tickers(None, None), (None, None))
 
+    zbot_regex = (r"Joker Gates [XVMX] <CONDI> | Hurricane ([\d,]+ point(s)) | [\d,.]+m ISK | "
+                  r"Saranen (Lonetrek) | 47 attacker(s) (23,723 damage) | "
+                  r"2016-06-10 02:09:38")
+
     def test_zbot(self):
         # See https://zkillboard.com/kill/54520379/
         self.assertRegexpMatches(api.zbot("54520379"), self.zbot_regex)
@@ -100,145 +74,111 @@ class TestAPI(unittest.TestCase):
     def test_zbot_int(self):
         self.assertRegexpMatches(api.zbot(54520379), self.zbot_regex)
 
+    @responses.activate
     def test_zbot_invalidid(self):
+        api_support.add_zkb_invalid_200(responses, url="https://zkillboard.com/api/killID/-2/")
         self.assertEqual(api.zbot("-2"), "Failed to load data for https://zkillboard.com/kill/-2/")
 
-    @mock.patch("vmbot.helpers.api.request_api",
-                side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_zbot_APIError_zkb(self, mock_api):
-        self.assertEqual(api.zbot("54520379"), "TestException")
+    @responses.activate
+    def test_zbot_APIError_zkb(self):
+        api_support.add_plain_404(responses, url="https://zkillboard.com/api/killID/54520379/")
+        self.assertEqual(api.zbot("54520379"), "API returned error code 404")
 
-    @mock.patch("vmbot.helpers.api.request_esi",
-                side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_zbot_APIError_esi(self, mock_esi):
-        self.assertEqual(api.zbot("54520379"), "TestException")
+    @responses.activate
+    def test_zbot_APIError_esi(self):
+        responses.add_passthru("https://zkillboard.com/api/")
+        api_support.add_plain_404(responses,
+                                  url=("https://esi.evetech.net/v1/killmails"
+                                       "/54520379/d7eb13ed7f6d7877678f422801cf19a5e7387068/"))
+        self.assertEqual(api.zbot("54520379"), "API returned error code 404")
 
     @mock.patch("config.YT_KEY", new="TestKey")
-    @mock.patch("vmbot.helpers.api.request_api", return_value=requests.Response())
-    def test_ytbot(self, mock_api):
-        mock_api.return_value.status_code = 200
-        mock_api.return_value.encoding = "utf-8"
+    @responses.activate
+    def test_ytbot(self):
+        api_support.add_yt_video_200(responses)
+        self.assertEqual(api.ytbot("GNFgkN1kbNc"),
+                         "Some video | HD | ABCDEF | 0:00:22 | 784,301 views | "
+                         "98.39% likes (+98,437/-1,613) | 2019-01-01 03:52:19")
 
-        # Live stream
-        mock_api.return_value._content = (
-            b'{"items":[{"snippet":{"publishedAt":"2019-01-08T22:16:44Z",'
-            b'"channelTitle": "ABCDEF","liveBroadcastContent":"live",'
-            b'"localized":{"title":"Some stream"}},"contentDetails":{"duration":"PT0S",'
-            b'"definition": "sd"},"statistics":{"viewCount": "1963"}}]}'
-        )
+    @mock.patch("config.YT_KEY", new="TestKey")
+    @responses.activate
+    def test_ytbot_live(self):
+        api_support.add_yt_live_200(responses)
         self.assertEqual(api.ytbot("GNFgkN1kbNc"),
                          "Some stream | LIVE | ABCDEF | 1,963 views | 2019-01-08 22:16:44")
 
-        # Upcoming stream
-        mock_api.return_value._content = (
-            b'{"items":[{"snippet":{"publishedAt":"2018-10-29T10:18:23Z",'
-            b'"channelTitle": "ABCDEF","liveBroadcastContent":"upcoming",'
-            b'"localized":{"title":"Some future stream"}},"contentDetails":{"duration":"PT0S",'
-            b'"definition": "sd"},"statistics":{"viewCount": "84"}}]}'
-        )
+    @mock.patch("config.YT_KEY", new="TestKey")
+    @responses.activate
+    def test_ytbot_upcoming(self):
+        api_support.add_yt_upcoming_200(responses)
         self.assertEqual(api.ytbot("GNFgkN1kbNc"),
                          "Some future stream | Upcoming | ABCDEF | 84 views | 2018-10-29 10:18:23")
 
-        # Video
-        mock_api.return_value._content = (
-            b'{"items":[{"snippet":{"publishedAt":"2019-01-01T03:52:19Z",'
-            b'"channelTitle": "ABCDEF","liveBroadcastContent":"none",'
-            b'"localized":{"title":"Some video"}},"contentDetails":{"duration":"PT22S",'
-            b'"definition": "hd"},"statistics":{"viewCount": "784301",'
-            b'"likeCount":"98437","dislikeCount":"1613"}}]}'
-        )
-        self.assertEqual(
-            api.ytbot("GNFgkN1kbNc"),
-            "Some video | HD | ABCDEF | 0:00:22 | 784,301 views | "
-            "98.39% likes (+98,437/-1,613) | 2019-01-01 03:52:19"
-        )
-
-    @mock.patch("config.YT_KEY", new=None)
+    @mock.patch("config.YT_KEY", new="")
     def test_ytbot_nokey(self):
         self.assertFalse(api.ytbot("GNFgkN1kbNc"))
 
     @mock.patch("config.YT_KEY", new="TestKey")
-    @mock.patch("vmbot.helpers.api.request_api", return_value=requests.Response())
-    def test_ytbot_noitems(self, mock_api):
-        mock_api.return_value.status_code = 200
-        mock_api.return_value._content = b'{"items":[]}'
-        mock_api.return_value.encoding = "utf-8"
-
+    @responses.activate
+    def test_ytbot_empty(self):
+        api_support.add_yt_video_empty_200(responses)
         self.assertIsNone(api.ytbot("GNFgkN1kbNc"))
 
     @mock.patch("config.YT_KEY", new="TestKey")
-    @mock.patch("vmbot.helpers.api.request_api")
-    def test_ytbot_quotaExceeded(self, mock_api):
-        resp = requests.Response()
-        resp.status_code = 403
-        resp._content = b'{"error":{"errors":[{"reason":"quotaExceeded"}]}}'
-        resp.encoding = "utf-8"
-
-        mock_api.side_effect = APIStatusError(requests.RequestException(response=resp),
-                                              "TestException")
+    @responses.activate
+    def test_ytbot_quotaExceeded(self):
+        api_support.add_yt_video_quotaExceeded(responses)
         self.assertFalse(api.ytbot("GNFgkN1kbNc"))
 
     @mock.patch("config.YT_KEY", new="TestKey")
-    @mock.patch("vmbot.helpers.api.request_api")
-    def test_ytbot_404(self, mock_api):
-        resp = requests.Response()
-        resp.status_code = 404
-        resp._content = b'{"error":{"errors":[{"reason":"videoNotFound"}]}}'
-        resp.encoding = "utf-8"
-
-        mock_api.side_effect = APIStatusError(requests.RequestException(response=resp),
-                                              "TestException")
+    @responses.activate
+    def test_ytbot_404(self):
+        api_support.add_yt_video_404(responses)
         self.assertIsNone(api.ytbot("GNFgkN1kbNc"))
 
     @mock.patch("config.YT_KEY", new="TestKey")
-    @mock.patch("vmbot.helpers.api.request_api")
-    def test_ytbot_APIStatusError(self, mock_api):
-        resp = requests.Response()
-        resp.status_code = 400
-        resp._content = (b'{"error":{"errors":[{"reason":"missingRequiredParameter"}],'
-                         b'"message":"The request is missing a required parameter."}}')
-        resp.encoding = "utf-8"
-
-        mock_api.side_effect = APIStatusError(requests.RequestException(response=resp),
-                                              "TestException")
-        self.assertEqual(api.ytbot("GNFgkN1kbNc"),
-                         "TestException: The request is missing a required parameter.")
+    @responses.activate
+    def test_ytbot_APIStatusError(self):
+        api_support.add_yt_video_400(responses)
+        self.assertEqual(
+            api.ytbot("GNFgkN1kbNc"),
+            "API returned error code 400: No filter selected. Expected one of: myRating, chart, id"
+        )
 
     @mock.patch("config.YT_KEY", new="TestKey")
-    @mock.patch("vmbot.helpers.api.request_api",
-                side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_ytbot_APIError(self, mock_api):
-        self.assertEqual(api.ytbot("GNFgkN1kbNc"), "TestException")
+    @responses.activate
+    def test_ytbot_APIError(self):
+        self.assertRegexpMatches(api.ytbot("GNFgkN1kbNc"),
+                                 r"^Error while connecting to API: Connection refused")
 
     def test_request_esi(self):
-        test_route = "/v2/status/"
-        test_params = {'datasource': "tranquility"}
+        res, head = api.request_esi("/v2/status/", params={'datasource': "tranquility"},
+                                    with_head=True)
+        self.assertTrue('players' in res)
 
-        res, head = api.request_esi(test_route, params=test_params, with_head=True)
-        cached_res = api.request_esi(test_route, params=test_params)
-        self.assertDictEqual(res, cached_res)
+    @responses.activate
+    def test_request_esi_warning(self):
+        api_support.add_esi_status_warning_200(responses)
 
-    @mock.patch("vmbot.helpers.api.request_api", side_effect=esi_warning_response)
-    def test_request_esi_warning(self, mock_api):
         log = StringIO.StringIO()
         handler = logging.StreamHandler(log)
         logger = logging.getLogger("vmbot.helpers.api.esi")
         logger.addHandler(handler)
 
-        self.assertDictEqual(api.request_esi("TestURL"), {'res': True})
-        self.assertTrue(log.getvalue().startswith('Route "TestURL" is deprecated'))
+        api.request_esi("/v2/status/")
+        self.assertTrue(log.getvalue().startswith('Route "/v2/status/" is deprecated\n'))
 
         logger.removeHandler(handler)
 
-    @mock.patch("requests.Session.request", side_effect=requests.RequestException("TestException"))
-    def test_request_api_RequestException(self, mock_requests):
-        self.assertRaisesRegexp(APIRequestError, "Error while connecting to API: TestException",
-                                api.request_api, "TestURL")
+    @responses.activate
+    def test_request_api_RequestException(self):
+        self.assertRaisesRegexp(APIRequestError,
+                                r"^Error while connecting to API: Connection refused",
+                                api.request_api, "https://httpbin.org/get")
 
-    @mock.patch("requests.Session.request", side_effect=flawed_response)
-    def test_request_api_flawedresponse(self, mock_requests):
-        self.assertRaisesRegexp(APIStatusError, "API returned error code 404",
-                                api.request_api, "TestURL")
+    def test_request_api_HTTPError(self):
+        self.assertRaisesRegexp(APIStatusError, r"^API returned error code 404$",
+                                api.request_api, "https://httpbin.org/status/404")
 
 
 if __name__ == "__main__":

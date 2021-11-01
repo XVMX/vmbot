@@ -1,0 +1,15 @@
+{
+  "error": {
+    "code": 400,
+    "message": "No filter selected. Expected one of: myRating, chart, id",
+    "errors": [
+      {
+        "message": "No filter selected. Expected one of: myRating, chart, id",
+        "domain": "youtube.parameter",
+        "reason": "missingRequiredParameter",
+        "location": "parameters.",
+        "locationType": "other"
+      }
+    ]
+  }
+}
