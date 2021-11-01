@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 
 import unittest
 
-import shutil
 import re
 
 import responses
@@ -13,7 +12,7 @@ from bs4 import BeautifulSoup
 from .support.xmpp import mock_muc_mess
 from .support import api as api_support
 from .support import files as files_support
-from vmbot.helpers.files import EMOTES, HTTPCACHE
+from vmbot.helpers.files import EMOTES
 from vmbot.helpers import api
 
 from vmbot.fun import Fun
