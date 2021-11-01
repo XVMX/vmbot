@@ -78,8 +78,8 @@ class MarketStructureLookup(object):
             return
 
         s = f.req_struct
-        s.type_id = result.get("type_id", None)
-        s.system_id = result["solar_system_id"]
+        s.type_id = result.get('type_id', None)
+        s.system_id = result['solar_system_id']
         s.has_market = True
 
         if ((s.type_id is not None and s.type_id not in self.market_typeids)
