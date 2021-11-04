@@ -133,6 +133,11 @@ class TestMarketStructureLookup(unittest.TestCase):
         self.assertSetEqual(ids, VALID_IDS_FRESH)
         lookup.finalize()
 
+        # Verify last_updated has been adjusted
+        q = db.select(MarketStructure).where(MarketStructure.structure_id.in_(VALID_IDS_FRESH))
+        for s in self.sess.execute(q).scalars():
+            self.assertLessEqual(s.update_age, timedelta(hours=1))
+
     def test_esi_error(self):
         self.token.request_esi.side_effect = mock_status_error(500)
         lookup = MarketStructureLookup(self.api_pool, self.token)

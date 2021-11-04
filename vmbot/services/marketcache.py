@@ -59,6 +59,9 @@ class MarketStructureLookup(object):
                 else:
                     # Reattempt market access regardless of cached status
                     s.has_market = True
+
+                # onupdate doesn't trigger when values are "updated" to their current values
+                s.last_updated = datetime.utcnow()
             elif not s.has_market:
                 del self.markets[id_]
 
@@ -71,8 +74,7 @@ class MarketStructureLookup(object):
             if e.status_code != 403:
                 raise e
 
-            # Access is still denied, set last_updated manually
-            f.req_struct.last_updated = datetime.utcnow()
+            # Access is still denied
             return
 
         s = f.req_struct
