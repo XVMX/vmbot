@@ -1608,3 +1608,7 @@ shrek.001.gif :dota:
 ! latestfad.001.png :latestfad:
 ! bighow.png :bighow:
 ! aloom.001.gif :aloom:
+! ibadpop.001.gif :ibadpop:
+! craboot.001.png :craboot:
+! screamy.001.gif :screamy:
+! bones.001.gif :bones:
