@@ -97,8 +97,8 @@ class TestAPI(unittest.TestCase):
     def test_ytbot(self):
         api_support.add_yt_video_200(responses)
         self.assertEqual(api.ytbot("GNFgkN1kbNc"),
-                         "Some video | HD | ABCDEF | 0:00:22 | 784,301 views | "
-                         "98.39% likes (+98,437/-1,613) | 2019-01-01 03:52:19")
+                         "Some video | HD | ABCDEF | 0:00:22 | "
+                         "784,301 views | 98,437 likes | 2019-01-01 03:52:19")
 
     @mock.patch("config.YT_KEY", new="TestKey")
     @responses.activate

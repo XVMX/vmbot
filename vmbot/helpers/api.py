@@ -113,7 +113,7 @@ def ytbot(video_id):
         return False
 
     fields = ("items(snippet(publishedAt,channelTitle,liveBroadcastContent,localized/title),"
-              "contentDetails(duration,definition),statistics(viewCount,likeCount,dislikeCount))")
+              "contentDetails(duration,definition),statistics(viewCount,likeCount))")
     params = {'part': "snippet,contentDetails,statistics", 'id': video_id,
               'hl': "en", 'fields': fields, 'key': config.YT_KEY, 'prettyPrint': "false"}
     try:
@@ -149,10 +149,8 @@ def ytbot(video_id):
     stats = yt['statistics']
     views = int(stats['viewCount'])
     res += " | {:,} views".format(views)
-    if 'likeCount' in stats and 'dislikeCount' in stats:
-        likes, dislikes = int(stats['likeCount']), int(stats['dislikeCount'])
-        perc_like = likes / float(likes + dislikes)
-        res += " | {:.2%} likes (+{:,}/-{:,})".format(perc_like, likes, dislikes)
+    if 'likeCount' in stats:
+        res += " | {:,} likes".format(int(stats['likeCount']))
 
     published = datetime.strptime(yt['snippet']['publishedAt'], ISO8601_DATETIME_FMT)
     res += " | {:%Y-%m-%d %H:%M:%S}".format(published)
