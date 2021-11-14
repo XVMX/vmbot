@@ -334,7 +334,7 @@ class Fun(object):
     @botcmd(disable_if=not config.IMGUR_ID)
     def imgur(self, mess, args):
         """<query> - Viral images straight off Imgur's search bar"""
-        headers = {'Authorization': "Client-ID {}".format(config.IMGUR_ID)}
+        headers = {'Authorization': "Client-ID " + config.IMGUR_ID}
         params = {'mature': "false", "album_previews": "false"}
         if args:
             url = "https://api.imgur.com/3/gallery/search/viral"
@@ -354,7 +354,7 @@ class Fun(object):
 
         image = _scored_choice(res['data'], (img['score'] for img in res['data']))
         return '<a href="{}">{}</a> ({:+,})'.format(
-            image['link'], image['title'], image['points']
+            image['link'], cgi.escape(image['title']), image['points']
         )
 
 
