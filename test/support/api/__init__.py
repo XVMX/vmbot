@@ -8,22 +8,23 @@ from functools import partial
 
 import responses
 
-from . import files
+from .cache import MockFileCache
+from .. import files
 
 import config
 
 
-def _noop_cache(sess, *args, **kwargs):
-    return sess
-
-
 def disable_cache():
-    return mock.patch("vmbot.helpers.api.CacheControl", new=_noop_cache)
+    return mock.patch("vmbot.helpers.api.FileCache", new=MockFileCache)
 
 
 def _add_to_mock(mock, f=None, **kwargs):
     if f is not None:
-        kwargs[b"body"] = files.open(f, "rb")
+        kwargs[b'body'] = files.open(f, "rb")
+
+    # Never cache mock responses
+    headers = kwargs.setdefault(b'headers', {})
+    headers['Cache-Control'] = "no-store"
 
     mock.add(**kwargs)
 
@@ -31,6 +32,49 @@ def _add_to_mock(mock, f=None, **kwargs):
 # Generic responses
 add_plain_200 = partial(_add_to_mock, method=responses.GET, status=200, body="Welcome!")
 add_plain_404 = partial(_add_to_mock, method=responses.GET, status=404, body="Not Found")
+
+# Special case responses for ESI
+add_esi_status_warning_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://esi.evetech.net/v2/status/",
+    status=200, content_type="application/json; charset=UTF-8", f="esi_status_200.json",
+    headers={'warning': "299 - This endpoint is deprecated."}
+)
+
+# Special case responses for zKillboard
+add_zkb_invalid_200 = partial(
+    _add_to_mock, method=responses.GET, status=200,
+    content_type="application/json; charset=utf-8", f="zkb_invalid_200.json"
+)
+
+# YouTube API requires authentication with API key
+add_yt_video_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=200, content_type="application/json; charset=UTF-8", f="yt_video_200.json"
+)
+add_yt_live_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=200, content_type="application/json; charset=UTF-8", f="yt_live_200.json"
+)
+add_yt_upcoming_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=200, content_type="application/json; charset=UTF-8", f="yt_upcoming_200.json"
+)
+add_yt_video_empty_200 = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=200, content_type="application/json; charset=UTF-8", f="yt_video_empty_200.json"
+)
+add_yt_video_quotaExceeded = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=403, content_type="application/json; charset=UTF-8", f="yt_video_quotaExceeded.json"
+)
+add_yt_video_404 = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=404, content_type="application/json; charset=UTF-8", f="yt_video_404.json"
+)
+add_yt_video_400 = partial(
+    _add_to_mock, method=responses.GET, url="https://www.googleapis.com/youtube/v3/videos",
+    status=400, content_type="application/json; charset=UTF-8", f="yt_video_400.json"
+)
 
 # bash.org is a bit unstable at times and the website never changes, so we keep a local copy
 add_bash_org_random_200 = partial(

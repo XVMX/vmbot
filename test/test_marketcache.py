@@ -106,7 +106,7 @@ class TestMarketStructureLookup(unittest.TestCase):
 
         self.assertSetEqual(ids, VALID_IDS_FRESH)
         for id_, spec in MOCK_STRUCTURES.items():
-            if not isinstance(spec, Exception) and not spec.get("has_market", True):
+            if not isinstance(spec, Exception) and not spec.get('has_market', True):
                 lookup.mark_inaccessible(id_)
         lookup.finalize()
 
@@ -123,7 +123,7 @@ class TestMarketStructureLookup(unittest.TestCase):
                     s = MarketStructure.from_esi_denied(id_)
                 else:
                     s = MarketStructure.from_esi_result(id_, spec)
-                    s.has_market = spec.get("has_market", True)
+                    s.has_market = spec.get('has_market', True)
 
                 s.last_updated -= MarketStructureLookup.MARKET_CACHE_TTL + timedelta(days=1)
                 self.sess.add(s)

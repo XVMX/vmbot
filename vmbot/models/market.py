@@ -26,7 +26,7 @@ class MarketStructure(db.Model):
 
     @classmethod
     def from_esi_result(cls, structure_id, result):
-        return cls(structure_id, result.get("type_id", None), result["solar_system_id"])
+        return cls(structure_id, result.get('type_id', None), result['solar_system_id'])
 
     @classmethod
     def from_esi_denied(cls, structure_id):

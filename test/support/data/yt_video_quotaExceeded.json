@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": 403,
+    "message": "Quota exceeded",
+    "errors": [
+      {
+        "message": "Quota exceeded",
+        "reason": "quotaExceeded"
+      }
+    ]
+  }
+}

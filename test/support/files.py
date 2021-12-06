@@ -8,6 +8,6 @@ import io
 DATADIR = path.abspath(path.join(path.dirname(__file__), "data"))
 
 
-def open(file, *args, **kwargs):
-    file = path.join(DATADIR, file)
-    return io.open(file, *args, **kwargs)
+def open(fname, *args, **kwargs):
+    fname = path.join(DATADIR, fname)
+    return io.open(fname, *args, **kwargs)
