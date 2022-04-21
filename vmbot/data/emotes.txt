@@ -1629,3 +1629,14 @@ shrek.001.gif :dota:
 ! tinkidel.001.gif :tinkidel:
 ! foksmash.png :foksmash:
 ! mildpanic.001.png :mildpanic:
+! hayter.001.gif :hayter:
+! letsgo.001.png :letsgo:
+! boomshaka.001.gif :boomshaka:
+! covidtree.001.png :covidtree:
+! america.001.png :america:
+! murica.001.gif :murica:
+! unjustpost.001.gif :unjustpost:
+! emot-santahurr.gif :santahurr:
+! ferrari.png :ferrari:
+! lemon.001.png :lemon:
+! imgay.001.gif :imgay:
