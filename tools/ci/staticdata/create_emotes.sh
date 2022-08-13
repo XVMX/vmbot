@@ -6,7 +6,7 @@ etag_file="$etag_path/pidgin_nosmile.zip.txt"
 echo "Downloading pidgin_nosmile.zip..."
 mkdir -p "$etag_path"
 touch "$etag_file"
-curl -sSLO --etag-compare "$etag_file" --etag-save "${etag_file}.new" \
+curl -fsSLO --etag-compare "$etag_file" --etag-save "${etag_file}.new" \
      https://s3.amazonaws.com/emotes.gbs.io/pidgin_nosmile.zip
 mv "${etag_file}.new" "$etag_file"
 

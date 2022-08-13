@@ -6,7 +6,7 @@ etag_file="$etag_path/sqlite-latest.sqlite.bz2.txt"
 echo "Downloading sqlite-latest.sqlite.bz2..."
 mkdir -p "$etag_path"
 touch "$etag_file"
-curl -sSLO --etag-compare "$etag_file" --etag-save "${etag_file}.new" \
+curl -fsSLO --etag-compare "$etag_file" --etag-save "${etag_file}.new" \
      https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2
 mv "${etag_file}.new" "$etag_file"
 
@@ -16,7 +16,7 @@ if [[ ! -s sqlite-latest.sqlite.bz2 ]]; then
   exit 0
 fi
 
-curl -sSLO https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2.md5
+curl -fsSLO https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2.md5
 
 echo "Verifying MD5 checksum..."
 if ! md5sum -c sqlite-latest.sqlite.bz2.md5; then

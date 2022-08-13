@@ -20,8 +20,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Activate PR branch
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           if git fetch --depth=2 origin auto-update-staticdata 2>/dev/null; then
             git checkout auto-update-staticdata
@@ -38,8 +38,10 @@ jobs:
           restore-keys: update-staticdata-etags-${{ hashFiles('tools/ci/staticdata/*.sh') }}-
       - name: Create emotes.txt
         run: tools/ci/staticdata/create_emotes.sh
+        continue-on-error: true
       - name: Create staticdata.sqlite
         run: tools/ci/staticdata/create_staticdata.sh
+        continue-on-error: true
       - name: Stage updates
         id: git-add
         run: |
