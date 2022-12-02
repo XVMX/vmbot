@@ -99,7 +99,7 @@ add_ud_define_api_200 = partial(
 )
 
 # Imgur API requires authentication with client ID
-_IMGUR_AUTH = "Client-ID {}".format(config.IMGUR_ID)
+_IMGUR_AUTH = "Client-ID " + config.IMGUR_ID
 add_imgur_viral_200 = partial(
     _add_to_mock, method=responses.GET, url="https://api.imgur.com/3/gallery/hot/viral",
     status=200, content_type="application/json", f="imgur_viral_200.json",
