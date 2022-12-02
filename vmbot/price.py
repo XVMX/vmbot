@@ -142,16 +142,15 @@ class Price(object):
             system_or_region = "Jita"
 
         token = self._get_token()
-        params = {'search': system_or_region, 'categories': "region,solar_system"}
-        try:
-            if "esi-search.search_structures.v1" in token.scopes:
-                params['categories'] += ",structure"
+        if "esi-search.search_structures.v1" in token.scopes:
+            params = {'search': system_or_region, 'categories': "region,solar_system,structure"}
+            try:
                 res = token.request_esi("/v3/characters/{}/search/",
                                         (token.character_id,), params=params)
-            else:
-                res = api.request_esi("/v2/search/", params=params)
-        except APIError as e:
-            return unicode(e)
+            except APIError as e:
+                return unicode(e)
+        else:
+            res = staticdata.search_location(system_or_region)
 
         region_id = res.get('region', [None])[0]
         system_ids = res.get('solar_system', [])

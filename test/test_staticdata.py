@@ -21,6 +21,32 @@ class TestStaticdata(unittest.TestCase):
     def test_type_name_invaliditem(self):
         self.assertEqual(staticdata.type_name.__wrapped__(-1), "{Failed to load}")
 
+    def test_search_location(self):
+        # region_id: 10000043 Domain
+        # system_id: 30005243 Madomi
+        # system_id: 30005226 Dom-Aphis
+        self.assertDictEqual(
+            staticdata.search_location("dom"),
+            {"region": [10000043], "solar_system": [30005243, 30005226]}
+        )
+
+    def test_search_location_region(self):
+        # region_id: 10000002 The Forge
+        self.assertDictEqual(
+            staticdata.search_location("Forge"),
+            {"region": [10000002]}
+        )
+
+    def test_search_location_system(self):
+        # system_id: 30000142 Jita
+        self.assertDictEqual(
+            staticdata.search_location("Jita"),
+            {"solar_system": [30000142]}
+        )
+
+    def test_search_location_empty(self):
+        self.assertDictEqual(staticdata.search_location("InvalidLoc"), {})
+
     def test_search_market_types(self):
         # types: 34 Tritanium, 25595 Alloyed Tritanium Bar
         self.assertListEqual(staticdata.search_market_types("trit"),

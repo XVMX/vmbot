@@ -39,6 +39,35 @@ def type_name(type_id):
     return type[0] if type else "{Failed to load}"
 
 
+def search_location(term):
+    """Resolve a search term to regions and solar systems."""
+    params = {'name': "%{}%".format(term)}
+    with _get_sde_conn() as conn:
+        regions = conn.execute(
+            """SELECT regionID
+               FROM mapRegions
+               WHERE regionName LIKE :name
+                 AND regionID < 12000000  -- only public regions
+               ORDER BY LENGTH(regionName) ASC;
+            """, params
+        ).fetchall()
+        systems = conn.execute(
+            """SELECT solarSystemID
+               FROM mapSolarSystems
+               WHERE solarSystemName LIKE :name
+                 AND regionID < 12000000  -- only public regions
+               ORDER BY LENGTH(solarSystemName) ASC;
+            """, params
+        ).fetchall()
+
+    res = {}
+    if regions:
+        res["region"] = [i[0] for i in regions]
+    if systems:
+        res["solar_system"] = [i[0] for i in systems]
+    return res
+
+
 def search_market_types(term):
     """Resolve a search term to types that are listed on the market."""
     with _get_sde_conn() as conn:
