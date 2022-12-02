@@ -30,6 +30,7 @@ from .async.km_feed import KMFeed
 from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
+from .helpers.sso import SSOToken
 from .helpers.decorators import timeout, requires_role, inject_db
 from .helpers.format import format_jid_nick
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
@@ -313,6 +314,13 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
             self.km_feed.close()
 
         return super(VMBot, self).shutdown()
+
+    def get_token(self):
+        try:
+            return self._token
+        except AttributeError:
+            self._token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
+            return self._token
 
     @staticmethod
     @timeout(5, "Your calculation is too expensive and was killed off")

@@ -16,7 +16,9 @@ from vmbot.helpers import api
 
 from vmbot.price import Price
 
-MOCK_TOKEN = mock.Mock(name="SSOToken", scopes=[])
+
+def mock_get_token():
+    return mock.Mock(name="SSOToken", scopes=[])
 
 
 class TestPrice(unittest.TestCase):
@@ -45,6 +47,7 @@ class TestPrice(unittest.TestCase):
     def setUp(self):
         self.price = Price()
         self.price.api_pool = futures.ThreadPoolExecutor(max_workers=10)
+        self.price.get_token = mock_get_token
 
     def tearDown(self):
         del self.price
@@ -63,84 +66,70 @@ class TestPrice(unittest.TestCase):
              "<item>[@system_or_region]")
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.price.Price._get_system_orders", return_value=((45.99, 1000), (45.99, 1000)))
-    def test_price_nosystem(self, mock_system_orders, mock_token):
+    def test_price_nosystem(self, mock_system_orders):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite"),
             self.price_template.format("Pyerite", "Jita", 45.99, 1000, 45.99, 1000, 0)
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.price.Price._get_system_orders", return_value=((45.99, 1000), (45.99, 1000)))
-    def test_price_system(self, mock_system_orders, mock_token):
+    def test_price_system(self, mock_system_orders):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite@Amarr"),
             self.price_template.format("Pyerite", "Amarr", 45.99, 1000, 45.99, 1000, 0)
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.price.Price._get_region_orders", return_value=((45.99, 1000), (45.99, 1000)))
-    def test_price_region(self, mock_region_orders, mock_token):
+    def test_price_region(self, mock_region_orders):
         self.assertEqual(
             self.price.price(self.default_mess, "Mexallon@The Forge"),
             self.price_template.format("Mexallon", "The Forge", 45.99, 1000, 45.99, 1000, 0)
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.price.Price._get_system_orders", return_value=((45.99, 1000), (45.99, 1000)))
     @mock.patch("vmbot.price.disambiguate", return_value="TestResponse")
-    def test_price_disambiguate(self, mock_disambiguate, mock_system_orders, mock_token):
+    def test_price_disambiguate(self, mock_disambiguate, mock_system_orders):
         self.assertEqual(
             self.price.price(self.default_mess, "Tritanium@ika"),
             (self.price_template.format("Tritanium", "Ikao", 45.99, 1000, 45.99, 1000, 0)
              + "<br />TestResponse" + "<br />TestResponse")
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
-    def test_price_invaliditem(self, mock_token):
+    def test_price_invaliditem(self):
         self.assertEqual(
             self.price.price(self.default_mess, "InvalidItem"),
             "Failed to find a matching item"
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
-    def test_price_invalidsystem(self, mock_token):
+    def test_price_invalidsystem(self):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite@InvalidSystem"),
             "Failed to find a matching system/region"
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.helpers.api.request_esi",
                 side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_price_searcherror(self, mock_esi, mock_token):
+    def test_price_searcherror(self, mock_esi):
         self.assertEqual(
             self.price.price(self.default_mess, "Mexallon"),
             "TestException"
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.price.Price._get_system_orders",
                 side_effect=APIError(requests.RequestException(), "TestException"))
-    def test_price_orderserror(self, mock_system_orders, mock_token):
+    def test_price_orderserror(self, mock_system_orders):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite"),
             "TestException"
         )
 
-    @mock.patch("vmbot.price.Price._get_token", return_value=MOCK_TOKEN)
     @mock.patch("vmbot.price.Price._get_system_orders", return_value=((0, 0), (0, 0)))
-    def test_price_noorders(self, mock_system_orders, mock_token):
+    def test_price_noorders(self, mock_system_orders):
         self.assertEqual(
             self.price.price(self.default_mess, "Pyerite"),
             self.no_spread_template.format("Pyerite", "Jita", 0, 0, 0, 0)
         )
-
-    @mock.patch("vmbot.helpers.sso.SSOToken.from_refresh_token", return_value=MOCK_TOKEN)
-    def test_get_token(self, mock_sso):
-        tk = self.price._get_token()
-        self.assertIs(self.price._get_token(), tk)
 
     def test_calc_totals(self):
         orders = [

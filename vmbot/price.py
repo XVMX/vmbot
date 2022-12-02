@@ -9,12 +9,9 @@ from concurrent import futures
 from .botcmd import botcmd
 from .helpers.exceptions import APIError, APIStatusError
 from .helpers import api
-from .helpers.sso import SSOToken
 from .helpers import staticdata
 from .helpers.format import disambiguate
 from .services.marketcache import MarketStructureLookup
-
-import config
 
 
 class Price(object):
@@ -120,13 +117,6 @@ class Price(object):
         futures.wait(order_futs)
         return Price._calc_totals(orders)
 
-    def _get_token(self):
-        try:
-            return self._token
-        except AttributeError:
-            self._token = SSOToken.from_refresh_token(config.SSO['refresh_token'])
-            return self._token
-
     @botcmd
     def price(self, mess, args):
         """<item>[@system_or_region] - Price of item in system_or_region, defaulting to Jita"""
@@ -141,7 +131,7 @@ class Price(object):
         except IndexError:
             system_or_region = "Jita"
 
-        token = self._get_token()
+        token = self.get_token()
         if "esi-search.search_structures.v1" in token.scopes:
             params = {'search': system_or_region, 'categories': "region,solar_system,structure"}
             try:

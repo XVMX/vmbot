@@ -25,9 +25,14 @@ class EVEUtils(object):
         if not args:
             return "Please provide a character name"
 
+        token = self.get_token()
+        if "esi-search.search_structures.v1" not in token.scopes:
+            return "SSO token is missing a required scope"
+
         params = {'search': args, 'categories': "character", 'strict': "true"}
         try:
-            res = api.request_esi("/v2/search/", params=params)
+            res = token.request_esi("/v3/characters/{}/search/",
+                                    (token.character_id,), params=params)
             char_id = res['character'][0]
         except APIError as e:
             return unicode(e)
