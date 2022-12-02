@@ -17,7 +17,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Activate PR branch
         run: |
           git config user.name "github-actions[bot]"
@@ -31,7 +31,7 @@ jobs:
           fi
 
       - name: Cache resource ETags
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .ci-etag
           key: update-staticdata-etags-${{ hashFiles('tools/ci/staticdata/*.sh') }}-${{ github.run_id }}
@@ -48,10 +48,10 @@ jobs:
           mv emotes.txt staticdata.sqlite vmbot/data/ 2>/dev/null || true
           git add vmbot/data/
           if git diff --staged --quiet; then
-            echo "::set-output name=changed::false"
+            echo "changed=false" >> $GITHUB_OUTPUT
             echo "Nothing to update"
           else
-            echo "::set-output name=changed::true"
+            echo "changed=true" >> $GITHUB_OUTPUT
             echo "Updates available"
           fi
 
