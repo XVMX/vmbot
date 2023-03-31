@@ -125,11 +125,11 @@ class TestACL(unittest.TestCase):
                          "The user doesn't have any of the specified roles")
 
     def test_list(self):
-        self.assertEqual(self.acl.list(self.default_mess, "admin"),
+        self.assertEqual(self.acl.listrole(self.default_mess, "admin"),
                          "This role is assigned to {}".format(ADMIN_JID.getNode()))
 
     def test_list_invalidrole(self):
-        self.assertEqual(self.acl.list(self.default_mess, "xyz"),
+        self.assertEqual(self.acl.listrole(self.default_mess, "xyz"),
                          "Invalid role")
 
     def test_list_notassigned(self):
@@ -137,7 +137,7 @@ class TestACL(unittest.TestCase):
         admin.allow_admin = False
         self.sess.commit()
 
-        self.assertEqual(self.acl.list(self.default_mess, "admin"),
+        self.assertEqual(self.acl.listrole(self.default_mess, "admin"),
                          "This role is not assigned to anyone")
 
         admin.allow_admin = True

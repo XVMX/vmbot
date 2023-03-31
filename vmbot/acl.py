@@ -104,7 +104,7 @@ class ACL(object):
 
     @botcmd
     @inject_db
-    def list(self, mess, args, session):
+    def listrole(self, mess, args, session):
         """<role> - Lists users with the specified role
 
         Available roles: director, admin, token.
