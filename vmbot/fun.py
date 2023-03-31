@@ -74,8 +74,7 @@ NICKISMS = (
     "D{}d!",
     "But d{}d!",
     "Come on d{}d...",
-    "Oh d{}d",
-    "D{}d, never go full retart!"
+    "Oh d{}d"
 )
 
 KAIRKISMS = (
@@ -98,16 +97,9 @@ SCOTTISMS = (
     "Israel has a right to defend itself."
 )
 
-JOKERISMS = (
-    "dont be a retard",
-    "dont ruin our zkb efficiency",
-    "urbad",
-    ":sun:"
-)
-
 PUBBIESMACK = (
     "{nick}: go back to reddit fam",
-    "{nick}: What are you, a fuckin alpha clone? :frogout:",
+    "{nick}: What are ya, some alpha clone? :frogout:",
     "{nick}: Ascendance is that way ---->",
     "{nick}: :commissar:",
     "{nick}: :frogbarf:",
@@ -202,14 +194,6 @@ class Say(object):
         """Like fishsay but more dead"""
         sender = args.strip() or self.get_sender_username(mess)
         return ":rip: {}".format(sender)
-
-    @botcmd
-    def jokersay(self, mess, args):
-        """Like fishsay but german"""
-        if args:
-            return args + ' ' + random.choice(JOKERISMS)
-        else:
-            return random.choice(JOKERISMS)
 
     @botcmd
     def handysay(self, mess, args):

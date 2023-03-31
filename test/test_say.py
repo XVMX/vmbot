@@ -9,7 +9,7 @@ import re
 from .support.xmpp import USER_MUC_JID, mock_muc_mess, get_sender_username
 from vmbot.helpers.files import HANDEY_QUOTES
 from vmbot.fun import (EBALL_ANSWERS, FISHISMS, PIMPISMS, ARELEISMS, NICKISMS,
-                       KAIRKISMS, DARIUSISMS, SCOTTISMS, JOKERISMS, PUBBIESMACK)
+                       KAIRKISMS, DARIUSISMS, SCOTTISMS, PUBBIESMACK)
 
 from vmbot.fun import Say
 
@@ -92,14 +92,6 @@ class TestSay(unittest.TestCase):
     def test_eksay_args(self):
         test_arg = "TestArg"
         self.assertEqual(self.say.eksay(self.default_mess, test_arg), ":rip: {}".format(test_arg))
-
-    def test_jokersay_noargs(self):
-        self.assertIn(self.say.jokersay(self.default_mess, self.default_args), JOKERISMS)
-
-    def test_jokersay_args(self):
-        test_arg = "TestArg"
-        self.assertIn(self.say.jokersay(self.default_mess, test_arg),
-                      [test_arg + ' ' + line for line in JOKERISMS])
 
     def test_handysay(self):
         with open(HANDEY_QUOTES, "rU") as says_file:

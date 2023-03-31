@@ -12,7 +12,6 @@ PUBBIETALK = (
     "o/",
     r"\o",
     "m8",
-    "retart",
     "rekt",
     "toon(?:ies)?",
     "iskies",

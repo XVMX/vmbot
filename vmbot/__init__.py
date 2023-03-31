@@ -323,7 +323,7 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
             return self._token
 
     @staticmethod
-    @timeout(5, "Your calculation is too expensive and was killed off")
+    @timeout(5, "Your calculation is too expensive and was not completed")
     def _do_math(args):
         return pretty(parse_expr(args), full_prec=False, use_unicode=True)
 
