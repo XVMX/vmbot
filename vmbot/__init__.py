@@ -334,8 +334,8 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
             reply = self._do_math(args)
         except TimeoutError as e:
             return unicode(e)
-        except Exception as e:
-            return "Failed to calculate your request: {}".format(e)
+        except Exception:
+            return  # probably an unintended invocation
 
         reply = '<span style="font-family: monospace;">' + reply.replace('\n', "<br />") + "</span>"
         if "<br />" in reply:
@@ -349,12 +349,13 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
         try:
             src, dest = args.split(" to ", 1)
         except ValueError:
-            return "Please provide a source unit/amount and a destination unit"
+            return  # probably an unintended invocation
         ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 
         try:
-            return unicode(ureg(src).to(dest))
-        except pint.DimensionalityError as e:
+            res = ureg(src, case_sensitive=False).to(ureg(dest, case_sensitive=False))
+            return "{:.6g}".format(res)
+        except (pint.UndefinedUnitError, pint.DimensionalityError) as e:
             return unicode(e)
         except Exception as e:
             return "Failed to convert your request: {}".format(e)
@@ -370,7 +371,7 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
             dice = int(args[0])
             sides = int(args[1])
         except ValueError:
-            return "Please provide integer parameters"
+            return  # probably an unintended invocation
         except IndexError:
             pass
 

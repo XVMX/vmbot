@@ -37,7 +37,7 @@ class EVEUtils(object):
         except APIError as e:
             return unicode(e)
         except KeyError:
-            return "This character doesn't exist"
+            return "This EVE character doesn't exist"
 
         # Process ESI lookups in parallel
         sheet_fut = self.api_pool.submit(api.request_esi, "/v5/characters/{}/", (char_id,))
