@@ -91,8 +91,8 @@ class TestPrice(unittest.TestCase):
     @mock.patch("vmbot.price.disambiguate", return_value="TestResponse")
     def test_price_disambiguate(self, mock_disambiguate, mock_system_orders):
         self.assertEqual(
-            self.price.price(self.default_mess, "Tritanium@ika"),
-            (self.price_template.format("Tritanium", "Ikao", 45.99, 1000, 45.99, 1000, 0)
+            self.price.price(self.default_mess, "Tritanium@hek"),
+            (self.price_template.format("Tritanium", "Hek", 45.99, 1000, 45.99, 1000, 0)
              + "<br />TestResponse" + "<br />TestResponse")
         )
 
