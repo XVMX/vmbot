@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, unicode_literals, print_functi
 import time
 from datetime import datetime
 from collections import defaultdict
-import signal
 from os import path, pardir
 import subprocess
 import random
@@ -31,7 +30,7 @@ from .helpers.exceptions import TimeoutError
 from .helpers import database as db
 from .helpers import api
 from .helpers.sso import SSOToken
-from .helpers.decorators import timeout, requires_role, inject_db
+from .helpers.decorators import HAS_TIMEOUT, timeout, requires_role, inject_db
 from .helpers.format import format_jid_nick
 from .helpers.regex import PUBBIE_REGEX, ZKB_REGEX, YT_REGEX
 from .models.message import Message
@@ -327,7 +326,7 @@ class VMBot(ACL, Director, Say, Fun, Chains, Pager, Price, EVEUtils, MUCJabberBo
     def _do_math(args):
         return pretty(parse_expr(args), full_prec=False, use_unicode=True)
 
-    @botcmd(disable_if=not hasattr(signal, "alarm"))
+    @botcmd(disable_if=not HAS_TIMEOUT)
     def math(self, mess, args):
         """<expr> - Evaluates expr mathematically"""
         try:

@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function
 
 import signal
-from functools import wraps
+from functools import wraps, update_wrapper
 
 from .exceptions import TimeoutError
 from . import database as db
@@ -11,9 +11,16 @@ from ..models.user import User
 
 import config
 
+HAS_TIMEOUT = hasattr(signal, "alarm")
+
 
 def timeout(seconds, error_message="Timer expired"):
     """Raise TimeoutError after timer expires."""
+    if not HAS_TIMEOUT:
+        def wrapper(*args, **kwargs):
+            raise TimeoutError("Timeout unavailable for function execution")
+        return lambda func: update_wrapper(wrapper, func)
+
     def decorate(func):
         def handle_timeout(signum, frame):
             raise TimeoutError(error_message)
@@ -24,11 +31,9 @@ def timeout(seconds, error_message="Timer expired"):
             signal.alarm(seconds)
 
             try:
-                result = func(*args, **kwargs)
+                return func(*args, **kwargs)
             finally:
                 signal.alarm(0)
-
-            return result
 
         return wrapper
 
