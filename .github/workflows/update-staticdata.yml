@@ -66,15 +66,15 @@ jobs:
 
           commits=($(git rev-parse HEAD "$GITHUB_REF"))
           if [[ "${commits[0]}" != "${commits[1]}" ]]; then
-            modifier="--amend"
+            modifier="--amend --reset-author"
           fi
-          git commit ${modifier:-} -m "Updated static data" -m "$commit_body"
+          git commit ${modifier:-} -m "Update static data" -m "$commit_body"
           git push --force-with-lease -u origin auto-update-staticdata
 
           pr="$(gh pr list -s open -l auto-update -S "static data" -L 1 \
                            --json url --template '{{ pluck "url" . | join "\n" }}')"
           if [[ -z "$pr" ]]; then
-            gh pr create -t "Updated static data" -l auto-update \
+            gh pr create -t "Update static data" -l auto-update \
                          -b "*This PR has been generated automatically*"
           else
             echo "$pr"
