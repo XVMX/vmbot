@@ -61,7 +61,7 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           commit_body="ETags:
-          pidgin_nosmile.zip       $(cat .ci-etag/pidgin_nosmile.zip.txt)
+          GSF_Emotes.zip           $(cat .ci-etag/GSF_Emotes.zip.txt)
           sqlite-latest.sqlite.bz2 $(cat .ci-etag/sqlite-latest.sqlite.bz2.txt)"
 
           commits=($(git rev-parse HEAD "$GITHUB_REF"))
