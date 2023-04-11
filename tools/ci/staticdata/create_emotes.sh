@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -euo pipefail
 fname="GSF_Emotes.zip"
 
 etag_path="${1:-.ci-etag}"
@@ -19,7 +19,7 @@ fi
 
 # Requires GNU sed extensions
 echo "Extracting emotes.txt..."
-unzip -p "$fname" "pidgin/gsf/theme" |
+unzip -p "$fname" "gsf/theme" |
   sed '0,/^\[default\]$/Id' > emotes.txt
 chmod 444 emotes.txt
 

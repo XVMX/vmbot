@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -euo pipefail
 fname="sqlite-latest.sqlite.bz2"
 
 etag_path="${1:-.ci-etag}"
