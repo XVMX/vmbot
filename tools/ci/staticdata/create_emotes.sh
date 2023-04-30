@@ -1,21 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 fname="GSF_Emotes.zip"
+ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109) Gecko/20100101 Firefox/112.0"
 
-etag_path="${1:-.ci-etag}"
-mkdir -p "$etag_path"
-etag_file="$etag_path/$fname.txt"
-
-# Requires curl 7.70 or later for bug-free etag support (CI: ubuntu-22.04)
 echo "Downloading $fname..."
-curl -fsSLO -m 300 --etag-compare "$etag_file" --etag-save "$etag_file" \
-     "https://wiki.goonswarm.org/images/0/0f/$fname"
-
-if [[ ! -s "$fname" ]]; then
-  echo "emotes.txt is up to date"
-  rm -f "$fname"
-  exit 0
-fi
+wget -nv -T 60 -e robots=off -U "$ua" --https-only -r -l 1 -nd \
+  -I /images -X /images/archive "https://wiki.goonswarm.org/w/File:$fname"
 
 # Requires GNU sed extensions
 echo "Extracting emotes.txt..."
