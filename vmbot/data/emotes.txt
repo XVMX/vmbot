@@ -1414,3 +1414,5 @@ blyat.001.png :blyat:
 utruck.001.gif :utruck:
 foksmash.png :foksmash:
 mildpanic.001.png :mildpanic:
+blushcat.png :blushcat:
+blushcatm.png :blushcatm:
